@@ -1,7 +1,19 @@
-
+# Key management types
 keys: address[20]
 key_types: num[20]
 key_count: num
+claim_count: num
+
+# Claim types
+claims: {
+    claimId: bytes32,
+    claimType: num,
+    issuer: address,
+    signatureType: num,
+    signature: bytes <= 4096,
+    data: bytes <= 4096,
+    uri: bytes <= 4096
+}[num]
 
 
 def __init__():
@@ -100,3 +112,57 @@ def replaceKey(_oldKey: address, _newKey: address) -> bool:
             return True
 
     return False
+
+
+
+# The signature format is a compact form of:
+#     {bytes32 r}{bytes32 s}{uint8 v}
+# Compact means, uint8 is not padded to 32 bytes.
+@internal
+def sig_verify(h: bytes32, signer: address, sig: bytes <= 66) -> bool:
+    r = extract32(sig, 0, type=num256)
+    s = extract32(sig, 32, type=num256)
+    sliced = slice(sig, start=64, len=1)
+    v = bytes_to_num(sliced)
+
+    # geth uses [0, 1] and some clients have followed.
+    # Add 27 to make it v compatible.
+    if v < 27:
+        v += 27
+    assert v == 27 or v == 28
+
+    if ecrecover(h, r, s, as_num256(v)) == signer:
+        return True
+    else:
+        return False
+
+
+def addClaim(_claimType: num(num256), issuer: address, signatureType: num(num256),
+             _signature: bytes <= 4096, _data: bytes <= 4096, _uri: bytes <= 4096) -> bytes32:
+    # For the time being assume singatureType == 1 means use ecrecover to verify.
+    # Also we only allow EC verify in this contract.
+    assert signatureType == 1
+
+    _id = sha3(concat(as_bytes32(_claimType), as_bytes32(issuer), as_bytes32(signatureType), _data, _uri))
+
+    if self.sig_verify(_id, issuer, slice(_signature, start=0, len=65)):
+        self.claims[0] = {
+            claimId: _id,
+            claimType: _claimType,
+            issuer: issuer,
+            signatureType: signatureType,
+            signature: _signature,
+            data: _data,
+            uri: _uri
+        }
+        return _id
+    else:
+        throw
+
+# Outstanding:
+# function getClaim(bytes32 _claimId) constant returns(uint256 claimType, address issuer, uint256 signatureType, bytes signature, bytes data, string uri);
+# function getClaimIdsByType(uint256 _claimType) constant returns(bytes32[] claimIds);
+# function removeClaim(bytes32 _claimId) returns (bool success)
+
+# function addClaim(uint256 _claimType, address issuer, uint256 signatureType,
+#                   bytes _signature, bytes _data, string _uri) returns (bytes32 claimRequestId)
