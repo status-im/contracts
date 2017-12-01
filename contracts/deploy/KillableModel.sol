@@ -17,14 +17,6 @@ contract KillableModel is BasicSystemStorage {
         watchdog = _watchdog;
     }
 
-    function changeWatchdog(address newWatchDog) public {
-        require(msg.sender == watchdog);
-        watchdog = newWatchDog;
-    }
-
-    /**
-     * @dev Should be only possible to call this at Model. Never set watchdog var at instances.
-     */
     function emergencyStop() public {
         require(msg.sender == watchdog);
         selfdestruct(watchdog);

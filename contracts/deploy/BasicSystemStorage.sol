@@ -8,9 +8,7 @@ pragma solidity ^0.4.17;
  * avoid overwriting wrong storage pointers
  */
 contract BasicSystemStorage {    
-    /// protected zone start (RecorverableSystem vars)
-    address system;
-    address recover;
-    address watchdog;
-    /// protected zone end
+    address public system;
+    address public recover;
+    address public watchdog;
 }

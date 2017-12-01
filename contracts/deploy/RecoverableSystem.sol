@@ -9,8 +9,13 @@ import "./DelegatedCall.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @dev Contract that recovers from dead system to recoverer.
  */
-contract RecoverableSystem is BasicSystemStorage, DelegatedCall {
+    contract RecoverableSystem is BasicSystemStorage, DelegatedCall {
 
+    /**
+     * @dev Requires at least valid _recoverer, that can elect the first system.
+     * @param _system the first system
+     * @param _recover the recoverer contract 
+     */
     function RecoverableSystem(address _system, address _recover) public {
         require(isOk(_recover));
         system = _system;
@@ -20,12 +25,12 @@ contract RecoverableSystem is BasicSystemStorage, DelegatedCall {
     /**
      * @dev delegatecall everything (but declared functions) to `_target()`
      */
-    function () public delegated {
+    function () external payable delegated {
         //all goes to system (or recover)
     }
 
     /**
-     * @dev checks if system contains code
+     * @dev checks if system is not in recovery mode
      */
     function isOk() public constant returns(bool a) {
         return isOk(system);
