@@ -1,9 +1,11 @@
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.17;
 
 import "./TrustNetwork.sol";
 import "./DelegationProxy.sol";
+import "./ProposalExecutor.sol";
 import "../token/MiniMeToken.sol";
 import "../common/Controlled.sol";
+
 
 /**
  * @title ProposalManager
@@ -16,12 +18,11 @@ contract ProposalManager is Controlled {
     MiniMeToken public SNT;
     address public stakeBank;
 
-    Proposal[] proposals;
+    Proposal[]  proposals;
     
     struct Proposal {
         address topic; 
 
-        address destination;
         uint value;
         bytes data;
         uint stake;
@@ -59,14 +60,13 @@ contract ProposalManager is Controlled {
         stakeBank = _stakeBank;
     }
 
-    function addProposal(address topic, address destination, uint value, bytes data, uint stake) returns (uint) {
+    function addProposal(address topic, uint value, bytes data, uint stake) public returns (uint) {
         require(stake > 1000);
         require(SNT.transferFrom(msg.sender, stakeBank, stake));
         uint pos = proposals.length++;
         Proposal storage p = proposals[pos];
         
         p.topic = topic;
-        p.destination = destination;
         p.value = value;
         p.data = data;
         p.stake = stake;
@@ -78,20 +78,22 @@ contract ProposalManager is Controlled {
         return pos;
     }
 
-    function getProposal(uint id) public constant returns (address topic, address destination, uint value, uint stake, bool approved, bool executed) {
+    function getProposal(uint id) public constant returns (address topic, uint value, uint stake, bool approved, bool executed) {
         Proposal memory p = proposals[id];
-        return (p.topic, p.destination, p.value, p.stake, p.approved, p.executed);
+        return (p.topic, p.value, p.stake, p.approved, p.executed);
     } 
 
-    function getProposalData(uint id) public constant returns(bytes){
+    function getProposalData(uint id) public constant returns(bytes) {
         return proposals[id].data;
     }
 
-    function setExecuted(uint id) public onlyController {
+    function execute(uint id) public {
+        Proposal memory p = proposals[id];
         proposals[id].executed = true;
+        ProposalExecutor(controller).executeProposal(p.topic, p.value, p.data);
     }
 
-    function vote(uint _proposal, Vote _vote) {
+    function vote(uint _proposal, Vote _vote) public {
         Proposal storage proposal = proposals[_proposal];
         require(block.number >= proposal.blockStart);
         if (_vote == Vote.Veto) {
