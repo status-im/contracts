@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity 0.4.11;
+pragma solidity ^0.4.11;
 
 /*
  * Ownable
@@ -27,7 +27,7 @@ pragma solidity 0.4.11;
 contract Ownable {
     address public owner;
 
-    function Ownable() {
+    function Ownable() public {
         owner = msg.sender;
     }
 
@@ -36,7 +36,7 @@ contract Ownable {
         _;
     }
 
-    function transferOwnership(address newOwner) onlyOwner {
+    function transferOwnership(address newOwner) public onlyOwner {
         if (newOwner != address(0)) {
             owner = newOwner;
         }
@@ -245,14 +245,14 @@ contract TokenRegistry is Ownable {
     /// @dev Provides a registered token's address when given the token symbol.
     /// @param _symbol Symbol of registered token.
     /// @return Token's address.
-    function getTokenAddressBySymbol(string _symbol) constant returns (address) {
+    function getTokenAddressBySymbol(string _symbol) public constant returns (address) {
         return tokenBySymbol[_symbol];
     }
 
     /// @dev Provides a registered token's address when given the token name.
     /// @param _name Name of registered token.
     /// @return Token's address.
-    function getTokenAddressByName(string _name) constant returns (address) {
+    function getTokenAddressByName(string _name) public constant returns (address) {
         return tokenByName[_name];
     }
 
