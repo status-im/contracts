@@ -23,4 +23,10 @@ ENV/
 # Coverage tests
 .coverage
 .cache/
+coverage/
+coverageEnv/
+coverage.json
 
+# node
+node_modules/
+npm-debug.log
