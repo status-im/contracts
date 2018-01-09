@@ -11,7 +11,7 @@ def identiy_tester():
     tester.s = tester.Chain()
     from viper import compiler
     tester.languages['viper'] = compiler.Compiler()
-    contract_code = open('contracts/erc_735.v.py').read()
+    contract_code = open('contracts/identity/erc_735.v.py').read()
     tester.c = tester.s.contract(
         contract_code,
         language='viper',
