@@ -42,11 +42,9 @@
             _;
         }
 
-
-        function Identity() public {
-            _addKey(msg.sender, MANAGEMENT_KEY);
+        function Identity(address _owner) public {
+            _addKey(_owner, MANAGEMENT_KEY);
         }
-
 
         function addKey(address _key, uint256 _type) public managerOrSelf returns (bool success) {
             _addKey(_key, _type);
@@ -63,7 +61,6 @@
             _removeKey(_oldKey);
             return true;
         }
-
 
 
         function execute(
@@ -89,6 +86,7 @@
                 approve(executionId, true);
             }
         }
+
 
         function approve(
             bytes32 _id,
