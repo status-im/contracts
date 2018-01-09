@@ -1,5 +1,5 @@
 const TestUtils = require("./TestUtils.js")
-const Identity = artifacts.require("./Identity.sol");
+const Identity = artifacts.require("./identity/Identity.sol");
 
 contract('Identity', function(accounts) {
 
