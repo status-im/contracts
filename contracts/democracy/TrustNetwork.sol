@@ -24,7 +24,7 @@ contract TrustNetwork is Controlled {
         topics[0x0] = newTopic(0x0, 0x0);
     }
     
-    function addTopic(address topicId, address parentTopic) onlyController {
+    function addTopic(address topicId, address parentTopic) public onlyController {
         
         Topic memory parent = topics[parentTopic];
         address vote = address(parent.voteProxy);
