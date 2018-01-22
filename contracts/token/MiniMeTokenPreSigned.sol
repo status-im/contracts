@@ -2,27 +2,36 @@ pragma solidity ^0.4.18;
 
 import "./MiniMeToken.sol";
 
+/**
+ * @title StatusConstitution
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
+ * @dev MiniMeToken that supports pre-signed methods transfer(address,uint256) and approveAndCall(address,uint256,bytes)
+ */
 contract MiniMeTokenPreSigned is MiniMeToken {
 
     mapping (address => uint256) public nonce;
     
-    function transferPreSigned(uint8[] _sigV, bytes32[] _sigR, bytes32[] _sigS, address[] _to, uint256[] _value, uint256[] _gasPrice, uint256[] _nonce) public {
-        uint len = _sigR.length;
-        require(len == _sigS.length && len == _sigV.length);
-        for (uint i = 0; i < len; i++) {
-            transferPreSigned(_sigV[i], _sigR[i], _sigS[i], _to[i], _value[i], _gasPrice[i], _nonce[i]);
-        }
-    }
-
-    function approveAndCallPreSigned(uint8[] _sigV, bytes32[] _sigR, bytes32[] _sigS, address[] _spender, uint256[] _amount, bytes[] _extraData, uint256[] _gasPrice, uint256[] _nonce) public {
-        uint len = _sigR.length;
-        require(len == _sigS.length && len == _sigV.length);
-        for (uint i = 0; i < len; i++) {
-            approveAndCallPreSigned(_sigV[i], _sigR[i], _sigS[i], _spender[i], _amount[i], _extraData[i], _gasPrice[i], _nonce[i]);
-        }
-    }
-
-    function transferPreSigned(uint8 _sigV, bytes32 _sigR, bytes32 _sigS, address _to, uint256 _value, uint256 _gasPrice, uint256 _nonce) public {
+    /**
+     * @notice Include a presigned `transfer(address,uint256)`
+     * @param _sigV Signature V 
+     * @param _sigR Signature R
+     * @param _sigS Signature S
+     * @param _to The address of the recipient
+     * @param _value The amount of tokens to be transferred
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     */
+    function transferPreSigned(
+        uint8 _sigV,
+        bytes32 _sigR,
+        bytes32 _sigS,
+        address _to,
+        uint256 _value,
+        uint256 _gasPrice,
+        uint256 _nonce
+    ) 
+        public 
+    {
         uint256 _gas = msg.gas;
         //"a9059cbb": "transfer(address,uint256)",
         bytes32 txHash = keccak256(byte(0x19), byte(0), address(this), bytes4(0xa9059cbb), _to, _value, _gasPrice, _nonce);
@@ -30,14 +39,36 @@ contract MiniMeTokenPreSigned is MiniMeToken {
         require(recovered > 0x0);
         require(nonce[recovered] == _nonce);
         nonce[recovered]++;
-        doTransfer(recovered, _to, _value);
+        require(doTransfer(recovered, _to, _value));
         _gas = 21000 + (_gas - msg.gas);
         if (_gasPrice > 0) {
-            doTransfer(recovered, msg.sender, _gasPrice*_gas);    
+            require(doTransfer(recovered, msg.sender, _gasPrice * _gas));    
         }
     }
 
-    function approveAndCallPreSigned(uint8 _sigV, bytes32 _sigR, bytes32 _sigS, address _spender, uint256 _amount, bytes _extraData, uint256 _gasPrice, uint256 _nonce) public {
+    /**
+     * @notice Include a presigned `approveAndCall(address,uint256,bytes)`
+     * @param _sigV Signature V 
+     * @param _sigR Signature R
+     * @param _sigS Signature S
+     * @param _spender The address of the recipient
+     * @param _amount The amount of tokens to be transferred
+     * @param _extraData option data to send to contract
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     */
+    function approveAndCallPreSigned(
+        uint8 _sigV,
+        bytes32 _sigR,
+        bytes32 _sigS,
+        address _spender,
+        uint256 _amount,
+        bytes _extraData,
+        uint256 _gasPrice,
+        uint256 _nonce
+    )
+        public
+    {
         uint256 _gas = msg.gas;
         require(transfersEnabled);
         //"cae9ca51": "approveAndCall(address,uint256,bytes)"
@@ -61,9 +92,69 @@ contract MiniMeTokenPreSigned is MiniMeToken {
         );
         _gas = 21000 + (_gas - msg.gas);
         if (_gasPrice > 0) {
-            doTransfer(recovered, msg.sender, _gasPrice*_gas);    
+            require(doTransfer(recovered, msg.sender, _gasPrice*_gas));    
         }
-        
-        
+            
     }
+
+    /**
+     * @notice Include batches of presigned `approveAndCall(address,uint256,bytes)`
+     * @param _sigV Signature V 
+     * @param _sigR Signature R
+     * @param _sigS Signature S
+     * @param _spender The address of the recipient
+     * @param _amount The amount of tokens to be transferred
+     * @param _extraData option data to send to contract
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     */
+    function approveAndCallPreSigned(
+        uint8[] _sigV,
+        bytes32[] _sigR,
+        bytes32[] _sigS,
+        address[] _spender,
+        uint256[] _amount,
+        bytes[] _extraData,
+        uint256[] _gasPrice,
+        uint256[] _nonce
+    ) 
+        public
+    {
+        uint len = _sigR.length;
+        require(len == _sigS.length && len == _sigV.length);
+        for (uint i = 0; i < len; i++) {
+            approveAndCallPreSigned(_sigV[i], _sigR[i], _sigS[i], _spender[i], _amount[i], _extraData[i], _gasPrice[i], _nonce[i]);
+        }
+    }
+    
+
+
+    /**
+     * @notice Include batches of presigned `transfer(address,uint256)`
+     * @param _sigV Signature V 
+     * @param _sigR Signature R
+     * @param _sigS Signature S
+     * @param _to The address of the recipient
+     * @param _value The amount of tokens to be transferred
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     */
+    function transferPreSigned(
+        uint8[] _sigV,
+        bytes32[] _sigR,
+        bytes32[] _sigS,
+        address[] _to,
+        uint256[] _value,
+        uint256[] _gasPrice,
+        uint256[] _nonce
+    )
+        public 
+    {
+        uint len = _sigR.length;
+        require(len == _sigS.length && len == _sigV.length);
+        for (uint i = 0; i < len; i++) {
+            transferPreSigned(_sigV[i], _sigR[i], _sigS[i], _to[i], _value[i], _gasPrice[i], _nonce[i]);
+        }
+    }
+    
 }
