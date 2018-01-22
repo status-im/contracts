@@ -114,7 +114,7 @@ contract ProposalManager is Controlled {
         proposal.voteIndex[msg.sender] = votePos + 1;
     }
 
-   function tabulate(uint _proposal, uint loopLimit) {
+   function tabulate(uint _proposal, uint loopLimit) public {
         Proposal storage proposal = proposals[_proposal];
         require(block.number > proposal.vetoBlockEnd);
         require(!proposal.tabulated);
