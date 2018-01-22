@@ -24,7 +24,8 @@ contract MiniMeTokenPreSigned is MiniMeToken {
 
     function transferPreSigned(uint8 _sigV, bytes32 _sigR, bytes32 _sigS, address _to, uint256 _value, uint256 _gasPrice, uint256 _nonce) public {
         uint256 _gas = msg.gas;
-        bytes32 txHash = keccak256(byte(0x19), byte(0), address(this), bytes4(keccak256("transfer(address,uint256)")), _to, _value, _gasPrice, _nonce);
+        //"a9059cbb": "transfer(address,uint256)",
+        bytes32 txHash = keccak256(byte(0x19), byte(0), address(this), bytes4(0xa9059cbb), _to, _value, _gasPrice, _nonce);
         address recovered = ecrecover(txHash, _sigV, _sigR, _sigS);
         require(recovered > 0x0);
         require(nonce[recovered] == _nonce);
@@ -39,7 +40,8 @@ contract MiniMeTokenPreSigned is MiniMeToken {
     function approveAndCallPreSigned(uint8 _sigV, bytes32 _sigR, bytes32 _sigS, address _spender, uint256 _amount, bytes _extraData, uint256 _gasPrice, uint256 _nonce) public {
         uint256 _gas = msg.gas;
         require(transfersEnabled);
-        bytes32 txHash = keccak256(byte(0x19), byte(0), address(this), bytes4(keccak256("approveAndCall(address,uint256,bytes)")), _spender, _amount, _extraData, _gasPrice, _nonce);
+        //"cae9ca51": "approveAndCall(address,uint256,bytes)"
+        bytes32 txHash = keccak256(byte(0x19), byte(0), address(this), bytes4(0xcae9ca51), _spender, _amount, _extraData, _gasPrice, _nonce);
         address recovered = ecrecover(txHash, _sigV, _sigR, _sigS);
         require(recovered > 0x0);
         require(nonce[recovered] == _nonce);
