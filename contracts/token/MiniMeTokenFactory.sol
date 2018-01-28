@@ -11,6 +11,8 @@ import "./MiniMeToken.sol";
 ///  same class
 contract MiniMeTokenFactory {
 
+    
+
     /// @notice Update the DApp by creating a new token with new functionalities
     ///  the msg.sender becomes the controller of this clone token
     /// @param _parentToken Address of the token being cloned

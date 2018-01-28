@@ -9,9 +9,9 @@ import "../token/MiniMeTokenPreSignedFactory.sol";
 
 contract SNTPreSigned is MiniMeTokenPreSigned {
     // @dev SNT constructor just parametrizes the MiniMeIrrevocableVestedToken constructor
-    function SNTPreSigned(address _oldToken)
-            MiniMeToken(
-                new MiniMeTokenPreSignedFactory(),
+    function SNTPreSigned(address _newFactory, address _oldToken)
+            MiniMeTokenPreSigned(
+                _newFactory,
                 _oldToken,                     // parent token
                 block.number,                       // snapshot block
                 "Status Network Token",  // Token name

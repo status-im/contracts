@@ -9,6 +9,28 @@ import "./MiniMeToken.sol";
  */
 contract MiniMeTokenPreSigned is MiniMeToken {
 
+    function MiniMeTokenPreSigned(
+        address _tokenFactory,
+        address _parentToken,
+        uint _parentSnapShotBlock,
+        string _tokenName,
+        uint8 _decimalUnits,
+        string _tokenSymbol,
+        bool _transfersEnabled
+    ) MiniMeToken(
+        _tokenFactory,
+         _parentToken,
+         _parentSnapShotBlock,
+         _tokenName,
+         _decimalUnits,
+         _tokenSymbol,
+        _transfersEnabled
+    ) 
+        public 
+    {     
+    
+    }
+    
     mapping (address => uint256) public nonce;
     
     /**
@@ -34,8 +56,9 @@ contract MiniMeTokenPreSigned is MiniMeToken {
     {
         uint256 _gas = msg.gas;
         //"a9059cbb": "transfer(address,uint256)",
-        bytes32 txHash = keccak256(byte(0x19), byte(0), address(this), bytes4(0xa9059cbb), _to, _value, _gasPrice, _nonce);
-        address recovered = ecrecover(txHash, _sigV, _sigR, _sigS);
+        bytes32 txHash = keccak256(address(this), bytes4(0xa9059cbb), _to, _value, _gasPrice, _nonce);
+        bytes32 signedMsg = keccak256("\x19Ethereum Signed Message:\n32", txHash);
+        address recovered = ecrecover(signedMsg, _sigV, _sigR, _sigS);
         require(recovered > 0x0);
         require(nonce[recovered] == _nonce);
         nonce[recovered]++;
@@ -72,8 +95,9 @@ contract MiniMeTokenPreSigned is MiniMeToken {
         uint256 _gas = msg.gas;
         require(transfersEnabled);
         //"cae9ca51": "approveAndCall(address,uint256,bytes)"
-        bytes32 txHash = keccak256(byte(0x19), byte(0), address(this), bytes4(0xcae9ca51), _spender, _amount, _extraData, _gasPrice, _nonce);
-        address recovered = ecrecover(txHash, _sigV, _sigR, _sigS);
+        bytes32 txHash = keccak256(address(this), bytes4(0xcae9ca51), _spender, _amount, _extraData, _gasPrice, _nonce);
+        bytes32 signedMsg = keccak256("\x19Ethereum Signed Message:\n32", txHash);
+        address recovered = ecrecover(signedMsg, _sigV, _sigR, _sigS);
         require(recovered > 0x0);
         require(nonce[recovered] == _nonce);
         nonce[recovered]++;
@@ -96,38 +120,6 @@ contract MiniMeTokenPreSigned is MiniMeToken {
         }
             
     }
-
-    /**
-     * @notice Include batches of presigned `approveAndCall(address,uint256,bytes)`
-     * @param _sigV Signature V 
-     * @param _sigR Signature R
-     * @param _sigS Signature S
-     * @param _spender The address of the recipient
-     * @param _amount The amount of tokens to be transferred
-     * @param _extraData option data to send to contract
-     * @param _gasPrice How much tokens willing to pay per gas
-     * @param _nonce Presigned transaction number.
-     */
-    function approveAndCallPreSigned(
-        uint8[] _sigV,
-        bytes32[] _sigR,
-        bytes32[] _sigS,
-        address[] _spender,
-        uint256[] _amount,
-        bytes[] _extraData,
-        uint256[] _gasPrice,
-        uint256[] _nonce
-    ) 
-        public
-    {
-        uint len = _sigR.length;
-        require(len == _sigS.length && len == _sigV.length);
-        for (uint i = 0; i < len; i++) {
-            approveAndCallPreSigned(_sigV[i], _sigR[i], _sigS[i], _spender[i], _amount[i], _extraData[i], _gasPrice[i], _nonce[i]);
-        }
-    }
-    
-
 
     /**
      * @notice Include batches of presigned `transfer(address,uint256)`
