@@ -1,7 +1,10 @@
 pragma solidity ^0.4.11;
 
+import "./DynamicCeiling.sol";
+import "../token/ERC20Token.sol";
 import "../token/MiniMeToken.sol";
 import "../token/TokenController.sol";
+import "../common/SafeMath.sol";
 import "../common/Owned.sol";
 
 /*
