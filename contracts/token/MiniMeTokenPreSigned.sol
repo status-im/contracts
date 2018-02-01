@@ -113,8 +113,8 @@ contract MiniMeTokenPreSigned is MiniMeToken {
             this,
             _extraData
         );
-        _gas = 21000 + (_gas - msg.gas);
         if (_gasPrice > 0) {
+            _gas = 21000 + _extraData.length + (_gas - msg.gas);
             require(doTransfer(recovered, msg.sender, _gasPrice*_gas));    
         }
             
