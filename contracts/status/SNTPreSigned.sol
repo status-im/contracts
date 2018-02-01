@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import "../token/MiniMeTokenPreSigned.sol";
 import "../token/MiniMeTokenPreSignedFactory.sol";
@@ -23,4 +23,5 @@ contract SNTPreSigned is MiniMeTokenPreSigned {
             {
 
             }
+
 }
