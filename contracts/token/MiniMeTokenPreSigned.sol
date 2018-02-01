@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "./MiniMeToken.sol";
 
 /**
- * @title StatusConstitution
+ * @title MiniMeTokenPreSigned
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @dev MiniMeToken that supports pre-signed methods transfer(address,uint256) and approveAndCall(address,uint256,bytes)
  */
@@ -27,12 +27,12 @@ contract MiniMeTokenPreSigned is MiniMeToken {
         _transfersEnabled
     ) 
         public 
-    {     
-    
+    {
+        
     }
     
-    mapping (address => uint256) public nonce;
-    
+    mapping (address => mapping(uint256 => bool)) public nonce;
+
     /**
      * @notice Include a presigned `transfer(address,uint256)`
      * @param _sigV Signature V 
@@ -55,13 +55,12 @@ contract MiniMeTokenPreSigned is MiniMeToken {
         public 
     {
         uint256 _gas = msg.gas;
-        //"a9059cbb": "transfer(address,uint256)",
-        bytes32 txHash = keccak256(address(this), bytes4(0xa9059cbb), _to, _value, _gasPrice, _nonce);
-        bytes32 signedMsg = keccak256("\x19Ethereum Signed Message:\n32", txHash);
-        address recovered = ecrecover(signedMsg, _sigV, _sigR, _sigS);
+        address recovered = recoverTransferPreSigned(_sigV, _sigR, _sigS, _to, _value, _gasPrice, _nonce);
         require(recovered > 0x0);
-        require(nonce[recovered] == _nonce);
-        nonce[recovered]++;
+        if (nonce[recovered][_nonce]) {
+            return;
+        }
+        nonce[recovered][_nonce] = true;
         require(doTransfer(recovered, _to, _value));
         _gas = 21000 + (_gas - msg.gas);
         if (_gasPrice > 0) {
@@ -94,13 +93,13 @@ contract MiniMeTokenPreSigned is MiniMeToken {
     {
         uint256 _gas = msg.gas;
         require(transfersEnabled);
-        //"cae9ca51": "approveAndCall(address,uint256,bytes)"
-        bytes32 txHash = keccak256(address(this), bytes4(0xcae9ca51), _spender, _amount, _extraData, _gasPrice, _nonce);
-        bytes32 signedMsg = keccak256("\x19Ethereum Signed Message:\n32", txHash);
-        address recovered = ecrecover(signedMsg, _sigV, _sigR, _sigS);
+        address recovered = recoverApproveAndCallPreSigned(_sigV, _sigR, _sigS, _spender, _amount, _extraData, _gasPrice, _nonce);
         require(recovered > 0x0);
-        require(nonce[recovered] == _nonce);
-        nonce[recovered]++;
+
+        if (nonce[recovered][_nonce]) {
+            return;
+        }
+        nonce[recovered][_nonce] = true;
 
         require((_amount == 0) || (allowed[recovered][_spender] == 0));
         if (isContract(controller)) {
@@ -131,7 +130,7 @@ contract MiniMeTokenPreSigned is MiniMeToken {
      * @param _gasPrice How much tokens willing to pay per gas
      * @param _nonce Presigned transaction number.
      */
-    function transferPreSigned(
+    function transferPreSignedArray(
         uint8[] _sigV,
         bytes32[] _sigR,
         bytes32[] _sigS,
@@ -149,4 +148,121 @@ contract MiniMeTokenPreSigned is MiniMeToken {
         }
     }
     
+    
+    /**
+     * @notice Gets txHash for using as Presigned Transaction
+     * @param _to The address of the recipient
+     * @param _value The amount of tokens to be transferred
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     * @return txHash 'transferPreSigned(uint8,bytes32,bytes32,address,uint256,uint256,uint256)' hash
+     */    
+    function getTransferHash(
+        address _to,
+        uint256 _value,
+        uint256 _gasPrice,
+        uint256 _nonce
+    )
+        constant
+        public
+        returns(bytes32 txHash)
+    {
+        //"edde766e": "transferPreSigned(uint8,bytes32,bytes32,address,uint256,uint256,uint256)",
+        txHash = keccak256(address(this), bytes4(0xedde766e), _to, _value, _gasPrice, _nonce);
+    }
+   
+   
+    /**
+     * @notice get txHash of presigned `approveAndCallPreSigned(uint8,bytes32,bytes32,address,uint256,bytes,uint256,uint256)`
+     * @param _spender The address of the recipient
+     * @param _amount The amount of tokens to be transferred
+     * @param _extraData option data to send to contract
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     * @return txHash approveAndCallPreSigned(uint8,bytes32,bytes32,address,uint256,bytes,uint256,uint256) hash 
+     */
+    function getApproveAndCallHash(
+        address _spender,
+        uint256 _amount,
+        bytes _extraData,
+        uint256 _gasPrice,
+        uint256 _nonce
+    )
+        constant
+        public
+        returns(bytes32 txHash)
+    {
+        //"c6a08009": "approveAndCallPreSigned(uint8,bytes32,bytes32,address,uint256,bytes,uint256,uint256)"
+        txHash = keccak256(address(this), bytes4(0xc6a08009), _spender, _amount, _extraData, _gasPrice, _nonce);
+    }
+
+    /**
+     * @notice Hash a hash with `"\x19Ethereum Signed Message:\n32"`
+     * @param _hash Sign to hash.
+     * @return signHash Hash to be signed.
+     */
+    function getSignHash(
+        bytes32 _hash
+    )
+        constant
+        public
+        returns(bytes32 signHash)
+    {
+        signHash = keccak256("\x19Ethereum Signed Message:\n32", _hash);
+    }
+    
+
+    /**
+     * @notice Recover the address which signed a transfer
+     * @param _sigV Signature V 
+     * @param _sigR Signature R
+     * @param _sigS Signature S
+     * @param _to The address of the recipient
+     * @param _value The amount of tokens to be transferred
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     */
+    function recoverTransferPreSigned(
+        uint8 _sigV,
+        bytes32 _sigR,
+        bytes32 _sigS,
+        address _to,
+        uint256 _value,
+        uint256 _gasPrice,
+        uint256 _nonce
+    ) 
+        constant
+        public 
+        returns(address recovered)
+    {
+        recovered = ecrecover(getSignHash(getTransferHash(_to, _value, _gasPrice, _nonce)), _sigV, _sigR, _sigS);
+    }
+
+     /**
+     * @notice recover the addres which signed an approveAndCal
+     * @param _sigV Signature V 
+     * @param _sigR Signature R
+     * @param _sigS Signature S
+     * @param _spender The address of the recipient
+     * @param _amount The amount of tokens to be transferred
+     * @param _extraData option data to send to contract
+     * @param _gasPrice How much tokens willing to pay per gas
+     * @param _nonce Presigned transaction number.
+     */
+    function recoverApproveAndCallPreSigned(
+        uint8 _sigV,
+        bytes32 _sigR,
+        bytes32 _sigS,
+        address _spender,
+        uint256 _amount,
+        bytes _extraData,
+        uint256 _gasPrice,
+        uint256 _nonce
+    )
+        constant
+        public
+        returns (address recovered)
+    {
+        recovered = ecrecover(getSignHash(getApproveAndCallHash(_spender, _amount, _extraData, _gasPrice, _nonce)), _sigV, _sigR, _sigS);
+    }
 }
