@@ -51,8 +51,7 @@ contract Identity is ERC725, ERC735 {
     
     modifier managerOrActor {
         require(keys[keccak256(bytes32(msg.sender), MANAGEMENT_KEY)].purpose == MANAGEMENT_KEY 
-                || keys[keccak256(bytes32(msg.sender), ACTION_KEY)].purpose == ACTION_KEY 
-                || msg.sender == address(this));
+                || keys[keccak256(bytes32(msg.sender), ACTION_KEY)].purpose == ACTION_KEY));
         _;
     }
 
