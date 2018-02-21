@@ -30,28 +30,28 @@ contract Identity is ERC725, ERC735 {
     }
 
     modifier managerOnly {
-        require(keys[keccak256(bytes32(msg.sender), MANAGEMENT_KEY)].purpose == MANAGEMENT_KEY);
+        require(isKeyType(bytes32(msg.sender), MANAGEMENT_KEY));
         _;
     }
 
     modifier managerOrSelf {
-        require(keys[keccak256(bytes32(msg.sender), MANAGEMENT_KEY)].purpose == MANAGEMENT_KEY || msg.sender == address(this));
+        require(isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || msg.sender == address(this));
         _;
     }
 
     modifier actorOnly {
-        require(keys[keccak256(bytes32(msg.sender), ACTION_KEY)].purpose == ACTION_KEY);
+        require(isKeyType(bytes32(msg.sender), ACTION_KEY));
         _;
     }
 
     modifier claimSignerOnly {
-        require(keys[keccak256(bytes32(msg.sender), CLAIM_SIGNER_KEY)].purpose == CLAIM_SIGNER_KEY);
+        require(isKeyType(bytes32(msg.sender), CLAIM_SIGNER_KEY));
         _;
     }
     
     modifier managerOrActor {
-        require(keys[keccak256(bytes32(msg.sender), MANAGEMENT_KEY)].purpose == MANAGEMENT_KEY 
-                || keys[keccak256(bytes32(msg.sender), ACTION_KEY)].purpose == ACTION_KEY));
+        require(isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
+                isKeyType(bytes32(msg.sender), ACTION_KEY));
         _;
     }
 
@@ -177,7 +177,7 @@ contract Identity is ERC725, ERC735 {
         
         require(msg.sender == c.issuer 
                 || msg.sender == address(this) 
-                || keys[keccak256(bytes32(msg.sender), MANAGEMENT_KEY)].purpose == MANAGEMENT_KEY);
+                || isKeyType(bytes32(msg.sender), MANAGEMENT_KEY));
         
         // MUST only be done by the issuer of the claim, or KEYS OF PURPOSE 1, or the identity itself.
         // TODO If its the identity itself, the approval process will determine its approval.
@@ -230,28 +230,32 @@ contract Identity is ERC725, ERC735 {
         Key storage myKey = keys[keccak256(_key, _purpose)];
         return (myKey.purpose, myKey.keyType, myKey.key);
     }
+    
+    function isKeyType(bytes32 _key, uint256 _type) constant public returns (bool){
+        return keys[keccak256(_key, _type)].purpose == _type;
+    }
 
     function getKeyPurpose(bytes32 _key) public constant returns(uint256[] purpose) {
         
         uint256[] memory purposeHolder = new uint256[](4);
         uint8 counter = 0;
         
-        if (keys[keccak256(_key, MANAGEMENT_KEY)].purpose == MANAGEMENT_KEY) {
+        if (isKeyType(_key, MANAGEMENT_KEY)) {
             purposeHolder[counter] = MANAGEMENT_KEY;
             counter++;
         }
         
-        if (keys[keccak256(_key, ACTION_KEY)].purpose == ACTION_KEY) {
+        if (isKeyType(_key, ACTION_KEY)) {
             purposeHolder[counter] = ACTION_KEY;
             counter++;
         }
             
-        if (keys[keccak256(_key, CLAIM_SIGNER_KEY)].purpose == CLAIM_SIGNER_KEY) {
+        if (isKeyType(_key, CLAIM_SIGNER_KEY)) {
             purposeHolder[counter] = CLAIM_SIGNER_KEY;
             counter++;
         }
             
-        if (keys[keccak256(_key, ENCRYPTION_KEY)].purpose == ENCRYPTION_KEY) {
+        if (isKeyType(_key, ENCRYPTION_KEY)) {
             purposeHolder[counter] = ENCRYPTION_KEY;
             counter++;
         }
