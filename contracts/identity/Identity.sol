@@ -12,18 +12,29 @@ contract Identity is ERC725, ERC735 {
     mapping (uint256 => bytes32[]) claimsByType;
     mapping (bytes32 => uint256) indexes;
     mapping (uint => Transaction) txx;
+    mapping (uint => Action) actionCatalogByTrx;
+    mapping (uint => bytes32) claimCatalogByTrx;
+
     mapping (uint256 => uint8) minimumApprovalsByKeyType;
-    bytes32[] pendingTransactions;
+    mapping (bytes32 => Claim) pendingClaims;
     uint nonce = 0;
 
-    struct Transaction {
+    struct Action {
         address to;
         uint value;
         bytes data;
+    }
+
+    uint8 constant ACTION_TRANSACTION = 1;
+    uint8 constant CLAIM_TRANSACTION = 2;
+
+    struct Transaction {
+        uint8 trxType;
         uint nonce;
         uint approverCount;
         mapping(uint256 => uint8) approvalsByKeyType;
         mapping(bytes32 => bool) approvals;
+        bool executed;
     }
 
     modifier managerOnly {
@@ -93,17 +104,10 @@ contract Identity is ERC725, ERC735 {
         managerOrActor
         returns (uint256 executionId)
     {
-        executionId = nonce;
+        executionId = createTransaction(ACTION_TRANSACTION);
         ExecutionRequested(executionId, _to, _value, _data);
-        txx[executionId] = Transaction(
-                            {
-                                to: _to,
-                                value: _value,
-                                data: _data,
-                                nonce: nonce,
-                                approverCount: 0
-                            });            
-        nonce++;
+        
+        actionCatalogByTrx[nonce] = Action({to: _to, value: _value, data: _data});
         approve(executionId, true);
     }
 
@@ -113,29 +117,55 @@ contract Identity is ERC725, ERC735 {
         returns (bool success)
     {   
         Transaction storage trx = txx[_id];
+        require(trx.executed == false);
         
         bytes32 managerKeyHash = keccak256(bytes32(msg.sender), MANAGEMENT_KEY);
         bytes32 actorKeyHash = keccak256(bytes32(msg.sender), ACTION_KEY);
         
         uint8 approvalCount;
         uint256 requiredKeyType;
-        
-        if (trx.to == address(this)) {
-            requiredKeyType = MANAGEMENT_KEY;
-            if (keys[managerKeyHash].purpose == MANAGEMENT_KEY) {
-                approvalCount = _calculateApprovals(managerKeyHash, MANAGEMENT_KEY, _approve, trx);
+        if (trx.trxType == ACTION_KEY) {
+            Action memory action = actionCatalogByTrx[_id];
+            if (action.to == address(this)) {
+                requiredKeyType = MANAGEMENT_KEY;
+                if (keys[managerKeyHash].purpose == MANAGEMENT_KEY)
+                    approvalCount = _calculateApprovals(managerKeyHash, MANAGEMENT_KEY, _approve, trx);
+            } else {
+                requiredKeyType = ACTION_KEY;
+                if (keys[managerKeyHash].purpose == ACTION_KEY)
+                    approvalCount = _calculateApprovals(actorKeyHash, ACTION_KEY, _approve, trx);
+            }
+            
+            if (approvalCount >= minimumApprovalsByKeyType[requiredKeyType]) {
+                trx.executed = true;
+                Executed(_id, action.to, action.value, action.data);
+                success = action.to.call.value(action.value)(action.data);
             }
         } else {
-            requiredKeyType = ACTION_KEY;
-            if (keys[managerKeyHash].purpose == ACTION_KEY) {
-                approvalCount = _calculateApprovals(actorKeyHash, ACTION_KEY, _approve, trx);
+            // It is a claim
+            bytes32 claimHash = claimCatalogByTrx[_id];
+            if (keys[managerKeyHash].purpose == MANAGEMENT_KEY)
+                approvalCount = _calculateApprovals(managerKeyHash, MANAGEMENT_KEY, _approve, trx);
+            
+            if (approvalCount >= minimumApprovalsByKeyType[MANAGEMENT_KEY]) {
+                Claim memory c = pendingClaims[claimHash];
+                claims[claimHash] = Claim(
+                                    {
+                                        claimType: c.claimType,
+                                        scheme: c.scheme,
+                                        issuer: c.issuer,
+                                        signature: c.signature,
+                                        data: c.data,
+                                        uri: c.uri
+                                    });
+                                    
+                indexes[claimHash] = claimsByType[c.claimType].length;
+                claimsByType[c.claimType].push(claimHash);
+                ClaimAdded(claimHash, c.claimType, c.scheme, c.issuer, c.signature, c.data, c.uri);
+                trx.executed = true;
             }
+
         }
-        
-        if (approvalCount >= minimumApprovalsByKeyType[requiredKeyType]) {
-            success = trx.to.call.value(txx[_id].value)(txx[_id].data);
-        }
-        
     }
 
     function setMiminumApprovalsByKeyType(
@@ -166,6 +196,22 @@ contract Identity is ERC725, ERC735 {
         trx.approverCount++;
         return trx.approvalsByKeyType[_keyType];
     }
+    
+    function createTransaction(uint8 _trxType) private returns (uint256 id){
+        id = nonce;
+        txx[nonce] = Transaction(
+                            {
+                                nonce: nonce,
+                                trxType: _trxType,
+                                approverCount: 0,
+                                executed: false
+                            });  
+        nonce++;
+    }
+
+    function getTransactionIdByClaim(bytes32 _claimHash) public view returns (uint256 id) {
+        return indexes[_claimHash];
+    }
 
     function addClaim(
         uint256 _claimType,
@@ -184,8 +230,12 @@ contract Identity is ERC725, ERC735 {
         
         claimRequestId = claimHash;
         
+        uint256 executionId = createTransaction(CLAIM_TRANSACTION);
+        claimCatalogByTrx[executionId] = claimHash;
+        indexes[claimHash] = executionId;
+
         if (claims[claimHash].claimType > 0) {
-            // Claim existed
+            // Claim existed, needs approval
             ClaimChanged(
                 claimRequestId,
                 _claimType,
@@ -195,7 +245,6 @@ contract Identity is ERC725, ERC735 {
                 _data,
                 _uri);
         } else {
-            // TODO Triggers if the claim is new Event and approval process exists: ClaimRequested
             ClaimRequested(
                 claimRequestId,
                 _claimType,
@@ -206,7 +255,7 @@ contract Identity is ERC725, ERC735 {
                 _uri);
         }
         
-        claims[claimHash] = Claim(
+        pendingClaims[claimHash] = Claim(
             {
                 claimType: _claimType,
                 scheme: _scheme,
@@ -215,13 +264,7 @@ contract Identity is ERC725, ERC735 {
                 data: _data,
                 uri: _uri
             }
-        );
-        
-        indexes[claimHash] = claimsByType[_claimType].length;
-        
-        claimsByType[_claimType].push(claimRequestId);
-        
-        // TODO This SHOULD create a pending claim, which SHOULD to be approved or rejected by n of m approve calls from keys of purpose 1.
+        );        
     }
     
     function removeClaim(bytes32 _claimId) public returns (bool success) {
@@ -232,9 +275,6 @@ contract Identity is ERC725, ERC735 {
             msg.sender == address(this) ||
             isKeyType(bytes32(msg.sender), MANAGEMENT_KEY)
             );
-        
-        // MUST only be done by the issuer of the claim, or KEYS OF PURPOSE 1, or the identity itself.
-        // TODO If its the identity itself, the approval process will determine its approval.
         
         uint claimIdTypePos = indexes[_claimId];
         delete indexes[_claimId];
