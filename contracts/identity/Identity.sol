@@ -104,6 +104,7 @@ contract Identity is ERC725, ERC735 {
                                 approverCount: 0
                             });            
         nonce++;
+        approve(executionId, true);
     }
 
     function approve(uint256 _id, bool _approve) 
