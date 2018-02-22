@@ -31,11 +31,8 @@ contract Identity is ERC725, ERC735 {
         _;
     }
 
-    modifier managerOrSelf {
-        require(
-            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
-            msg.sender == address(this)
-        );
+    modifier selfOnly {
+        require(msg.sender == address(this));
         _;
     }
 
@@ -68,7 +65,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _type
     )
         public
-        managerOrSelf
+        selfOnly
         returns (bool success)
     {
         _addKey(_key, _purpose, _type);
@@ -80,7 +77,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _purpose
     )
         public
-        managerOrSelf
+        selfOnly
         returns (bool success)
     {
         _removeKey(_key, _purpose);
@@ -140,7 +137,13 @@ contract Identity is ERC725, ERC735 {
         
     }
 
-    function setMiminumApprovalsByKeyType(uint256 _type, uint8 _minimumApprovals) public managerOrSelf {
+    function setMiminumApprovalsByKeyType(
+        uint256 _type,
+        uint8 _minimumApprovals
+    ) 
+        public 
+        selfOnly
+    {
         minimumApprovalsByKeyType[_type] = _minimumApprovals;
     }
 
