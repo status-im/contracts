@@ -2,7 +2,7 @@ pragma solidity ^0.4.17;
 
 import "./ERC725.sol";
 import "./ERC735.sol";
-
+import "./Recovery.sol";
 
 contract Identity is ERC725, ERC735 {
 
@@ -15,6 +15,8 @@ contract Identity is ERC725, ERC735 {
     mapping (uint256 => uint8) minimumApprovalsByKeyType;
     bytes32[] pendingTransactions;
     uint nonce = 0;
+    bool recoverySet;
+    Recovery recoveryContract;
 
     struct Transaction {
         address to;
@@ -365,6 +367,38 @@ contract Identity is ERC725, ERC735 {
     {
         return claimsByType[_claimType];
     }
+
+// ---- Recovery Specific Functions
+    event RecoverySetUp(address sender, bytes32[] recoveryHashes);
+    event RecoveryCompleted(bytes32 newManagementKey);
+
+    function setupRecovery(bytes32[] _recoveryHashes) 
+        public
+        managerOnly
+    {
+        require(recoverySet == false);
+        RecoverySetUp(msg.sender, _recoveryHashes);
+        recoveryContract = new Recovery(this, _recoveryHashes);
+        recoverySet = true;
+    }
+
+    function completeRecovery() public {
+        require(recoverySet == true);
+        address newManager = recoveryContract.getNewManager();
+        require(newManager != address(0x0));
+
+        RecoveryCompleted(bytes32(newManager));
+        
+        bytes32[] memory managementKeys = getKeysByPurpose(MANAGEMENT_KEY);
+        for (uint256 i = 0; i < managementKeys.length; i++) {
+            _removeKey(managementKeys[i], MANAGEMENT_KEY);
+        }
+        addKey(bytes32(newManager), MANAGEMENT_KEY, 1);
+        setMiminumApprovalsByKeyType(MANAGEMENT_KEY, 1);
+    }
+
+
+
 }
 
 
