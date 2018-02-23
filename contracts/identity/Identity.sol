@@ -93,17 +93,7 @@ contract Identity is ERC725, ERC735 {
         managerOrActor
         returns (uint256 executionId)
     {
-        executionId = nonce;
-        ExecutionRequested(executionId, _to, _value, _data);
-        txx[executionId] = Transaction(
-                            {
-                                to: _to,
-                                value: _value,
-                                data: _data,
-                                nonce: nonce,
-                                approverCount: 0
-                            });            
-        nonce++;
+        executionId = _execute(_to, _value, _data);
         approve(executionId, true);
     }
 
@@ -176,52 +166,29 @@ contract Identity is ERC725, ERC735 {
         string _uri
     ) 
         public 
-        claimSignerOnly
-        returns (bytes32 claimRequestId)
+        returns (bytes32 claimHash)
     {
-        
-        bytes32 claimHash = keccak256(_issuer, _claimType);
-        
-        claimRequestId = claimHash;
-        
-        if (claims[claimHash].claimType > 0) {
-            // Claim existed
-            ClaimChanged(
-                claimRequestId,
-                _claimType,
-                _scheme,
-                _issuer,
-                _signature,
-                _data,
-                _uri);
-        } else {
-            // TODO Triggers if the claim is new Event and approval process exists: ClaimRequested
-            ClaimRequested(
-                claimRequestId,
-                _claimType,
-                _scheme,
-                _issuer,
-                _signature,
-                _data,
-                _uri);
-        }
-        
-        claims[claimHash] = Claim(
-            {
-                claimType: _claimType,
-                scheme: _scheme,
-                issuer: _issuer,
-                signature: _signature,
-                data: _data,
-                uri: _uri
+        claimHash = keccak256(_issuer, _claimType);
+        if (msg.sender == address(this)) {
+            if (claims[claimHash].claimType > 0) {
+                _modifyClaim(claimHash, _claimType, _scheme, _issuer, _signature, _data, _uri);
+            } else {
+                _includeClaim(claimHash, _claimType, _scheme, _issuer, _signature, _data, _uri);
             }
-        );
-        
-        indexes[claimHash] = claimsByType[_claimType].length;
-        
-        claimsByType[_claimType].push(claimRequestId);
-        
-        // TODO This SHOULD create a pending claim, which SHOULD to be approved or rejected by n of m approve calls from keys of purpose 1.
+        } else {
+            require(_issuer == msg.sender);
+            require(isKeyType(bytes32(msg.sender), CLAIM_SIGNER_KEY));
+            _execute(address(this), 0, msg.data);
+            ClaimRequested(
+                claimHash,
+                _claimType,
+                _scheme,
+                _issuer,
+                _signature,
+                _data,
+                _uri
+            );
+        }
     }
     
     function removeClaim(bytes32 _claimId) public returns (bool success) {
@@ -245,6 +212,94 @@ contract Identity is ERC725, ERC735 {
         delete claims[_claimId];
         claimsTypeArr.length--;
         return true;
+    }
+
+    function _execute(
+        address _to,
+        uint256 _value,
+        bytes _data
+    ) 
+        private
+        returns (uint256 executionId)
+    {
+        executionId = nonce;
+        ExecutionRequested(executionId, _to, _value, _data);
+        txx[executionId] = Transaction(
+                            {
+                                to: _to,
+                                value: _value,
+                                data: _data,
+                                nonce: nonce,
+                                approverCount: 0
+                            });            
+        nonce++;
+    }
+
+    function _includeClaim(
+        bytes32 _claimHash,
+        uint256 _claimType,
+        uint256 _scheme,
+        address _issuer,
+        bytes _signature,
+        bytes _data,
+        string _uri
+    ) 
+        private
+    {
+        claims[_claimHash] = Claim(
+            {
+                claimType: _claimType,
+                scheme: _scheme,
+                issuer: _issuer,
+                signature: _signature,
+                data: _data,
+                uri: _uri
+            }
+        );
+        indexes[_claimHash] = claimsByType[_claimType].length;
+        claimsByType[_claimType].push(_claimHash);
+        ClaimAdded(
+            _claimHash,
+            _claimType,
+            _scheme,
+            _issuer,
+            _signature,
+            _data,
+            _uri
+        );
+    }
+
+    function _modifyClaim(
+        bytes32 _claimHash,
+        uint256 _claimType,
+        uint256 _scheme,
+        address _issuer,
+        bytes _signature,
+        bytes _data,
+        string _uri
+    ) 
+        private
+    {
+        require(msg.sender == _issuer);
+            ClaimChanged(
+                _claimHash,
+                _claimType,
+                _scheme,
+                _issuer,
+                _signature,
+                _data,
+                _uri
+                );
+            claims[_claimHash] = Claim(
+                    {
+                        claimType: _claimType,
+                        scheme: _scheme,
+                        issuer: _issuer,
+                        signature: _signature,
+                        data: _data,
+                        uri: _uri
+                    }
+                );
     }
 
     function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) private {
