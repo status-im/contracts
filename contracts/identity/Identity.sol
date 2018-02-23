@@ -40,11 +40,6 @@ contract Identity is ERC725, ERC735 {
         require(isKeyType(bytes32(msg.sender), ACTION_KEY));
         _;
     }
-
-    modifier claimSignerOnly {
-        require(isKeyType(bytes32(msg.sender), CLAIM_SIGNER_KEY));
-        _;
-    }
     
     modifier managerOrActor {
         require(
