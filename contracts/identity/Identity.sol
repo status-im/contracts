@@ -191,8 +191,7 @@ contract Identity is ERC725, ERC735 {
         
         require(
             msg.sender == c.issuer ||
-            msg.sender == address(this) ||
-            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY)
+            msg.sender == address(this)
             );
         
         // MUST only be done by the issuer of the claim, or KEYS OF PURPOSE 1, or the identity itself.
