@@ -43,29 +43,31 @@ contract FriendsRecovery {
         require(_friendList.length >= threshold);
         bytes32 _secretHash = keccak256(_secret);
         require(_secretHash == secret);
-        Recovering storage attempt = recoveryAttempt[_nonce];
-        bytes32 signatureHash = getSignHash(hashNewOwnerSecret(keccak256(_secretHash), attempt.newOwner));
-        
+        Recovering memory attempt = recoveryAttempt[_nonce];
+        bytes32 signatureHash = getSignHash(keccak256(address(this), keccak256(_secretHash, attempt.newOwner)));  
         for (uint256 i = 0; i < threshold; i++) {
-            address friend = _friendList[i];
-            require(ecrecover(signatureHash, attempt.v[i], attempt.r[i], _s[i]) == friend); 
-            bytes32 friendHash = keccak256(friend, _secret);
-            require(friendAllowed[friendHash]);
-            delete friendAllowed[friendHash];
+            friendSigned(_secret, _friendList[i], attempt.v[i], attempt.r[i], _s[i], signatureHash);
         }
         controller = attempt.newOwner;
         secret = _newSecret;
-        uint256 len = _newFriendsHashes.length;
-        require(len >= threshold);
-        for (i = 0; i < len; i++) {
-            friendAllowed[_newFriendsHashes[i]] = true;
-        }
+        addFriends(_newFriendsHashes);
+        delete recoveryAttempt[_nonce];
         RecoveryCompleted(controller);
     }
 
+    function friendSigned(bytes32 _secret, address _friend, uint8 _v, bytes32 _r, bytes32 _s, bytes32 _messageHash) private {
+            require(ecrecover(_messageHash, _v, _r, _s) == _friend); 
+            bytes32 friendHash = keccak256(_friend, _secret);
+            require(friendAllowed[friendHash]);
+            delete friendAllowed[friendHash];
+    }
 
-    function hashNewOwnerSecret(bytes32 _secretHash, address _newOwner) public constant returns(bytes32 _hash) {
-        _hash = keccak256(address(this), _secretHash, _newOwner);
+    function addFriends(bytes32[] _newFriendsHashes) private {
+        uint256 len = _newFriendsHashes.length;
+        require(len >= threshold);
+        for (uint256 i = 0; i < len; i++) {
+            friendAllowed[_newFriendsHashes[i]] = true;
+        }
     }
 
     /**
