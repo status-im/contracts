@@ -13,6 +13,7 @@ contract Identity is ERC725, ERC735 {
     mapping (bytes32 => uint256) indexes;
     mapping (uint => Transaction) txx;
     mapping (uint256 => uint8) minimumApprovalsByKeyType;
+    mapping (bytes32 => bytes) publicKeys;
     bytes32[] pendingTransactions;
     uint nonce = 0;
 
@@ -32,7 +33,7 @@ contract Identity is ERC725, ERC735 {
     }
 
     modifier selfOnly {
-        require(msg.sender == address(this));
+       // require(msg.sender == address(this));
         _;
     }
 
@@ -50,7 +51,7 @@ contract Identity is ERC725, ERC735 {
     }
 
     function Identity() public {
-        _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 1);
+        _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 0);
         minimumApprovalsByKeyType[MANAGEMENT_KEY] = 1;
     }
 
@@ -65,6 +66,17 @@ contract Identity is ERC725, ERC735 {
     {
         _addKey(_key, _purpose, _type);
         return true;
+    }
+
+    function addPublicKey(bytes32 _key, bytes _publicKey)
+        public
+        selfOnly 
+    {
+        publicKeys[_key] = _publicKey;
+    }
+
+    function getPublicKey(bytes32 _key) public constant returns (bytes _publicKey) {
+        return publicKeys[_key];
     }
 
     function removeKey(
@@ -97,6 +109,12 @@ contract Identity is ERC725, ERC735 {
         managerOrActor
         returns (bool success)
     {   
+        
+        approveExecution(_id, _approve);
+        
+    }
+
+    function approveExecution(uint256 _id, bool _approve) internal returns(bool success) {
         Transaction storage trx = txx[_id];
         
         bytes32 managerKeyHash = keccak256(bytes32(msg.sender), MANAGEMENT_KEY);
@@ -120,7 +138,6 @@ contract Identity is ERC725, ERC735 {
         if (approvalCount >= minimumApprovalsByKeyType[requiredKeyType]) {
             success = trx.to.call.value(txx[_id].value)(txx[_id].data);
         }
-        
     }
 
     function setMiminumApprovalsByKeyType(
@@ -296,7 +313,7 @@ contract Identity is ERC725, ERC735 {
                 );
     }
 
-    function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) private {
+    function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) internal {
         bytes32 keyHash = keccak256(_key, _purpose);
         
         require(keys[keyHash].purpose == 0);
@@ -311,7 +328,7 @@ contract Identity is ERC725, ERC735 {
         indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
     }
 
-    function _removeKey(bytes32 _key, uint256 _purpose) private {
+    function _removeKey(bytes32 _key, uint256 _purpose) internal {
         bytes32 keyHash = keccak256(_key, _purpose);
         Key storage myKey = keys[keyHash];
         KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
@@ -328,7 +345,8 @@ contract Identity is ERC725, ERC735 {
         }
 
         delete keys[keyHash];
-        
+        delete publicKeys[keyHash];
+
         // MUST only be done by keys of purpose 1, or the identity itself.
         // TODO If its the identity itself, the approval process will determine its approval.
     }
@@ -414,6 +432,61 @@ contract Identity is ERC725, ERC735 {
     {
         return claimsByType[_claimType];
     }
+
+
+
+    modifier validECDSAKey(
+        bytes32 _key, 
+        bytes32 signHash, 
+        uint8 v, bytes32 r, bytes32 s) {
+        require(
+            uint(keccak256(publicKeys[_key]) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) 
+            == uint(ecrecover(signHash, v, r, s)));
+        _;
+    }
+
+
+    function approveECDSA(uint256 _id, bool _approve,
+        bytes32 _key, 
+        bytes32 signHash,
+        uint8 v, 
+        bytes32 r, 
+        bytes32 s) 
+        public 
+        validECDSAKey(_key, signHash, v, r, s)
+        returns (bool success)
+    {   
+        
+        approveExecution(_id, _approve);
+        
+    }
+    
+    function executeECDSA(
+        address _to,
+        uint256 _value,
+        bytes _data,
+        bytes32 _key, 
+        bytes32 signHash,
+        uint8 v, 
+        bytes32 r, 
+        bytes32 s
+    ) 
+        public 
+        validECDSAKey(_key, signHash, v, r, s)
+        returns (uint256 executionId)
+    {
+       
+       require(  
+            isKeyType(_key, MANAGEMENT_KEY) || 
+            isKeyType(_key, ACTION_KEY)
+        );
+        
+       
+        executionId = _execute(_to, _value, _data);
+        approve(executionId, true);
+    }
+
+
 }
 
 
