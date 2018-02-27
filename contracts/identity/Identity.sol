@@ -63,10 +63,10 @@ contract Identity is ERC725, ERC735 {
     }
 
     function Identity() public {
-        _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 1);
+        _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 0);
         minimumApprovalsByKeyType[MANAGEMENT_KEY] = 1;
     }
-
+    
     function addKey(
         bytes32 _key,
         uint256 _purpose,
@@ -75,7 +75,7 @@ contract Identity is ERC725, ERC735 {
         public
         selfOnly
         returns (bool success)
-    {
+    {           
         _addKey(_key, _purpose, _type);
         return true;
     }
