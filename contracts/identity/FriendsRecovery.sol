@@ -17,8 +17,9 @@ contract FriendsRecovery {
 
     event RecoveryCompleted(address newController);
 
-    function FriendsRecovery( uint256 _threshold, bytes32[] _friendHashes) public {
+    function FriendsRecovery( uint256 _threshold, bytes32 _secret, bytes32[] _friendHashes) public {
         threshold = _threshold;
+        secret = _secret;
         uint len = _friendHashes.length;
         require(threshold <= len);
         for (uint i = 0; i < len; i++) {
@@ -32,19 +33,26 @@ contract FriendsRecovery {
         _identity.call(_data);
     }
 
-    function recover(address _newOwner, uint8[] _v, bytes32[] _r) external {
-        require (_v.length > threshold);
-        require (_r.length > threshold);
+    function recover(address _newOwner, uint8[] _v, bytes32[] _r) 
+        external 
+        returns (uint nonce)
+    {
+        require (_v.length >= threshold);
+        require (_r.length >= threshold);
+        nonce++;
         recoveryAttempt[nonce] = Recovering({v: _v, r: _r, newOwner: _newOwner});
     }
 
-    function reveal(uint256 _nonce, bytes32 _secret, bytes32 _newSecret, bytes32[] _s, address[] _friendList, bytes32[] _newFriendsHashes) external {
+    function reveal(uint256 _nonce, bytes32 _secret, 
+        bytes32 _newSecret, bytes32[] _s, address[] _friendList, bytes32[] _newFriendsHashes) external {
         require(_s.length >= threshold);
         require(_friendList.length >= threshold);
         bytes32 _secretHash = keccak256(_secret);
         require(_secretHash == secret);
+       
         Recovering memory attempt = recoveryAttempt[_nonce];
         bytes32 signatureHash = getSignHash(keccak256(address(this), keccak256(_secretHash, attempt.newOwner)));  
+       
         for (uint256 i = 0; i < threshold; i++) {
             friendSigned(_secret, _friendList[i], attempt.v[i], attempt.r[i], _s[i], signatureHash);
         }
@@ -54,7 +62,7 @@ contract FriendsRecovery {
         delete recoveryAttempt[_nonce];
         RecoveryCompleted(controller);
     }
-
+   
     function friendSigned(bytes32 _secret, address _friend, uint8 _v, bytes32 _r, bytes32 _s, bytes32 _messageHash) private {
             require(ecrecover(_messageHash, _v, _r, _s) == _friend); 
             bytes32 friendHash = keccak256(_friend, _secret);
