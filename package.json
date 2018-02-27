@@ -16,5 +16,8 @@
   "homepage": "https://github.com/status-im/contracts#readme",
   "devDependencies": {
     "solidity-coverage": "^0.4.4"
+  },
+  "dependencies": {
+    "web3": "^1.0.0-beta.30"
   }
 }

@@ -20,7 +20,7 @@ contract FriendsRecovery {
     function FriendsRecovery( uint256 _threshold, bytes32[] _friendHashes) public {
         threshold = _threshold;
         uint len = _friendHashes.length;
-        require(len < threshold);
+        require(threshold <= len);
         for (uint i = 0; i < len; i++) {
             friendAllowed[_friendHashes[i]] = true;
         }

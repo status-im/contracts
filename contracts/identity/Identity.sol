@@ -2,7 +2,6 @@ pragma solidity ^0.4.17;
 
 import "./ERC725.sol";
 import "./ERC735.sol";
-import "./Recovery.sol";
 
 contract Identity is ERC725, ERC735 {
 
@@ -16,7 +15,7 @@ contract Identity is ERC725, ERC735 {
     bytes32[] pendingTransactions;
     uint nonce = 0;
     bool recoverySet;
-    Recovery recoveryContract;
+    address recoveryContract;
 
     struct Transaction {
         address to;
@@ -29,12 +28,18 @@ contract Identity is ERC725, ERC735 {
     }
 
     modifier managerOnly {
-        require(isKeyType(bytes32(msg.sender), MANAGEMENT_KEY));
+        require(
+            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
+            (recoverySet && msg.sender == address(recoveryContract))
+        );
         _;
     }
 
     modifier selfOnly {
-        require(msg.sender == address(this));
+        require(
+            msg.sender == address(this) || 
+            (recoverySet && msg.sender == address(recoveryContract))
+        );
         _;
     }
 
@@ -51,7 +56,8 @@ contract Identity is ERC725, ERC735 {
     modifier managerOrActor {
         require(
             isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
-            isKeyType(bytes32(msg.sender), ACTION_KEY)
+            isKeyType(bytes32(msg.sender), ACTION_KEY) || 
+            (recoverySet && msg.sender == address(recoveryContract))
         );
         _;
     }
@@ -114,6 +120,7 @@ contract Identity is ERC725, ERC735 {
         managerOrActor
         returns (bool success)
     {   
+        
         Transaction storage trx = txx[_id];
         
         bytes32 managerKeyHash = keccak256(bytes32(msg.sender), MANAGEMENT_KEY);
@@ -368,36 +375,14 @@ contract Identity is ERC725, ERC735 {
         return claimsByType[_claimType];
     }
 
-// ---- Recovery Specific Functions
-    event RecoverySetUp(address sender, bytes32[] recoveryHashes);
-    event RecoveryCompleted(bytes32 newManagementKey);
-
-    function setupRecovery(bytes32[] _recoveryHashes) 
+    function setupRecovery(address _recoveryContract) 
         public
-        managerOnly
+        selfOnly
     {
         require(recoverySet == false);
-        RecoverySetUp(msg.sender, _recoveryHashes);
-        recoveryContract = new Recovery(this, _recoveryHashes);
+        recoveryContract = _recoveryContract;
         recoverySet = true;
     }
-
-    function completeRecovery() public {
-        require(recoverySet == true);
-        address newManager = recoveryContract.getNewManager();
-        require(newManager != address(0x0));
-
-        RecoveryCompleted(bytes32(newManager));
-        
-        bytes32[] memory managementKeys = getKeysByPurpose(MANAGEMENT_KEY);
-        for (uint256 i = 0; i < managementKeys.length; i++) {
-            _removeKey(managementKeys[i], MANAGEMENT_KEY);
-        }
-        addKey(bytes32(newManager), MANAGEMENT_KEY, 1);
-        setMiminumApprovalsByKeyType(MANAGEMENT_KEY, 1);
-    }
-
-
 
 }
 
