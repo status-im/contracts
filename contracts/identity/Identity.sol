@@ -117,6 +117,8 @@ contract Identity is ERC725, ERC735 {
         uint8 approvalCount;
         uint256 requiredKeyType;
         
+        Approved(_id, _approve);
+
         if (trx.to == address(this)) {
             requiredKeyType = MANAGEMENT_KEY;
             if (keys[managerKeyHash].purpose == MANAGEMENT_KEY) {
@@ -128,9 +130,10 @@ contract Identity is ERC725, ERC735 {
                 approvalCount = _calculateApprovals(actorKeyHash, ACTION_KEY, _approve, trx);
             }
         }
-        
+
         if (approvalCount >= minimumApprovalsByKeyType[requiredKeyType]) {
-            success = trx.to.call.value(txx[_id].value)(txx[_id].data);
+            Executed(_id, trx.to, trx.value, trx.data);
+            success = trx.to.call.value(trx.value)(trx.data);
         }
     }
 
