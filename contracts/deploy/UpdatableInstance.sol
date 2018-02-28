@@ -10,6 +10,8 @@ import "./Instance.sol";
  */
 contract UpdatableInstance is Instance {
 
+    event InstanceUpdated(address oldKernel, address newKernel);
+
     function UpdatableInstance(address _kernel) 
         Instance(_kernel) 
         public
@@ -19,6 +21,7 @@ contract UpdatableInstance is Instance {
     
     function updateUpdatableInstance(address _kernel) external {
         require(msg.sender == address(this));
+        InstanceUpdated(kernel, _kernel);
         kernel = _kernel;
     }
 
