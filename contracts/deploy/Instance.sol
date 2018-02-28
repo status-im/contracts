@@ -3,6 +3,7 @@ pragma solidity ^0.4.17;
 import "./InstanceStorage.sol";
 import "./DelegatedCall.sol";
 
+
 /**
  * @title Instance
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
