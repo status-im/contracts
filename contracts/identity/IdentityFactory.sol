@@ -4,15 +4,15 @@ import "../deploy/Factory.sol";
 import "../deploy/UpdatableInstance.sol";
 import "./IdentityKernel.sol";
 
+
 contract IdentityFactory is Factory {
 
     event IdentityCreated(address instance);
 
     function IdentityFactory(bytes _infohash) 
-        Factory(new IdentityKernel(), _infohash)
         public
+        Factory(new IdentityKernel(), _infohash)
     {
-        
     }
 
     function createIdentity() 

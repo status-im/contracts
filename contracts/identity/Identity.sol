@@ -3,6 +3,7 @@ pragma solidity ^0.4.17;
 import "./ERC725.sol";
 import "./ERC735.sol";
 
+
 contract Identity is ERC725, ERC735 {
 
     mapping (bytes32 => Key) keys;
@@ -105,7 +106,7 @@ contract Identity is ERC725, ERC735 {
         managerOrActor(bytes32(msg.sender))
         returns (bool success)
     {   
-        approveExecution(bytes32(msg.sender), _id, _approve);
+        return approveExecution(bytes32(msg.sender), _id, _approve);
     }
 
     function approveExecution(bytes32 _key, uint256 _id, bool _approve) internal returns(bool success) {
@@ -137,7 +138,7 @@ contract Identity is ERC725, ERC735 {
         }
     }
 
-    function setMiminumApprovalsByKeyType(
+    function setMininumApprovalsByKeyType(
         uint256 _type,
         uint8 _minimumApprovals
     ) 
@@ -290,25 +291,23 @@ contract Identity is ERC725, ERC735 {
         private
     {
         require(msg.sender == _issuer);
-            ClaimChanged(
-                _claimHash,
-                _claimType,
-                _scheme,
-                _issuer,
-                _signature,
-                _data,
-                _uri
-                );
-            claims[_claimHash] = Claim(
-                    {
-                        claimType: _claimType,
-                        scheme: _scheme,
-                        issuer: _issuer,
-                        signature: _signature,
-                        data: _data,
-                        uri: _uri
-                    }
-                );
+        ClaimChanged(
+            _claimHash,
+            _claimType,
+            _scheme,
+            _issuer,
+            _signature,
+            _data,
+            _uri
+            );
+        claims[_claimHash] = Claim({
+            claimType: _claimType,
+            scheme: _scheme,
+            issuer: _issuer,
+            signature: _signature,
+            data: _data,
+            uri: _uri
+        });
     }
 
     function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) internal {
@@ -439,14 +438,15 @@ contract Identity is ERC725, ERC735 {
         _;
     }
 
-
     function approveECDSA(uint256 _id, bool _approve,
         bytes32 _key, 
         uint8 v, 
         bytes32 r, 
         bytes32 s) 
         public 
-        validECDSAKey(_key, keccak256(address(this), bytes4(keccak256("approve(uint256,bool)")), _id, _approve), v, r, s)
+        validECDSAKey(_key, keccak256(address(this), 
+                      bytes4(keccak256("approve(uint256,bool)")), _id, _approve),
+                      v, r, s)
         managerOrActor(_key)
         returns (bool success)
     {   
@@ -464,7 +464,9 @@ contract Identity is ERC725, ERC735 {
         bytes32 s
     ) 
         public 
-        validECDSAKey(_key, keccak256(address(this), bytes4(keccak256("execute(address,uint256,bytes)")), _to, _value, _data, _nonce), v, r, s)
+        validECDSAKey(_key, keccak256(address(this), 
+                      bytes4(keccak256("execute(address,uint256,bytes)")), 
+                      _to, _value, _data, _nonce), v, r, s)
         managerOrActor(_key)
         returns (uint256 executionId)
     {
