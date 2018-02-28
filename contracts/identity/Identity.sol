@@ -134,6 +134,7 @@ contract Identity is ERC725, ERC735 {
         public 
         selfOnly
     {
+        require(_minimumApprovals > 0);
         minimumApprovalsByKeyType[_type] = _minimumApprovals;
     }
 
