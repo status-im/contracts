@@ -1,4 +1,6 @@
 const TestUtils = require("./TestUtils.js")
+const web3EthAbi = require("web3-eth-abi");
+
 const Identity = artifacts.require("./identity/Identity.sol");
 const IdentityFactory = artifacts.require("./identity/IdentityFactory.sol");
 const UpdatableInstance = artifacts.require('./deploy/UpdatableInstance.sol');
@@ -56,11 +58,29 @@ contract('IdentityFactory', function(accounts) {
 
 
         it("Updates an identity to the latest version", async() => {
+            let functionPayload =  web3EthAbi.encodeFunctionCall({
+                name: 'updateUpdatableInstance',
+                type: 'function',
+                inputs: [{
+                    type: 'address',
+                    name: '_kernel'
+                }]
+            }, [updatedIdentityKernel.address]);
+
+            let tx1 = await identity.execute(identity.address, 0, functionPayload, {from: accounts[0]} );
+            assert.strictEqual(tx1.logs[tx1.logs.length - 1].event, "Executed");
+
+            // Calling function available in updated identity kernel
+            let updatedIdentity1 = await UpdatedIdentityKernel.at(identity.address, {from: accounts[0]})
+            let tx2 = await updatedIdentity1.test({from: accounts[0]});
+
+            assert.strictEqual(tx2.logs[tx2.logs.length - 1].event, "TestFunctionExecuted");
             
+            assert.equal(
+                tx2.logs[tx2.logs.length - 1].args.minApprovalsByManagementKeys.toString(10),
+                1,
+                identity.address + " wasn't updated to last version");
         })
-
-
-
     });
 
 });
