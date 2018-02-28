@@ -10,10 +10,10 @@ contract UpdatedIdentityKernel is IdentityKernel {
         minimumApprovalsByKeyType[MANAGEMENT_KEY] = 1;
     }
 
-    event TestFunctionExecuted();
+    event TestFunctionExecuted(uint8 minApprovalsByManagementKeys);
 
     function test() public {
-        TestFunctionExecuted();
+        TestFunctionExecuted(minimumApprovalsByKeyType[MANAGEMENT_KEY]);
     }
 
     
