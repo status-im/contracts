@@ -3,7 +3,6 @@ pragma solidity ^0.4.17;
 import "./ERC725.sol";
 import "./ERC735.sol";
 
-
 contract Identity is ERC725, ERC735 {
 
     mapping (bytes32 => Key) keys;
@@ -15,6 +14,8 @@ contract Identity is ERC725, ERC735 {
     mapping (uint256 => uint8) minimumApprovalsByKeyType;
     bytes32[] pendingTransactions;
     uint nonce = 0;
+    bool recoverySet;
+    address recoveryContract;
 
     struct Transaction {
         address to;
@@ -26,13 +27,19 @@ contract Identity is ERC725, ERC735 {
         mapping(bytes32 => bool) approvals;
     }
 
-    modifier managerOnly(bytes32 _key) {
-        require(isKeyType(_key, MANAGEMENT_KEY));
+    modifier managerOnly {
+        require(
+            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
+            (recoverySet && msg.sender == address(recoveryContract))
+        );
         _;
     }
 
     modifier selfOnly {
-        require(msg.sender == address(this));
+        require(
+            msg.sender == address(this) || 
+            (recoverySet && msg.sender == address(recoveryContract))
+        );
         _;
     }
 
@@ -43,8 +50,9 @@ contract Identity is ERC725, ERC735 {
     
     modifier managerOrActor(bytes32 _key) {
         require(
-            isKeyType(_key, MANAGEMENT_KEY) || 
-            isKeyType(_key, ACTION_KEY)
+            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
+            isKeyType(bytes32(msg.sender), ACTION_KEY) || 
+            (recoverySet && msg.sender == address(recoveryContract))
         );
         _;
     }
@@ -53,7 +61,7 @@ contract Identity is ERC725, ERC735 {
         _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 0);
         minimumApprovalsByKeyType[MANAGEMENT_KEY] = 1;
     }
-
+    
     function addKey(
         bytes32 _key,
         uint256 _purpose,
@@ -62,7 +70,7 @@ contract Identity is ERC725, ERC735 {
         public
         selfOnly
         returns (bool success)
-    {
+    {           
         _addKey(_key, _purpose, _type);
         return true;
     }
@@ -97,7 +105,6 @@ contract Identity is ERC725, ERC735 {
         managerOrActor(bytes32(msg.sender))
         returns (bool success)
     {   
-        
         approveExecution(bytes32(msg.sender), _id, _approve);
     }
 
@@ -420,8 +427,6 @@ contract Identity is ERC725, ERC735 {
         return claimsByType[_claimType];
     }
 
-
-
     modifier validECDSAKey(
         bytes32 _key, 
         bytes32 signHash, 
@@ -464,6 +469,14 @@ contract Identity is ERC725, ERC735 {
         approveExecution(_key, executionId, true);
     }
 
+    function setupRecovery(address _recoveryContract) 
+        public
+        selfOnly
+    {
+        require(recoverySet == false);
+        recoveryContract = _recoveryContract;
+        recoverySet = true;
+    }
 
 }
 
