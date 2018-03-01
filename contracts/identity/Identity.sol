@@ -138,7 +138,7 @@ contract Identity is ERC725, ERC735 {
         }
     }
 
-    function setMininumApprovalsByKeyType(
+    function setMinimumApprovalsByKeyType(
         uint256 _type,
         uint8 _minimumApprovals
     ) 

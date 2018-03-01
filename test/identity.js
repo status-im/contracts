@@ -1,4 +1,7 @@
-const TestUtils = require("./TestUtils.js")
+const TestUtils = require("../utils/testUtils.js")
+const web3EthAbi = require("web3-eth-abi");
+const idUtils = require('../utils/identityUtils.js');
+
 const Identity = artifacts.require("./identity/Identity.sol");
 
 contract('Identity', function(accounts) {
@@ -9,129 +12,200 @@ contract('Identity', function(accounts) {
         identity = await Identity.new({from: accounts[0]})
     })
 
-
     describe("Identity()", () => {
         it("initialize with msg.sender as management key", async () => {
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[0])),
-                1,
+                idUtils.purposes.MANAGEMENT,
                 identity.address + ".getKeyPurpose("+accounts[0]+") is not MANAGEMENT_KEY")
         });
-        
     });
 
 
     describe("addKey(address _key, uint256 _type)", () => {
-
         it("MANAGEMENT_KEY add a new address as ACTION_KEY", async () => {
-            await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 2, 1, {from: accounts[0]})
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
+                {from: accounts[0]}
+            );
+
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                2,
+                idUtils.purposes.ACTION,
                 identity.address+".getKeyPurpose("+accounts[1]+") is not ACTION_KEY")
         });
 
-
         it("should not add key by non manager", async () => {            
             try {
-                await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 1, 1, {from: accounts[2]})
-            }catch(e){
+                await identity.execute(
+                    identity.address, 
+                    0, 
+                    idUtils.encode.addKey(accounts[1], idUtils.purposes.MANAGEMENT, idUtils.types.ADDRESS), 
+                    {from: accounts[2]}
+                );
+                assert.fail('should have reverted before');
+            } catch(error) {
+                TestUtils.assertJump(error);
             }
+            
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                0,
+                idUtils.purposes.NONE,
                 identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
         });
 
-        it("should not add key type 1 by actor", async () => {            
-            await identity.addKey(TestUtils.addressToBytes32(accounts[2]), 2, 1, {from: accounts[0]})
-            try {
-                await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 1, 1, {from: accounts[2]})
-            } catch(e){
-            }
+        it("should not add key type 1 by actor", async () => {  
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[2], idUtils.purposes.ACTION, idUtils.types.ADDRESS), 
+                {from: accounts[0]}
+            );
+            
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.MANAGEMENT, idUtils.types.ADDRESS), 
+                {from: accounts[2]}
+            );
+                
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                0,
+                idUtils.purposes.NONE,
                 identity.address+".getKeyType("+accounts[1]+") is not correct")
         });
 
-
-
         it("fire KeyAdded(address indexed key, uint256 indexed type)", async () => {
-            identity.addKey(TestUtils.addressToBytes32(accounts[1]), 2, 1, {from: accounts[0]})
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.MANAGEMENT, idUtils.types.ADDRESS), 
+                {from: accounts[0]}
+            );
+            
             const keyAdded = await TestUtils.listenForEvent(identity.KeyAdded())
             assert(keyAdded.key, TestUtils.addressToBytes32(accounts[1]), "Key is not correct")
-            assert(keyAdded.keyType, 2, "Type is not correct")
+            assert(keyAdded.keyType, idUtils.types.ADDRESS, "Type is not correct")
         });
-
     });
 
 
     describe("removeKey(address _key, uint256 _type)", () => {
+        it("MANAGEMENT_KEY should remove a key", async () => {
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.MANAGEMENT, idUtils.types.ADDRESS), 
+                {from: accounts[0]}
+            );
 
-        it("MANAGEMENT_KEY should removes a key", async () => {
-            await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 1, 1, {from: accounts[0]})
-            await identity.removeKey(TestUtils.addressToBytes32(accounts[0]), 1, {from: accounts[1]})    
-            assert.equal(
-                await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[0])),
-                0,
-                identity.address+".getKeyPurpose("+accounts[0]+") is not 0")
-        });
-        
-
-        it("other key should not removes a key", async () => {
-            await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 1, 1, {from: accounts[0]})
-            try {
-                await identity.removeKey(TestUtils.addressToBytes32(accounts[1]), 1, {from: accounts[2]})    
-            }catch (e) {
-
-            }
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.removeKey(accounts[1], idUtils.purposes.MANAGEMENT), 
+                {from: accounts[0]}
+            );
+            
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                1,
+                idUtils.purposes.NONE,
+                identity.address+".getKeyPurpose("+accounts[1]+") is not 0")
+        });
+
+        it("other key should not removes a key", async () => {
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.MANAGEMENT, idUtils.types.ADDRESS), 
+                {from: accounts[0]}
+            );
+
+            try {
+                await identity.execute(
+                    identity.address, 
+                    0, 
+                    idUtils.encode.removeKey(accounts[1], idUtils.purposes.MANAGEMENT), 
+                    {from: accounts[2]}
+                );
+                assert.fail('should have reverted before');
+            } catch(error) {
+                TestUtils.assertJump(error);
+            }
+            
+            assert.equal(
+                await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
+                idUtils.purposes.MANAGEMENT,
                 identity.address+".getKeyPurpose("+accounts[1]+") is not 0")
         });
 
         it("actor key should not remove key", async () => {
-            await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 2, 1, {from: accounts[0]})
-            await identity.addKey(TestUtils.addressToBytes32(accounts[2]), 2, 1, {from: accounts[0]})
-            try {
-                await identity.removeKey(TestUtils.addressToBytes32(accounts[1]), 1, {from: accounts[2]})    
-            }catch (e) {
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS), 
+                {from: accounts[0]}
+            );
 
-            }
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[2], idUtils.purposes.ACTION, idUtils.types.ADDRESS), 
+                {from: accounts[0]}
+            );
+
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.removeKey(accounts[1], idUtils.purposes.ACTION), 
+                {from: accounts[2]}
+            );
+
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                2,
+                idUtils.purposes.ACTION,
                 identity.address+".getKeyType("+accounts[1]+") is not 0")
         });
         
-
         it("MANAGEMENT_KEY should not remove itself MANAGEMENT_KEY when there is no other MANAGEMENT_KEY", async () => {
-            let assertJump = (error) => {
-                assert.isAbove(error.message.search('revert'), -1, 'Revert should happen');
-            }
-            try {
-                await identity.removeKey(TestUtils.addressToBytes32(accounts[0]), 1, {from: accounts[0]});
-                assert.fail('should have reverted before');
-              } catch(error) {
-                  assertJump(error);
-              }
-              
-            
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.removeKey(accounts[0], idUtils.purposes.MANAGEMENT), 
+                {from: accounts[0]}
+            );
+
+            assert.equal(
+                await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[0])),
+                idUtils.purposes.MANAGEMENT,
+                identity.address+".getKeyType("+accounts[0]+") is not 1")
         });
 
         it("fire KeyRemoved(address indexed key, uint256 indexed type)", async () => {
-            await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 2, 1,{from: accounts[0]})
-            identity.removeKey(TestUtils.addressToBytes32(accounts[1]), 2, {from: accounts[0]})  
-            const keyRemoved = await TestUtils.listenForEvent(identity.KeyRemoved())
-            assert(keyRemoved.key, TestUtils.addressToBytes32(accounts[1]), "Key is not correct")
-            assert(keyRemoved.keyType, 2, "Type is not correct")
-        });
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS), 
+                {from: accounts[0]}
+            );
+            
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.removeKey(accounts[1], idUtils.purposes.ACTION), 
+                {from: accounts[0]}
+            );
 
+            const keyRemoved = await TestUtils.listenForEvent(identity.KeyRemoved());
+            assert(keyRemoved.key, TestUtils.addressToBytes32(accounts[1]), "Key is not correct");
+            assert(keyRemoved.keyType, idUtils.types.ADDRESS, "Type is not correct");
+        });
     });
 
 
+
+    /*
     describe("getKeyPurpose(address _key)", () => {
 
         it("should start only with initializer as only key", async () => {
@@ -259,5 +333,5 @@ contract('Identity', function(accounts) {
             
         });
     });
-             
+      */       
 });

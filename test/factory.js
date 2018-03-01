@@ -1,4 +1,5 @@
-const TestUtils = require("./TestUtils.js")
+const TestUtils = require("../utils/testUtils.js")
+const idUtils = require("../utils/identityUtils.js")
 const web3EthAbi = require("web3-eth-abi");
 
 const Identity = artifacts.require("./identity/Identity.sol");
@@ -27,15 +28,18 @@ contract('IdentityFactory', function(accounts) {
             
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[0])),
-                1,
+                idUtils.purposes.MANAGEMENT,
                 identity.address + ".getKeyPurpose("+accounts[0]+") is not MANAGEMENT_KEY")
         });
 
 
         it("Registers a updated identity contract", async() => {
+            const infoHash = "0xbbb";
             updatedIdentityKernel = await UpdatedIdentityKernel.new({from: accounts[0]});
-            let tx = await identityFactory.setKernel(updatedIdentityKernel.address, "0xbbb");
-            assert.strictEqual(tx.logs[0].event, "NewKernel");
+            await identityFactory.setKernel(updatedIdentityKernel.address, infoHash);
+            
+            const newKernel = await TestUtils.listenForEvent(identityFactory.NewKernel());
+            assert(newKernel.infohash, infoHash, "Infohash is not correct");
         });
 
         
@@ -58,16 +62,12 @@ contract('IdentityFactory', function(accounts) {
 
 
         it("Updates an identity to the latest version", async() => {
-            let functionPayload =  web3EthAbi.encodeFunctionCall({
-                name: 'updateUpdatableInstance',
-                type: 'function',
-                inputs: [{
-                    type: 'address',
-                    name: '_kernel'
-                }]
-            }, [updatedIdentityKernel.address]);
-
-            let tx1 = await identity.execute(identity.address, 0, functionPayload, {from: accounts[0]} );
+            let tx1 = await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.updateUpdatableInstance(updatedIdentityKernel.address), 
+                {from: accounts[0]} 
+            );
             assert.strictEqual(tx1.logs[tx1.logs.length - 1].event, "Executed");
 
             // Calling function available in updated identity kernel
@@ -75,7 +75,6 @@ contract('IdentityFactory', function(accounts) {
             let tx2 = await updatedIdentity1.test({from: accounts[0]});
 
             assert.strictEqual(tx2.logs[tx2.logs.length - 1].event, "TestFunctionExecuted");
-            
             assert.equal(
                 tx2.logs[tx2.logs.length - 1].args.minApprovalsByManagementKeys.toString(10),
                 1,
