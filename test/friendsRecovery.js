@@ -1,4 +1,6 @@
-const TestUtils = require("./TestUtils.js")
+const TestUtils = require("../utils/testUtils.js")
+const idUtils = require("../utils/identityUtils");
+
 const Identity = artifacts.require("./identity/Identity.sol");
 const FriendsRecovery = artifacts.require("./identity/FriendsRecovery.sol");
 
@@ -17,9 +19,8 @@ contract('FriendsRecovery', function(accounts) {
     ];
 
     describe("FriendsRecovery()", () => {
-        it("test1", async () => {
+        it("Execute a full recovery", async () => {
             let identity = await Identity.new({from: accounts[0]})
-
 
             // A bytes32 string that represents some user data
             const secret = '0x0000000000000000000000000000000000000000000000000000000000123456';
@@ -37,17 +38,13 @@ contract('FriendsRecovery', function(accounts) {
 
             let recoveryContract = await FriendsRecovery.new(threshold, hashedSecret, friendHashes, {from: accounts[0]});
 
-            let functionPayload =  web3EthAbi.encodeFunctionCall({
-                                        name: 'setupRecovery',
-                                        type: 'function',
-                                        inputs: [{
-                                            type: 'address',
-                                            name: '_recoveryContract'
-                                        }]
-                                    }, [recoveryContract.address]);
-            
             // Setting up recovery contract for identity
-            let tx1 = await identity.execute(identity.address, 0, functionPayload, {from: accounts[0]} );
+            let tx1 = await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.setupRecovery(recoveryContract.address), 
+                {from: accounts[0]} 
+            );
             
             //console.log(tx1.logs);
 
@@ -103,8 +100,6 @@ contract('FriendsRecovery', function(accounts) {
                 web3Utils.soliditySha3(accounts[5], newSecret)
             ];
 
-    
-
             let tx3 = await recoveryContract.reveal(
                 nonce, 
                 secret, 
@@ -128,31 +123,14 @@ contract('FriendsRecovery', function(accounts) {
             // Execute something with new controller address
             // In this case, adding new controller address key
 
-            functionPayload =  web3EthAbi.encodeFunctionCall({
-                name: 'addKey',
-                type: 'function',
-                inputs: [
-                    {
-                        type: 'bytes32',
-                        name: '_key'
-                    }, {
-                        type: 'uint256',
-                        name: '_purpose'
-                    }, {
-                        type: 'uint256',
-                        name: '_type'
-                    }]
-                }, [newController, 1, 0]);
+            let tx4 = await recoveryContract.execute(
+                identity.address, 
+                idUtils.encode.addKey(newController, idUtils.purposes.MANAGEMENT, idUtils.types.ADDRESS), 
+                {from: newController});
 
-            let tx4 = await recoveryContract.execute(identity.address, functionPayload, {from: newController});
-            
-            
-
-            let  = await identity.getKeyPurpose(newController, {from: accounts[0]});
-               
             assert.equal(
-                await identity.getKeyPurpose(newController),
-                1,
+                await identity.getKeyPurpose(TestUtils.addressToBytes32(newController)),
+                idUtils.purposes.MANAGEMENT,
                 identity.address+".getKeyPurpose("+newController+") is not correct")
 
         });
