@@ -1,9 +1,9 @@
-const TestUtils = require("./TestUtils.js")
+const TestUtils = require("../utils/testUtils.js")
 var ethUtils = require('ethereumjs-util')
 
 const Identity = artifacts.require("./identity/Identity.sol");
 
-contract('Identity', function(accounts) {
+contract('Identity - Extended Functionality', function(accounts) {
 
     let identity;
 
