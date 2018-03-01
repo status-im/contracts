@@ -1,8 +1,9 @@
-const TestUtils = require("../utils/testUtils.js")
+const TestUtils = require("../utils/testUtils.js");
 const web3EthAbi = require("web3-eth-abi");
 const idUtils = require('../utils/identityUtils.js');
 
 const Identity = artifacts.require("./identity/Identity.sol");
+const TestContract = artifacts.require("./test/TestContract.sol");
 
 contract('Identity', function(accounts) {
 
@@ -204,41 +205,51 @@ contract('Identity', function(accounts) {
     });
 
 
-
-    /*
     describe("getKeyPurpose(address _key)", () => {
 
         it("should start only with initializer as only key", async () => {
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[0])),
-                1,
+                idUtils.purposes.MANAGEMENT,
                 identity.address+".getKeyPurpose("+accounts[0]+") is not correct")
 
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                0,
+                idUtils.purposes.NONE,
                 identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
         });
 
         it("should get type 2 after addKey type 2", async () => {
-            await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 2, 1, {from: accounts[0]})
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
+                {from: accounts[0]}
+            );
+            
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                2,
+                idUtils.purposes.ACTION,
                 identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
             });
             
-        it("should get type 3 after addKey type 3", async () => {            
-            await identity.addKey(TestUtils.addressToBytes32(accounts[1]), 3, 1, {from: accounts[0]})
+        it("should get type 3 after addKey type 3", async () => {       
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.CLAIM_SIGNER, idUtils.types.ADDRESS),
+                {from: accounts[0]}
+            );
+
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
-                3,
+                idUtils.purposes.CLAIM_SIGNER,
                 identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
         });
 
     });
 
-   
+   /*
     describe("getKeysByType(uint256 _type)", () => {
 
         it("at initialization", async () => {
@@ -252,35 +263,159 @@ contract('Identity', function(accounts) {
         it("after removeKey", async () => {
             
         });
-
-        it("after replaceKey", async () => {
-            
-        });
-
     });
-
+*/
 
 
     describe("execute(address _to, uint256 _value, bytes _data)", () => {
+        let testContractInstance;
+        let functionPayload;
+
+        it("Identity should receive ether", async() => {
+
+            const amountToSend = web3.toWei(0.05, "ether");
+
+            let idBalance0 = web3.eth.getBalance(identity.address);
+
+            await web3.eth.sendTransaction({from:accounts[0], to:identity.address, value: amountToSend}) 
+
+            let idBalance1 = web3.eth.getBalance(identity.address);
+
+            assert.equal(idBalance0.toNumber() + amountToSend, idBalance1.toNumber(), identity.address + " did not receive ether");
+        });
 
         it("ACTOR_KEY execute arbitrary transaction", async () => {
+            await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
+                {from: accounts[0]}
+            );
+
+            testContractInstance = await TestContract.new({from: accounts[0]});
+
+            functionPayload = web3EthAbi.encodeFunctionCall({
+                name: 'test',
+                type: 'function',
+                inputs: []
+            }, []);
+
+            await identity.execute(
+                testContractInstance.address, 
+                0, 
+                functionPayload,
+                {from: accounts[1]}
+            );
             
+            assert.notEqual(
+                await TestUtils.listenForEvent(testContractInstance.TestFunctionExecuted()),
+                undefined,
+                "Test function was not executed");
         });
         
         it("MANAGEMENT_KEY execute arbitrary transaction", async () => {
+            await identity.execute(
+                testContractInstance.address, 
+                0, 
+                functionPayload,
+                {from: accounts[0]}
+            );
             
+            assert.notEqual(
+                await TestUtils.listenForEvent(testContractInstance.TestFunctionExecuted()),
+                undefined,
+                "Test function was not executed");
         });
 
         it("Other keys NOT execute arbitrary transaction", async () => {
+            try {
+                await identity.execute(
+                    testContractInstance.address, 
+                    0, 
+                    functionPayload,
+                    {from: accounts[3]}
+                );
+                assert.fail('should have reverted before');
+            } catch(error) {
+                TestUtils.assertJump(error);
+            }
+        });
+
+
+        it("MANAGEMENT_KEY should send ether from contract", async () => {
+
+            // Adding funds to contract
+            await web3.eth.sendTransaction({from:accounts[0], to:identity.address, value: web3.toWei(0.05, "ether")}) 
+
+            const amountToSend = web3.toWei(0.01, "ether");
+
+            let idBalance0 = web3.eth.getBalance(identity.address);
+            let a1Balance0 = web3.eth.getBalance(accounts[1]);
+
+            await identity.execute(
+                accounts[1], 
+                amountToSend, 
+                '',
+                {from: accounts[0]}
+            );
+
+            let idBalance1 = web3.eth.getBalance(identity.address);
+            let a1Balance1 = web3.eth.getBalance(accounts[1]);
+
+            assert(idBalance1.toNumber, idBalance0.toNumber - amountToSend, "Contract did not send ether");
+            assert(a1Balance1.toNumber, a1Balance0.toNumber + amountToSend, accounts[1] + " did not receive ether");
+        });
+
+        it("fire ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data)", async () => {
+            await identity.execute(
+                testContractInstance.address, 
+                0, 
+                functionPayload,
+                {from: accounts[0]}
+            );
             
+            const executionRequested = await TestUtils.listenForEvent(identity.ExecutionRequested());
+            assert(executionRequested.to, testContractInstance.address, "To is not correct");
+            assert(executionRequested.value, 0, "Value is not correct");
+            assert(executionRequested.data, functionPayload, "Data is not correct");
         });
 
         it("fire Executed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data)", async () => {
+            await identity.execute(
+                testContractInstance.address, 
+                0, 
+                functionPayload,
+                {from: accounts[0]}
+            );
             
+            const executed = await TestUtils.listenForEvent(identity.Executed());
+            assert(executed.to, testContractInstance.address, "To is not correct");
+            assert(executed.value, 0, "Value is not correct");
+            assert(executed.data, functionPayload, "Data is not correct");
         });
 
     });
 
+
+/*
+
+    describe("setMinimumApprovalsByKeyType(uint256 _type, uint8 _minimumApprovals)", () => {
+        it("MANAGEMENT_KEY should set minimum approvals for MANAGEMENT_KEYs", async () => {
+            
+        });
+
+        it("MANAGEMENT_KEY should set minimum approvals for ACTION_KEYs", async () => {
+            
+        });
+
+        it("ACTION_KEY should not be able to set minimum approvals", async () => {
+            
+        });
+
+        it("Other keys should not be able to set minimum approvals", async () => {
+            
+        });
+    });
 
     describe("approve(bytes32 _id, bool _approve)", () => {
 
@@ -289,6 +424,10 @@ contract('Identity', function(accounts) {
         });
 
         it("MANAGEMENT_KEY should approve a transaction", async () => {
+            
+        });
+
+        it("2 out of 3 MANAGEMENT_KEY should approve a transaction and execute it", async () => {
             
         });
 

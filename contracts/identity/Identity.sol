@@ -60,7 +60,9 @@ contract Identity is ERC725, ERC735 {
 
     function Identity() public {
         _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 0);
+
         minimumApprovalsByKeyType[MANAGEMENT_KEY] = 1;
+        minimumApprovalsByKeyType[ACTION_KEY] = 1;
     }
     
     function addKey(
@@ -481,6 +483,10 @@ contract Identity is ERC725, ERC735 {
         require(recoverySet == false);
         recoveryContract = _recoveryContract;
         recoverySet = true;
+    }
+
+    function () public payable {
+
     }
 
 }
