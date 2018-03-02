@@ -47,6 +47,13 @@ contract FriendsRecovery {
         addFriends(_friendHashes);
     }
 
+    function withdraw() 
+        external
+        identityOnly
+    {
+        identity.transfer(this.balance);
+    }
+
     function cancelSetup() 
         external 
         identityOnly 
