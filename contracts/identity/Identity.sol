@@ -15,8 +15,8 @@ contract Identity is ERC725, ERC735 {
     mapping (uint256 => uint8) minimumApprovalsByKeyType;
     bytes32[] pendingTransactions;
     uint nonce = 0;
-    bool recoverySet;
     address recoveryContract;
+    address managerReset;
 
     struct Transaction {
         address to;
@@ -24,22 +24,26 @@ contract Identity is ERC725, ERC735 {
         bytes data;
         uint nonce;
         uint approverCount;
-        mapping(uint256 => uint8) approvalsByKeyType;
         mapping(bytes32 => bool) approvals;
     }
 
     modifier managerOnly {
         require(
-            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
-            (recoverySet && msg.sender == address(recoveryContract))
+            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY)
         );
         _;
     }
 
     modifier selfOnly {
         require(
-            msg.sender == address(this) || 
-            (recoverySet && msg.sender == address(recoveryContract))
+            msg.sender == address(this)
+        );
+        _;
+    }
+
+    modifier recoveryOnly {
+        require(
+            (recoveryContract != address(0) && msg.sender == address(recoveryContract))
         );
         _;
     }
@@ -65,6 +69,38 @@ contract Identity is ERC725, ERC735 {
         minimumApprovalsByKeyType[ACTION_KEY] = 1;
     }
     
+    function managerReset(address _newKey) 
+        external 
+        recoveryOnly
+    {
+        managerReset = _newKey;
+        _addKey(managerReset, purpose, _newType);
+        minimumApprovalsByKeyType[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
+    }
+    
+    function processManagerReset(uint limit) 
+        external 
+    {
+        require(managerReset != address(0));
+        bytes32 newKey = bytes32(managerReset);
+        bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
+        uint totalManagers = managers.lenght;
+        if (limit == 0) {
+            limit = totalManagers;
+        }
+        minimumApprovalsByKeyType[MANAGEMENT_KEY] = totalManagers - limit + 1;
+        for (uint i = 0; i < limit; i++) {
+            address manager = managers[i];
+            if (manager != newKey) {
+                _removeKey(manager, MANAGEMENT_KEY);
+                totalManagers--;
+            }
+        }
+        if (totalManagers == 1) {
+            managerReset = address(0);
+        }
+    }
+
     function addKey(
         bytes32 _key,
         uint256 _purpose,
@@ -73,10 +109,25 @@ contract Identity is ERC725, ERC735 {
         public
         selfOnly
         returns (bool success)
-    {           
+    {   
         _addKey(_key, _purpose, _type);
         return true;
     }
+
+    function replaceKey(
+        bytes32 _oldKey,
+        bytes32 _newKey,
+        uint256 _newType
+    )
+        public
+        selfOnly
+        returns (bool success)
+    {
+        uint256 purpose = key[_oldKey].purpose;
+        _addKey(_newKey, purpose, _newType);
+        _removeKey(_oldKey, purpose);
+        return true;
+    } 
 
     function removeKey(
         bytes32 _key,
@@ -111,7 +162,14 @@ contract Identity is ERC725, ERC735 {
         return approveExecution(bytes32(msg.sender), _id, _approve);
     }
 
-    function approveExecution(bytes32 _key, uint256 _id, bool _approve) internal returns(bool success) {
+    function approveExecution(
+        bytes32 _key,
+        uint256 _id,
+        bool _approve
+    ) 
+        internal 
+        returns(bool success)
+    {
         Transaction storage trx = txx[_id];
         
         bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
@@ -125,12 +183,12 @@ contract Identity is ERC725, ERC735 {
         if (trx.to == address(this)) {
             requiredKeyType = MANAGEMENT_KEY;
             if (keys[managerKeyHash].purpose == MANAGEMENT_KEY) {
-                approvalCount = _calculateApprovals(managerKeyHash, MANAGEMENT_KEY, _approve, trx);
+                approvalCount = _calculateApprovals(managerKeyHash, _approve, trx);
             }
         } else {
             requiredKeyType = ACTION_KEY;
             if (keys[managerKeyHash].purpose == ACTION_KEY) {
-                approvalCount = _calculateApprovals(actorKeyHash, ACTION_KEY, _approve, trx);
+                approvalCount = _calculateApprovals(actorKeyHash, _approve, trx);
             }
         }
 
@@ -153,21 +211,22 @@ contract Identity is ERC725, ERC735 {
 
     function _calculateApprovals(
         bytes32 _keyHash,
-        uint256 _keyType,
         bool _approve,
         Transaction storage trx
     )
         private 
         returns (uint8 approvalCount) 
     {
-        if (trx.approvals[_keyHash] == false && _approve) {
-            trx.approvalsByKeyType[_keyType]++;
-        } else if (trx.approvals[_keyHash] == true && !_approve && trx.approverCount > 0) {
-            trx.approvalsByKeyType[_keyType]--;
-        }
+        require(trx.approvals[_keyHash] != _approve);
+
         trx.approvals[_keyHash] = _approve;
-        trx.approverCount++;
-        return trx.approvalsByKeyType[_keyType];
+        if (_approve) {
+            trx.approverCount++;
+        } else {
+            trx.approverCount--;
+        }
+        
+        return trx.approverCount;
     }
 
     function addClaim(
@@ -480,9 +539,8 @@ contract Identity is ERC725, ERC735 {
         public
         selfOnly
     {
-        require(recoverySet == false);
+        require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
-        recoverySet = true;
     }
 
     function () public payable {
