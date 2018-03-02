@@ -182,8 +182,6 @@ contract Identity is ERC725, ERC735 {
         
         Approved(_id, _approve);
 
-Debug1(_key, isKeyType(_key, ACTION_KEY));
-
         if (trx.to == address(this)) {
             require(isKeyType(_key, MANAGEMENT_KEY));
             bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
@@ -199,9 +197,10 @@ Debug1(_key, isKeyType(_key, ACTION_KEY));
         if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
             Executed(_id, trx.to, trx.value, trx.data);
             success = trx.to.call.value(trx.value)(trx.data);
+            Debug1(success);
         }
     }
-event Debug1(bytes32 d, bool b);
+
     function setMinimumApprovalsByKeyType(
         uint256 _purpose,
         uint256 _minimumApprovals
@@ -209,12 +208,11 @@ event Debug1(bytes32 d, bool b);
         public 
         selfOnly
     {
-        Debug(_minimumApprovals, keysByPurpose[_purpose].length, 0);
         require(_minimumApprovals > 0);
         require(_minimumApprovals <= keysByPurpose[_purpose].length);
         minimumApprovalsByKeyPurpose[_purpose] = _minimumApprovals;
     }
-event Debug(uint256 a, uint256 b, uint256 c);
+    
     function _calculateApprovals(
         bytes32 _keyHash,
         bool _approve,
@@ -393,6 +391,7 @@ event Debug(uint256 a, uint256 b, uint256 c);
     }
 
     function _removeKey(bytes32 _key, uint256 _purpose) internal {
+        
         bytes32 keyHash = keccak256(_key, _purpose);
         Key storage myKey = keys[keyHash];
         KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
@@ -405,11 +404,17 @@ event Debug(uint256 a, uint256 b, uint256 c);
         keysByPurpose[_purpose].length--;
 
         if (_purpose == MANAGEMENT_KEY) {
-            require(keysByPurpose[MANAGEMENT_KEY].length >= 1);
+            require(
+                keysByPurpose[MANAGEMENT_KEY].length >= 1 && 
+                keysByPurpose[MANAGEMENT_KEY].length >= minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]
+            );
+
         }
 
         delete keys[keyHash];
     }
+
+    event Debug(uint256 a, uint256 b);
 
     function getKey(
         bytes32 _key,
