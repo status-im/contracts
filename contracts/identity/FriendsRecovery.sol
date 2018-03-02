@@ -34,6 +34,7 @@ contract FriendsRecovery {
     }
 
     function FriendsRecovery(
+        address _identity,
         uint256 _setupDelay,
         uint256 _threshold,
         bytes32 _secret,
@@ -41,6 +42,7 @@ contract FriendsRecovery {
         ) 
         public 
     {
+        identity = _identity;
         threshold = _threshold;
         secret = _secret;
         setupDelay = _setupDelay;
