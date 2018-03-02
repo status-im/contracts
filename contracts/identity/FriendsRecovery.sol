@@ -2,72 +2,64 @@ pragma solidity ^0.4.17;
 
 
 contract FriendsRecovery {
+    
     address private controller;
     bytes32 private secret;
     mapping(bytes32 => bool) friendAllowed;
     uint threshold;
-    uint nonce;
-    mapping (uint256 => Recovering) recoveryAttempt; 
-
-    struct Recovering {
-        uint8[] v;
-        bytes32[] r;
-        address newOwner;
-    }
+    uint nonce; 
+    mapping(bytes32 => mapping(address => bool)) signed;
 
     event RecoveryCompleted(address newController);
 
     function FriendsRecovery( uint256 _threshold, bytes32 _secret, bytes32[] _friendHashes) public {
         threshold = _threshold;
         secret = _secret;
-        uint len = _friendHashes.length;
-        require(threshold <= len);
-        for (uint i = 0; i < len; i++) {
-            friendAllowed[_friendHashes[i]] = true;
-        }
-
+        addFriends(_friendHashes);
     }
 
     function execute(address _identity, bytes _data) external {
         require(msg.sender == controller);
-        _identity.call(_data);
+        require(_identity.call(_data));
     }
 
-    function recover(address _newOwner, uint8[] _v, bytes32[] _r) 
+    function approve(bytes32 _secretHash) 
         external 
-        returns (uint nonce)
     {
-        require (_v.length >= threshold);
-        require (_r.length >= threshold);
-        nonce++;
-        recoveryAttempt[nonce] = Recovering({v: _v, r: _r, newOwner: _newOwner});
+        signed[_secretHash][msg.sender] = true;
     }
 
-    function reveal(uint256 _nonce, bytes32 _secret, 
-        bytes32 _newSecret, bytes32[] _s, address[] _friendList, bytes32[] _newFriendsHashes) external {
-        require(_s.length >= threshold);
+    function approvePreSigned(bytes32 _secretHash, uint8[] _v, bytes32[] _r, bytes32[] _s) 
+        external 
+    {
+        uint256 len = _v.length;
+        require (len >= threshold);
+        require (_r.length == len);
+        require (_s.length == len);    
+        bytes32 signatureHash = getSignHash(keccak256(address(this), _secretHash)); 
+        for (uint256 i = 0; i < len; i++){
+            address recovered = ecrecover(signatureHash, _v[i], _r[i], _s[i]);
+            require(recovered != address(0));
+            signed[_secretHash][recovered] = true;
+        }        
+    }
+
+    function reveal(bytes32 _secret, address _newOwner, address[] _friendList, bytes32 _newSecret, bytes32[] _newFriendsHashes) external {
         require(_friendList.length >= threshold);
-        bytes32 _secretHash = keccak256(_secret);
-        require(_secretHash == secret);
-       
-        Recovering memory attempt = recoveryAttempt[_nonce];
-        bytes32 signatureHash = getSignHash(keccak256(address(this), keccak256(_secretHash, attempt.newOwner)));  
-       
+        require(keccak256(_secret) == secret);
+        bytes32 _secretHash = keccak256(_secret, _newOwner);
+        
         for (uint256 i = 0; i < threshold; i++) {
-            friendSigned(_secret, _friendList[i], attempt.v[i], attempt.r[i], _s[i], signatureHash);
+            address friend = _friendList[i];
+            require(friendAllowed[keccak256(_secret, friend)]);
+            require(signed[_secretHash][friend]);
+            delete signed[_secretHash][friend];
         }
-        controller = attempt.newOwner;
+
+        controller = _newOwner;
         secret = _newSecret;
         addFriends(_newFriendsHashes);
-        delete recoveryAttempt[_nonce];
         RecoveryCompleted(controller);
-    }
-   
-    function friendSigned(bytes32 _secret, address _friend, uint8 _v, bytes32 _r, bytes32 _s, bytes32 _messageHash) private {
-            require(ecrecover(_messageHash, _v, _r, _s) == _friend); 
-            bytes32 friendHash = keccak256(_friend, _secret);
-            require(friendAllowed[friendHash]);
-            delete friendAllowed[friendHash];
     }
 
     function addFriends(bytes32[] _newFriendsHashes) private {
