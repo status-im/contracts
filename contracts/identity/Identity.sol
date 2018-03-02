@@ -12,11 +12,11 @@ contract Identity is ERC725, ERC735 {
     mapping (uint256 => bytes32[]) claimsByType;
     mapping (bytes32 => uint256) indexes;
     mapping (uint => Transaction) txx;
-    mapping (uint256 => uint8) minimumApprovalsByKeyType;
+    mapping (uint256 => uint256) minimumApprovalsByKeyPurpose;
     bytes32[] pendingTransactions;
     uint nonce = 0;
     address recoveryContract;
-    address managerReset;
+    address recoveryManager;
 
     struct Transaction {
         address to;
@@ -54,10 +54,11 @@ contract Identity is ERC725, ERC735 {
     }
     
     modifier managerOrActor(bytes32 _key) {
+
+
         require(
             isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
-            isKeyType(bytes32(msg.sender), ACTION_KEY) || 
-            (recoverySet && msg.sender == address(recoveryContract))
+            isKeyType(bytes32(msg.sender), ACTION_KEY)
         );
         _;
     }
@@ -65,39 +66,42 @@ contract Identity is ERC725, ERC735 {
     function Identity() public {
         _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 0);
 
-        minimumApprovalsByKeyType[MANAGEMENT_KEY] = 1;
-        minimumApprovalsByKeyType[ACTION_KEY] = 1;
+        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = 1;
+        minimumApprovalsByKeyPurpose[ACTION_KEY] = 1;
     }
     
     function managerReset(address _newKey) 
         external 
         recoveryOnly
     {
-        managerReset = _newKey;
-        _addKey(managerReset, purpose, _newType);
-        minimumApprovalsByKeyType[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
+        recoveryManager = _newKey;
+        _addKey(bytes32(recoveryManager), MANAGEMENT_KEY, 0);
+        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
     }
     
-    function processManagerReset(uint limit) 
-        external 
+    function processManagerReset(uint256 limit) 
+        public 
     {
-        require(managerReset != address(0));
-        bytes32 newKey = bytes32(managerReset);
+        require(recoveryManager != address(0));
+        bytes32 newKey = bytes32(recoveryManager);
         bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
-        uint totalManagers = managers.lenght;
+        uint256 totalManagers = managers.length;
+        
         if (limit == 0) {
             limit = totalManagers;
         }
-        minimumApprovalsByKeyType[MANAGEMENT_KEY] = totalManagers - limit + 1;
-        for (uint i = 0; i < limit; i++) {
-            address manager = managers[i];
+
+        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = totalManagers - limit + 1;
+        for (uint256 i = 0; i < limit; i++) {
+            bytes32 manager = managers[i];
             if (manager != newKey) {
                 _removeKey(manager, MANAGEMENT_KEY);
                 totalManagers--;
             }
         }
+
         if (totalManagers == 1) {
-            managerReset = address(0);
+            recoveryManager = address(0);
         }
     }
 
@@ -123,7 +127,7 @@ contract Identity is ERC725, ERC735 {
         selfOnly
         returns (bool success)
     {
-        uint256 purpose = key[_oldKey].purpose;
+        uint256 purpose = keys[_oldKey].purpose;
         _addKey(_newKey, purpose, _newType);
         _removeKey(_oldKey, purpose);
         return true;
@@ -170,52 +174,54 @@ contract Identity is ERC725, ERC735 {
         internal 
         returns(bool success)
     {
+        
         Transaction storage trx = txx[_id];
         
-        bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
-        bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
-        
-        uint8 approvalCount;
-        uint256 requiredKeyType;
+        uint256 approvalCount;
+        uint256 requiredKeyPurpose;
         
         Approved(_id, _approve);
 
+Debug1(_key, isKeyType(_key, ACTION_KEY));
+
         if (trx.to == address(this)) {
-            requiredKeyType = MANAGEMENT_KEY;
-            if (keys[managerKeyHash].purpose == MANAGEMENT_KEY) {
-                approvalCount = _calculateApprovals(managerKeyHash, _approve, trx);
-            }
+            require(isKeyType(_key, MANAGEMENT_KEY));
+            bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
+            requiredKeyPurpose = MANAGEMENT_KEY;
+            approvalCount = _calculateApprovals(managerKeyHash, _approve, trx);
         } else {
-            requiredKeyType = ACTION_KEY;
-            if (keys[managerKeyHash].purpose == ACTION_KEY) {
-                approvalCount = _calculateApprovals(actorKeyHash, _approve, trx);
-            }
+            require(isKeyType(_key, ACTION_KEY));
+            bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
+            requiredKeyPurpose = ACTION_KEY;
+            approvalCount = _calculateApprovals(actorKeyHash, _approve, trx);
         }
 
-        if (approvalCount >= minimumApprovalsByKeyType[requiredKeyType]) {
+        if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
             Executed(_id, trx.to, trx.value, trx.data);
             success = trx.to.call.value(trx.value)(trx.data);
         }
     }
-
+event Debug1(bytes32 d, bool b);
     function setMinimumApprovalsByKeyType(
-        uint256 _type,
-        uint8 _minimumApprovals
+        uint256 _purpose,
+        uint256 _minimumApprovals
     ) 
         public 
         selfOnly
     {
+        Debug(_minimumApprovals, keysByPurpose[_purpose].length, 0);
         require(_minimumApprovals > 0);
-        minimumApprovalsByKeyType[_type] = _minimumApprovals;
+        require(_minimumApprovals <= keysByPurpose[_purpose].length);
+        minimumApprovalsByKeyPurpose[_purpose] = _minimumApprovals;
     }
-
+event Debug(uint256 a, uint256 b, uint256 c);
     function _calculateApprovals(
         bytes32 _keyHash,
         bool _approve,
         Transaction storage trx
     )
         private 
-        returns (uint8 approvalCount) 
+        returns (uint256 approvalCount) 
     {
         require(trx.approvals[_keyHash] != _approve);
 
@@ -403,9 +409,6 @@ contract Identity is ERC725, ERC735 {
         }
 
         delete keys[keyHash];
-
-        // MUST only be done by keys of purpose 1, or the identity itself.
-        // TODO If its the identity itself, the approval process will determine its approval.
     }
 
     function getKey(

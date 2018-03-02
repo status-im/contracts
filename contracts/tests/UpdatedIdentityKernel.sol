@@ -5,9 +5,9 @@ import "../identity/IdentityKernel.sol";
 
 contract UpdatedIdentityKernel is IdentityKernel {
 
-    event TestFunctionExecuted(uint8 minApprovalsByManagementKeys);
+    event TestFunctionExecuted(uint256 minApprovalsByManagementKeys);
 
     function test() public {
-        TestFunctionExecuted(minimumApprovalsByKeyType[MANAGEMENT_KEY]);
+        TestFunctionExecuted(minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]);
     }   
 }
