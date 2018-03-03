@@ -166,40 +166,6 @@ contract Identity is ERC725, ERC735 {
         return _approve(bytes32(msg.sender), _id, _approval);
     }
 
-    function _approve(
-        bytes32 _key,
-        uint256 _id,
-        bool _approval
-    ) 
-        private 
-        returns(bool success)
-    {
-        
-        Transaction storage trx = txx[_id];
-        
-        uint256 approvalCount;
-        uint256 requiredKeyPurpose;
-        
-        Approved(_id, _approval);
-
-        if (trx.to == address(this)) {
-            require(isKeyType(_key, MANAGEMENT_KEY));
-            bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
-            requiredKeyPurpose = MANAGEMENT_KEY;
-            approvalCount = _calculateApprovals(managerKeyHash, _approval, trx);
-        } else {
-            require(isKeyType(_key, ACTION_KEY));
-            bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
-            requiredKeyPurpose = ACTION_KEY;
-            approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
-        }
-
-        if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
-            Executed(_id, trx.to, trx.value, trx.data);
-            success = trx.to.call.value(trx.value)(trx.data);
-        }
-    }
-
     function setMinimumApprovalsByKeyType(
         uint256 _purpose,
         uint256 _minimumApprovals
@@ -212,26 +178,7 @@ contract Identity is ERC725, ERC735 {
         minimumApprovalsByKeyPurpose[_purpose] = _minimumApprovals;
     }
     
-    function _calculateApprovals(
-        bytes32 _keyHash,
-        bool _approval,
-        Transaction storage trx
-    )
-        private 
-        returns (uint256 approvalCount) 
-    {
-        require(trx.approvals[_keyHash] != _approval);
-
-        trx.approvals[_keyHash] = _approval;
-        if (_approval) {
-            trx.approverCount++;
-        } else {
-            trx.approverCount--;
-        }
-        
-        return trx.approverCount;
-    }
-
+    
     function addClaim(
         uint256 _claimType,
         uint256 _scheme,
@@ -286,131 +233,6 @@ contract Identity is ERC725, ERC735 {
         delete claims[_claimId];
         claimsTypeArr.length--;
         return true;
-    }
-
-    function _execute(
-        address _to,
-        uint256 _value,
-        bytes _data
-    ) 
-        private
-        returns (uint256 executionId)
-    {
-        executionId = nonce;
-        ExecutionRequested(executionId, _to, _value, _data);
-        txx[executionId] = Transaction(
-                            {
-                                to: _to,
-                                value: _value,
-                                data: _data,
-                                nonce: nonce,
-                                approverCount: 0
-                            });            
-        nonce++;
-    }
-
-    function _includeClaim(
-        bytes32 _claimHash,
-        uint256 _claimType,
-        uint256 _scheme,
-        address _issuer,
-        bytes _signature,
-        bytes _data,
-        string _uri
-    ) 
-        private
-    {
-        claims[_claimHash] = Claim(
-            {
-                claimType: _claimType,
-                scheme: _scheme,
-                issuer: _issuer,
-                signature: _signature,
-                data: _data,
-                uri: _uri
-            }
-        );
-        indexes[_claimHash] = claimsByType[_claimType].length;
-        claimsByType[_claimType].push(_claimHash);
-        ClaimAdded(
-            _claimHash,
-            _claimType,
-            _scheme,
-            _issuer,
-            _signature,
-            _data,
-            _uri
-        );
-    }
-
-    function _modifyClaim(
-        bytes32 _claimHash,
-        uint256 _claimType,
-        uint256 _scheme,
-        address _issuer,
-        bytes _signature,
-        bytes _data,
-        string _uri
-    ) 
-        private
-    {
-        require(msg.sender == _issuer);
-        ClaimChanged(
-            _claimHash,
-            _claimType,
-            _scheme,
-            _issuer,
-            _signature,
-            _data,
-            _uri
-            );
-        claims[_claimHash] = Claim({
-            claimType: _claimType,
-            scheme: _scheme,
-            issuer: _issuer,
-            signature: _signature,
-            data: _data,
-            uri: _uri
-        });
-    }
-
-    function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) internal {
-        bytes32 keyHash = keccak256(_key, _purpose);
-        
-        require(keys[keyHash].purpose == 0);
-        require(
-            _purpose == MANAGEMENT_KEY ||
-            _purpose == ACTION_KEY ||
-            _purpose == CLAIM_SIGNER_KEY ||
-            _purpose == ENCRYPTION_KEY
-            );
-        KeyAdded(_key, _purpose, _type);
-        keys[keyHash] = Key(_purpose, _type, _key);
-        indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
-    }
-
-    function _removeKey(bytes32 _key, uint256 _purpose) internal {
-        
-        bytes32 keyHash = keccak256(_key, _purpose);
-        Key storage myKey = keys[keyHash];
-        KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
-        
-        uint index = indexes[keyHash];
-        delete indexes[keyHash];
-        bytes32 replacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
-        keysByPurpose[_purpose][index] = replacer;
-        indexes[keccak256(replacer, _purpose)] = index;
-        keysByPurpose[_purpose].length--;
-
-        if (_purpose == MANAGEMENT_KEY) {
-            require(
-                keysByPurpose[MANAGEMENT_KEY].length >= 1 && 
-                keysByPurpose[MANAGEMENT_KEY].length >= minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]
-            );
-
-        }
-
-        delete keys[keyHash];
     }
 
     function getKey(
@@ -567,6 +389,188 @@ contract Identity is ERC725, ERC735 {
     function () public payable {
 
     }
+
+    function _execute(
+        address _to,
+        uint256 _value,
+        bytes _data
+    ) 
+        private
+        returns (uint256 executionId)
+    {
+        executionId = nonce;
+        ExecutionRequested(executionId, _to, _value, _data);
+        txx[executionId] = Transaction(
+                            {
+                                to: _to,
+                                value: _value,
+                                data: _data,
+                                nonce: nonce,
+                                approverCount: 0
+                            });            
+        nonce++;
+    }
+    
+    function _approve(
+        bytes32 _key,
+        uint256 _id,
+        bool _approval
+    ) 
+        private 
+        returns(bool success)
+    {
+        
+        Transaction storage trx = txx[_id];
+        
+        uint256 approvalCount;
+        uint256 requiredKeyPurpose;
+        
+        Approved(_id, _approval);
+
+        if (trx.to == address(this)) {
+            require(isKeyType(_key, MANAGEMENT_KEY));
+            bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
+            requiredKeyPurpose = MANAGEMENT_KEY;
+            approvalCount = _calculateApprovals(managerKeyHash, _approval, trx);
+        } else {
+            require(isKeyType(_key, ACTION_KEY));
+            bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
+            requiredKeyPurpose = ACTION_KEY;
+            approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
+        }
+
+        if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
+            Executed(_id, trx.to, trx.value, trx.data);
+            success = trx.to.call.value(trx.value)(trx.data);
+        }
+    }
+
+    function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) private {
+        bytes32 keyHash = keccak256(_key, _purpose);
+        
+        require(keys[keyHash].purpose == 0);
+        require(
+            _purpose == MANAGEMENT_KEY ||
+            _purpose == ACTION_KEY ||
+            _purpose == CLAIM_SIGNER_KEY ||
+            _purpose == ENCRYPTION_KEY
+            );
+        KeyAdded(_key, _purpose, _type);
+        keys[keyHash] = Key(_purpose, _type, _key);
+        indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
+    }
+
+    function _removeKey(bytes32 _key, uint256 _purpose) private {
+        
+        bytes32 keyHash = keccak256(_key, _purpose);
+        Key storage myKey = keys[keyHash];
+        KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
+        
+        uint index = indexes[keyHash];
+        delete indexes[keyHash];
+        bytes32 replacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
+        keysByPurpose[_purpose][index] = replacer;
+        indexes[keccak256(replacer, _purpose)] = index;
+        keysByPurpose[_purpose].length--;
+
+        if (_purpose == MANAGEMENT_KEY) {
+            require(
+                keysByPurpose[MANAGEMENT_KEY].length >= 1 && 
+                keysByPurpose[MANAGEMENT_KEY].length >= minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]
+            );
+
+        }
+
+        delete keys[keyHash];
+    }
+
+    function _calculateApprovals(
+        bytes32 _keyHash,
+        bool _approval,
+        Transaction storage trx
+    )
+        private 
+        returns (uint256 approvalCount) 
+    {
+        require(trx.approvals[_keyHash] != _approval);
+
+        trx.approvals[_keyHash] = _approval;
+        if (_approval) {
+            trx.approverCount++;
+        } else {
+            trx.approverCount--;
+        }
+        
+        return trx.approverCount;
+    }
+
+    
+    function _includeClaim(
+        bytes32 _claimHash,
+        uint256 _claimType,
+        uint256 _scheme,
+        address _issuer,
+        bytes _signature,
+        bytes _data,
+        string _uri
+    ) 
+        private
+    {
+        claims[_claimHash] = Claim(
+            {
+                claimType: _claimType,
+                scheme: _scheme,
+                issuer: _issuer,
+                signature: _signature,
+                data: _data,
+                uri: _uri
+            }
+        );
+        indexes[_claimHash] = claimsByType[_claimType].length;
+        claimsByType[_claimType].push(_claimHash);
+        ClaimAdded(
+            _claimHash,
+            _claimType,
+            _scheme,
+            _issuer,
+            _signature,
+            _data,
+            _uri
+        );
+    }
+
+
+    function _modifyClaim(
+        bytes32 _claimHash,
+        uint256 _claimType,
+        uint256 _scheme,
+        address _issuer,
+        bytes _signature,
+        bytes _data,
+        string _uri
+    ) 
+        private
+    {
+        require(msg.sender == _issuer);
+        ClaimChanged(
+            _claimHash,
+            _claimType,
+            _scheme,
+            _issuer,
+            _signature,
+            _data,
+            _uri
+            );
+        claims[_claimHash] = Claim({
+            claimType: _claimType,
+            scheme: _scheme,
+            issuer: _issuer,
+            signature: _signature,
+            data: _data,
+            uri: _uri
+        });
+    }
+
 
 }
 
