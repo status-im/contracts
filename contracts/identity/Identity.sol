@@ -54,12 +54,28 @@ contract Identity is ERC725, ERC735 {
     }
     
     modifier managerOrActor(bytes32 _key) {
-
-
         require(
             isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
             isKeyType(bytes32(msg.sender), ACTION_KEY)
         );
+        _;
+    }
+    
+    modifier validECDSAKey (
+        bytes32 _key, 
+        bytes32 _signHash, 
+        uint8 _v, 
+        bytes32 _r,
+        bytes32 _s
+    ) 
+    {
+        require(address(_key) == ecrecover(
+            keccak256("\x19Ethereum Signed Message:\n32", _signHash),
+            _v,
+            _r,
+            _s
+            ));
+        require(keys[_key].purpose != 0);
         _;
     }
 
@@ -69,9 +85,16 @@ contract Identity is ERC725, ERC735 {
         minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = 1;
         minimumApprovalsByKeyPurpose[ACTION_KEY] = 1;
     }
-    
+
+    function () 
+        public 
+        payable 
+    {
+
+    }
+
     function managerReset(address _newKey) 
-        external 
+        public 
         recoveryOnly
     {
         recoveryManager = _newKey;
@@ -213,7 +236,10 @@ contract Identity is ERC725, ERC735 {
         }
     }
     
-    function removeClaim(bytes32 _claimId) public returns (bool success) {
+    function removeClaim(bytes32 _claimId) 
+        public 
+        returns (bool success) 
+    {
         Claim memory c = claims[_claimId];
         
         require(
@@ -303,7 +329,14 @@ contract Identity is ERC725, ERC735 {
     function getClaim(bytes32 _claimId)
         public
         constant 
-        returns(uint256 claimType, uint256 scheme, address issuer, bytes signature, bytes data, string uri) 
+        returns(
+            uint256 claimType,
+            uint256 scheme,
+            address issuer,
+            bytes signature,
+            bytes data,
+            string uri
+            ) 
     {
         Claim memory _claim = claims[_claimId];
         return (_claim.claimType, _claim.scheme, _claim.issuer, _claim.signature, _claim.data, _claim.uri);
@@ -315,19 +348,6 @@ contract Identity is ERC725, ERC735 {
         returns(bytes32[] claimIds)
     {
         return claimsByType[_claimType];
-    }
-
-    modifier validECDSAKey (
-        bytes32 _key, 
-        bytes32 _signHash, 
-        uint8 _v, 
-        bytes32 _r,
-        bytes32 _s
-    ) 
-    {
-        require(address(_key) == ecrecover(keccak256("\x19Ethereum Signed Message:\n32", _signHash), _v, _r, _s));
-        require(keys[_key].purpose != 0);
-        _;
     }
 
     function approveECDSA(
@@ -368,9 +388,21 @@ contract Identity is ERC725, ERC735 {
         bytes32 _s
     ) 
         public 
-        validECDSAKey(_key, keccak256(address(this), 
-                      bytes4(keccak256("execute(address,uint256,bytes)")), 
-                      _to, _value, _data, _nonce), _v, _r, _s)
+        validECDSAKey(
+            _key,
+            keccak256(
+                address(this), 
+                bytes4(
+                    keccak256("execute(address,uint256,bytes)")), 
+                    _to,
+                    _value,
+                    _data,
+                    _nonce
+                    ),
+                _v,
+                _r,
+                _s
+                )
         managerOrActor(_key)
         returns (uint256 executionId)
     {
@@ -384,10 +416,6 @@ contract Identity is ERC725, ERC735 {
     {
         require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
-    }
-
-    function () public payable {
-
     }
 
     function _execute(
@@ -445,7 +473,13 @@ contract Identity is ERC725, ERC735 {
         }
     }
 
-    function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) private {
+    function _addKey(
+        bytes32 _key,
+        uint256 _purpose,
+        uint256 _type
+    ) 
+        private 
+    {
         bytes32 keyHash = keccak256(_key, _purpose);
         
         require(keys[keyHash].purpose == 0);
@@ -460,12 +494,16 @@ contract Identity is ERC725, ERC735 {
         indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
     }
 
-    function _removeKey(bytes32 _key, uint256 _purpose) private {
-        
+    function _removeKey(
+        bytes32 _key,
+        uint256 _purpose
+    )
+        private 
+    {
         bytes32 keyHash = keccak256(_key, _purpose);
         Key storage myKey = keys[keyHash];
         KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
-        
+     
         uint index = indexes[keyHash];
         delete indexes[keyHash];
         bytes32 replacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
