@@ -478,7 +478,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _purpose,
         uint256 _type
     ) 
-        private 
+        internal 
     {
         bytes32 keyHash = keccak256(_key, _purpose);
         
