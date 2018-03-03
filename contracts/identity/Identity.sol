@@ -80,11 +80,8 @@ contract Identity is ERC725, ERC735 {
     }
 
     function Identity() public {
-        _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 0);
-
-        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = 1;
-        minimumApprovalsByKeyPurpose[ACTION_KEY] = 1;
-    }
+        _constructIdentity(msg.sender);
+    }    
 
     function () 
         public 
@@ -417,6 +414,16 @@ contract Identity is ERC725, ERC735 {
         require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
     }
+    
+    function _constructIdentity(address _manager)
+        internal 
+    {
+        require(minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] == 0);
+        _addKey(bytes32(_manager), MANAGEMENT_KEY, 0);
+
+        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = 1;
+        minimumApprovalsByKeyPurpose[ACTION_KEY] = 1;
+    }
 
     function _execute(
         address _to,
@@ -478,7 +485,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _purpose,
         uint256 _type
     ) 
-        internal 
+        private
     {
         bytes32 keyHash = keccak256(_key, _purpose);
         
