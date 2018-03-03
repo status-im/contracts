@@ -18,7 +18,7 @@ contract EmojiCheck is Controlled {
         external 
         onlyController 
     {
-        ranges.push(Range(_start,_end));
+        ranges.push(Range(_start, _end));
     }
 
     function updateEmojiRange(
@@ -30,7 +30,7 @@ contract EmojiCheck is Controlled {
         onlyController 
     {
         require(_rangePos < ranges.length);
-        ranges[_rangePos] = Range(_start,_end);
+        ranges[_rangePos] = Range(_start, _end);
     }
 
     function isInEmojiRange(
@@ -56,8 +56,34 @@ contract EmojiCheck is Controlled {
     {
         uint len = _s.length;
         require(_rangePos.length == len);
-        for (uint i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; i++) {
             if (!isInEmojiRange(_s[i], _rangePos[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function isEmoji(uint32 _char) public constant returns(bool) {
+        uint len = ranges.length;
+        for (uint256 i = 0; i < len; i++) {
+            if (isInEmojiRange(_char, i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function isCharArrayEmojiOnly(
+        uint32[] _s
+    )
+        public
+        constant
+        returns(bool)
+    {
+        uint len = _s.length;
+        for (uint256 i = 0; i < len; i++) {
+            if (!isEmoji(_s[i])) {
                 return false;
             }
         }
