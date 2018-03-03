@@ -134,7 +134,7 @@ contract FriendsRecovery {
         require(_friendList.length >= threshold);
         require(keccak256(identity, _revealedSecret) == secret);
         revealed[_newSecret] = true;
-        bytes32 _secretHash = keccak256(identity, _revealedSecret, _dest, _data);
+        bytes32 _secretHash = keccak256(identity, _revealedSecret, _dest, _data, _newSecret, _newFriendsHashes);
         
         for (uint256 i = 0; i < threshold; i++) {
             address friend = _friendList[i];
