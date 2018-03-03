@@ -158,20 +158,20 @@ contract Identity is ERC725, ERC735 {
         approve(executionId, true);
     }
 
-    function approve(uint256 _id, bool _approve) 
+    function approve(uint256 _id, bool _approval) 
         public 
         managerOrActor(bytes32(msg.sender))
         returns (bool success)
     {   
-        return approveExecution(bytes32(msg.sender), _id, _approve);
+        return _approve(bytes32(msg.sender), _id, _approval);
     }
 
-    function approveExecution(
+    function _approve(
         bytes32 _key,
         uint256 _id,
-        bool _approve
+        bool _approval
     ) 
-        internal 
+        private 
         returns(bool success)
     {
         
@@ -180,24 +180,23 @@ contract Identity is ERC725, ERC735 {
         uint256 approvalCount;
         uint256 requiredKeyPurpose;
         
-        Approved(_id, _approve);
+        Approved(_id, _approval);
 
         if (trx.to == address(this)) {
             require(isKeyType(_key, MANAGEMENT_KEY));
             bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
             requiredKeyPurpose = MANAGEMENT_KEY;
-            approvalCount = _calculateApprovals(managerKeyHash, _approve, trx);
+            approvalCount = _calculateApprovals(managerKeyHash, _approval, trx);
         } else {
             require(isKeyType(_key, ACTION_KEY));
             bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
             requiredKeyPurpose = ACTION_KEY;
-            approvalCount = _calculateApprovals(actorKeyHash, _approve, trx);
+            approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
         }
 
         if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
             Executed(_id, trx.to, trx.value, trx.data);
             success = trx.to.call.value(trx.value)(trx.data);
-            Debug1(success);
         }
     }
 
@@ -215,16 +214,16 @@ contract Identity is ERC725, ERC735 {
     
     function _calculateApprovals(
         bytes32 _keyHash,
-        bool _approve,
+        bool _approval,
         Transaction storage trx
     )
         private 
         returns (uint256 approvalCount) 
     {
-        require(trx.approvals[_keyHash] != _approve);
+        require(trx.approvals[_keyHash] != _approval);
 
-        trx.approvals[_keyHash] = _approve;
-        if (_approve) {
+        trx.approvals[_keyHash] = _approval;
+        if (_approval) {
             trx.approverCount++;
         } else {
             trx.approverCount--;
@@ -414,8 +413,6 @@ contract Identity is ERC725, ERC735 {
         delete keys[keyHash];
     }
 
-    event Debug(uint256 a, uint256 b);
-
     function getKey(
         bytes32 _key,
         uint256 _purpose
@@ -476,7 +473,7 @@ contract Identity is ERC725, ERC735 {
     function getKeysByPurpose(uint256 _purpose)
         public
         constant
-        returns(bytes32[] keys)
+        returns(bytes32[])
     {
         return keysByPurpose[_purpose];
     }
@@ -498,28 +495,44 @@ contract Identity is ERC725, ERC735 {
         return claimsByType[_claimType];
     }
 
-    modifier validECDSAKey(
+    modifier validECDSAKey (
         bytes32 _key, 
-        bytes32 signHash, 
-        uint8 v, bytes32 r, bytes32 s) {
-        require(address(_key) == ecrecover(keccak256("\x19Ethereum Signed Message:\n32", signHash), v, r, s));
+        bytes32 _signHash, 
+        uint8 _v, 
+        bytes32 _r,
+        bytes32 _s
+    ) 
+    {
+        require(address(_key) == ecrecover(keccak256("\x19Ethereum Signed Message:\n32", _signHash), _v, _r, _s));
         require(keys[_key].purpose != 0);
         _;
     }
 
-    function approveECDSA(uint256 _id, bool _approve,
+    function approveECDSA(
+        uint256 _id,
+        bool _approval,
         bytes32 _key, 
-        uint8 v, 
-        bytes32 r, 
-        bytes32 s) 
+        uint8 _v, 
+        bytes32 _r, 
+        bytes32 _s
+    ) 
         public 
-        validECDSAKey(_key, keccak256(address(this), 
-                      bytes4(keccak256("approve(uint256,bool)")), _id, _approve),
-                      v, r, s)
+        validECDSAKey(
+            _key,
+            keccak256(
+                address(this),
+                bytes4(keccak256("approve(uint256,bool)")),
+                _id,
+                _approval
+                ),
+            _v,
+            _r,
+            _s
+        )
         managerOrActor(_key)
         returns (bool success)
     {   
-        return approveExecution(_key, _id, _approve);
+        return _approve(_key, _id, _approval);
     }
     
     function executeECDSA(
@@ -528,19 +541,19 @@ contract Identity is ERC725, ERC735 {
         bytes _data,
         uint _nonce,
         bytes32 _key, 
-        uint8 v, 
-        bytes32 r, 
-        bytes32 s
+        uint8 _v, 
+        bytes32 _r, 
+        bytes32 _s
     ) 
         public 
         validECDSAKey(_key, keccak256(address(this), 
                       bytes4(keccak256("execute(address,uint256,bytes)")), 
-                      _to, _value, _data, _nonce), v, r, s)
+                      _to, _value, _data, _nonce), _v, _r, _s)
         managerOrActor(_key)
         returns (uint256 executionId)
     {
         executionId = _execute(_to, _value, _data);
-        approveExecution(_key, executionId, true);
+        _approve(_key, executionId, true);
     }
 
     function setupRecovery(address _recoveryContract) 
