@@ -51,7 +51,7 @@ contract EmojiCheck is Controlled {
         uint256[] _rangePos
     )
         public
-        constant
+        view
         returns(bool)
     {
         uint len = _s.length;
@@ -64,7 +64,25 @@ contract EmojiCheck is Controlled {
         return true;
     }
 
-    function isEmoji(uint32 _char) public constant returns(bool) {
+    function findEmojiRangePosition(uint32 _char) 
+        public 
+        view 
+        returns(uint256 rangePos)
+    {
+        uint len = ranges.length;
+        for (uint256 i = 0; i < len; i++) {
+            if (isInEmojiRange(_char, i)) {
+                return i;
+            }   
+        }
+        revert();
+    }
+
+    function isEmoji(uint32 _char) 
+        public 
+        view 
+        returns(bool) 
+    {
         uint len = ranges.length;
         for (uint256 i = 0; i < len; i++) {
             if (isInEmojiRange(_char, i)) {
@@ -78,7 +96,7 @@ contract EmojiCheck is Controlled {
         uint32[] _s
     )
         public
-        constant
+        view
         returns(bool)
     {
         uint len = _s.length;
