@@ -1,9 +1,9 @@
 pragma solidity ^0.4.17;
 
-import "../deploy/InstanceStorage.sol";
+import "../deploy/DelayedUpdatableInstanceStorage.sol";
 import "./Identity.sol";
 
-contract IdentityKernel is InstanceStorage, Identity {
+contract IdentityKernel is DelayedUpdatableInstanceStorage, Identity {
 
     function initIdentity(address _caller) external {
         _constructIdentity(_caller);
