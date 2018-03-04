@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
 
 import "../deploy/Factory.sol";
-import "../deploy/UpdatableInstance.sol";
+import "../deploy/DelayedUpdatableInstance.sol";
 import "./IdentityKernel.sol";
 
 
@@ -24,7 +24,7 @@ contract IdentityFactory is Factory {
     function createIdentity(address _idOwner) 
         public 
     {
-        IdentityKernel instance = IdentityKernel(new UpdatableInstance(address(latestKernel)));
+        IdentityKernel instance = IdentityKernel(new DelayedUpdatableInstance(address(latestKernel)));
         instance.initIdentity(_idOwner);
         IdentityCreated(address(instance));
     }
