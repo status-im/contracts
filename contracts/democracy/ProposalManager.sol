@@ -31,24 +31,18 @@ contract ProposalManager is Controlled {
         uint voteBlockEnd;
         uint vetoBlockEnd;
 
-        VoteTicket[] votes;
-        mapping(address => uint) voteIndex;
+        mapping(address => Vote) voteMap;
 
-        uint tabulationPosition;
-        bool tabulated;
-        mapping(uint8 => uint) results;
+        mapping(address => bool) tabulated;
+        
+        mapping(uint8 => uint256) results;
         
         bool approved;
         bool executed;
     }
-
-
-    struct VoteTicket {
-        address voter;
-        Vote vote;
-    }
     
     enum Vote { 
+        Null,
         Reject, 
         Approve,
         Veto  
@@ -88,6 +82,7 @@ contract ProposalManager is Controlled {
     }
 
     function execute(uint id) public {
+        //require quorum reached
         Proposal memory p = proposals[id];
         proposals[id].executed = true;
         ProposalExecutor(controller).executeProposal(p.topic, p.value, p.data);
@@ -101,47 +96,28 @@ contract ProposalManager is Controlled {
         } else {
             require(block.number <= proposal.voteBlockEnd);
         }
-        uint votePos = proposal.voteIndex[msg.sender];
-        if (votePos == 0) {
-            votePos = proposal.votes.length;
-        } else {
-            votePos = votePos - 1;
-        }
-        VoteTicket storage ticket = proposal.votes[votePos];
-        assert (ticket.voter == 0x0 || ticket.voter == msg.sender);
-        ticket.voter = msg.sender;
-        ticket.vote = _vote;
-        proposal.voteIndex[msg.sender] = votePos + 1;
+
+        proposal.voteMap[msg.sender] = _vote;
+
     }
 
-   function tabulate(uint _proposal, uint loopLimit) public {
+   function tabulate(uint _proposal, address _delegator) public {
         Proposal storage proposal = proposals[_proposal];
         require(block.number > proposal.vetoBlockEnd);
-        require(!proposal.tabulated);
-        
-        uint totalVoted = proposal.votes.length;
-        if (loopLimit == 0) {
-            loopLimit = totalVoted;    
-        }
-        require (loopLimit <= totalVoted);
-        require (loopLimit > proposal.tabulationPosition);
-        
+
         DelegationProxy voteDelegation;
         DelegationProxy vetoDelegation;
         (voteDelegation, vetoDelegation) = trustNet.getTopic(proposal.topic);
         
-        for (uint i = proposal.tabulationPosition; i < loopLimit; i++) {
-            VoteTicket memory _vote = proposal.votes[i];
-            if (_vote.vote == Vote.Reject || _vote.vote == Vote.Approve) {
-                proposal.results[uint8(_vote.vote)] += voteDelegation.influenceOfAt(_vote.voter, SNT, proposal.voteBlockEnd);
-            } else {
-                proposal.results[uint8(_vote.vote)] += vetoDelegation.influenceOfAt(_vote.voter, SNT, proposal.vetoBlockEnd);
-            }
+        Vote _vote = proposal.voteMap[vetoDelegation.delegationOfAt(_delegator, proposal.vetoBlockEnd)];
+        if (_vote != Vote.Veto) {
+            _vote = proposal.voteMap[voteDelegation.delegationOfAt(_delegator, proposal.voteBlockEnd)];
         }
-        
-        proposal.tabulationPosition = i;
-        if (proposal.tabulationPosition == totalVoted) {
-            proposal.tabulated = true;        
+
+        if (_vote == Vote.Reject || _vote == Vote.Approve) {
+            proposal.results[uint8(_vote)] += MiniMeToken(SNT).balanceOfAt(_delegator, proposal.voteBlockEnd);
+        } else {
+            proposal.results[uint8(_vote)] += MiniMeToken(SNT).balanceOfAt(_delegator, proposal.vetoBlockEnd);
         }
    }
 
