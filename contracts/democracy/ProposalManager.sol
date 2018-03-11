@@ -82,8 +82,8 @@ contract ProposalManager is Controlled {
     }
 
     function execute(uint id) public {
-        //require quorum reached
         Proposal memory p = proposals[id];
+        require(p.approved == true);
         proposals[id].executed = true;
         ProposalExecutor(controller).executeProposal(p.topic, p.value, p.data);
     }
@@ -119,6 +119,17 @@ contract ProposalManager is Controlled {
         } else {
             proposal.results[uint8(_vote)] += MiniMeToken(SNT).balanceOfAt(_delegator, proposal.vetoBlockEnd);
         }
-   }
 
+   }
+   
+   function approve(uint _proposal) public {
+       Proposal storage proposal = proposals[_proposal];
+       uint256 totalTokens = MiniMeToken(SNT).totalSupplyAt(proposal.vetoBlockEnd);
+       uint256 approved = proposal.results[uint8(Vote.Approve)];
+       uint256 veto = proposal.results[uint8(Vote.Veto)];
+       require (approved > veto);
+       if (approved > (totalTokens / 2)) {
+           proposal.approved = true;
+       }
+   }
 }
