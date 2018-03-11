@@ -24,3 +24,7 @@ ENV/
 .coverage
 .cache/
 
+# other
+.vs/
+bin/
+node_modules/
