@@ -1,0 +1,40 @@
+{
+  "0x100a84ae61fc01463b8dd1d14c0552bc63e449bf875a3c821db1472a7f2ea7f5": {
+    "contracts": {
+      "0xc4f0f28310cc8957fd3040ef4fb2fc21cc669f42173dd52ebcf16f7e7d364887": {
+        "name": "UpdatableInstance",
+        "address": "0x1aeddac81d1670bf046a13ddeb61bda746ca99fc"
+      },
+      "0x7c4d636944e661891368c8a5836d7b8e163ca1cefca59eb7da2f26d1bada6451": {
+        "name": "Migrations",
+        "address": "0x973814c1af065a48082ab69cde00000882b6715a"
+      },
+      "0xf0214e1adbe60c4b7c687a05c2b28c790146192ae0ae57222a3dae6dda0b50ca": {
+        "name": "DelayedUpdatableInstance",
+        "address": "0xafb0f14cc14502a2b75d41b83cdde6d1ebf90098"
+      },
+      "0x6bf4e874fae6b206fecaf8042e030df5012e5adeeb3ed6666cae1c46fed7d95d": {
+        "name": "DelayedUpdatableInstanceStorage",
+        "address": "0x8910be62976bd3ae989cbe71f470a47785f6bec9"
+      }
+    },
+    "name": "development"
+  },
+  "0x15146ef43527d2e638b33afe4e2a79d9517f03122fa274f8071a4efcdb4e4f37": {
+    "contracts": {
+      "0xe2449e8d9fb350b044c6962ff788aa27649288ec4602ffd7e7f16bcdab049a65": {
+        "name": "Identity",
+        "address": "0x66439ce4b7fa531a575ef886db03a49d77707bd8"
+      },
+      "0x4034da20d6fb8542dfedc48712f00a0a1f88652088b0a94c10699170f4e4128a": {
+        "name": "IdentityFactory",
+        "address": "0xf2588872abe042ffe77dfa6ebe46056cfb17a499"
+      },
+      "0xc2eb75d4e8e9455a4838329bcc41d43e84e9682a266e828c34e825cacca57b02": {
+        "name": "IdentityKernel",
+        "address": "0x2fc33d566dbdc63b8d5a7d8a1bc8e2b97a1a91ea"
+      }
+    },
+    "name": "development"
+  }
+}
