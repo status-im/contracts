@@ -1,7 +1,7 @@
 
 const assert = require('assert');
 const Embark = require('embark');
-const EmbarkSpec = Embark.initTests();
+let EmbarkSpec = Embark.initTests();
 const web3 = EmbarkSpec.web3;
 const TestUtils = require("../utils/testUtils.js");
 const web3EthAbi = require("web3-eth-abi");
@@ -15,6 +15,8 @@ describe("Identity", function() {
     beforeEach( function(done) {
         this.timeout(0);
         
+        EmbarkSpec = Embark.initTests();
+
         EmbarkSpec.deployAll({ "Identity": {}}, (_accounts) => { 
             accounts = _accounts;  
             done();          
