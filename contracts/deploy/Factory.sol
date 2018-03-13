@@ -31,6 +31,18 @@ contract Factory is Controlled {
         _setKernel(_kernel, _infohash);
     }
 
+    function getVersion(uint256 index) public view
+        returns(uint256 blockNumber,
+                uint256 timestamp,
+                address kernel,
+                bytes infohash)
+    {
+        return (versionLog[index].blockNumber, 
+                versionLog[index].timestamp, 
+                versionLog[index].kernel, 
+                versionLog[index].infohash);
+    }
+
     function _setKernel(address _kernel, bytes _infohash) 
         internal
     {
