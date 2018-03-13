@@ -65,18 +65,35 @@ contract('IdentityFactory', function(accounts) {
             let tx1 = await identity.execute(
                 identity.address, 
                 0, 
-                idUtils.encode.updateUpdatableInstance(updatedIdentityKernel.address), 
+                idUtils.encode.updateRequestUpdatableInstance(updatedIdentityKernel.address), 
                 {from: accounts[0]} 
             );
+
             assert.strictEqual(tx1.logs[tx1.logs.length - 1].event, "Executed");
+
+            // Updating EVM timestamp to test delay
+            const plus31days = 60 * 60 * 24 * 31;
+
+            web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [plus31days], id: 0});
+            web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0})
+
+            // Confirm update
+            let tx2 = await identity.execute(
+                identity.address, 
+                0, 
+                idUtils.encode.updateConfirmUpdatableInstance(updatedIdentityKernel.address), 
+                {from: accounts[0]} 
+            );
+
+            assert.strictEqual(tx2.logs[tx2.logs.length - 1].event, "Executed");
 
             // Calling function available in updated identity kernel
             let updatedIdentity1 = await UpdatedIdentityKernel.at(identity.address, {from: accounts[0]})
-            let tx2 = await updatedIdentity1.test({from: accounts[0]});
+            let tx3 = await updatedIdentity1.test({from: accounts[0]});
 
-            assert.strictEqual(tx2.logs[tx2.logs.length - 1].event, "TestFunctionExecuted");
+            assert.strictEqual(tx3.logs[tx3.logs.length - 1].event, "TestFunctionExecuted");
             assert.equal(
-                tx2.logs[tx2.logs.length - 1].args.minApprovalsByManagementKeys.toString(10),
+                tx3.logs[tx3.logs.length - 1].args.minApprovalsByManagementKeys.toString(10),
                 1,
                 identity.address + " wasn't updated to last version");
         })
