@@ -1,3 +1,6 @@
+/*
+COMMENTED TEMPORARLY WHILE PROJECT IS MIGRATED TO EMBARK - @rramos
+
 const TestUtils = require("../utils/testUtils.js")
 const idUtils = require("../utils/identityUtils");
 
@@ -140,3 +143,5 @@ contract('FriendsRecovery', function(accounts) {
     
 
 });
+
+*/

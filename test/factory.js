@@ -1,3 +1,7 @@
+/*
+COMMENTED TEMPORARLY WHILE PROJECT IS MIGRATED TO EMBARK - @rramos
+
+
 const TestUtils = require("../utils/testUtils.js")
 const idUtils = require("../utils/identityUtils.js")
 const web3EthAbi = require("web3-eth-abi");
@@ -83,3 +87,5 @@ contract('IdentityFactory', function(accounts) {
     });
 
 });
+
+*/
