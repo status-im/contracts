@@ -86,14 +86,25 @@ Identity management is limited to the addition, removal and setting of the minim
 Lorem Ipsum
 
 ### Constants / View functions
-Lorem Ipsum
+The following functions are provided to access information about an identity:
+- `getKey(bytes32 _key, uint256 _purpose)`. Returns the key type, purpose and key for a given key-purpose pair
+- `isKeyPurpose(bytes32 _key, uint256 _purpose)` returns if a given key-purpose exists, and if it's purpose is actually what was specified.
+- `getKeyPurpose(bytes32 _key)` returns an array of purposes for a given key.
+- `function getKeysByPurpose(uint256 _purpose)` returns an array of keys for a given purpose.
+- `getClaim(bytes32 _claimId)` returns the claim information registered for a given claim Id.
+- `getClaimIdsByType(uint256 _claimType)` returns an array of claim Ids for a given claim type.
 
 ### Adding new functionality to identitities
-New versions of identities should extend from `IdentityKernel` and need to be registered in the `IdentityFactory`. This is done by creating a new instance of the new contract which inherits from `IdentityKernel`, and then calling the `setKernel` function of the `IdentityFactory` specifiying the address of the updated identity kernel, and an `bytes32` info hash with the description of the new version.
+New versions of identities should extend from `IdentityKernel` and need to be registered in the `IdentityFactory`. This is done by creating a new instance of the new contract which inherits from `IdentityKernel`, and then calling the `setKernel` function of the `IdentityFactory` specifiying the address of the updated identity kernel, and a `bytes32` info hash with the description of the new version.
 Once updated, a `NewKernel` event is triggered.
 
 ### Upgrade an `IdentityKernel` instance 
-Lorem Ipsum
+When an identity instance needs to be upgraded, we can use the execute/approve process to upgrade it to an specific version. The payload for the execute function needs to be a call to the function
+`updateUpdatableInstance` with the address of the new identity kernel. 
+
+Once this execution is approved, the update process is completed and a InstanceUpdated event is triggered.
+
+Kernel addresses could be obtained using the `getVersion` function of the `IdentityFactory`
 
 ### Identity Recovery
 Lorem Ipsum
