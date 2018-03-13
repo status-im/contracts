@@ -102,8 +102,8 @@ Once updated, a `NewKernel` event is triggered.
 
 ### Upgrade an `IdentityKernel` instance 
 When an identity instance needs to be upgraded, we can use the execute/approve process to upgrade it to an specific version. This upgrade process requires using `execute` to call two functions
-- `updateRequestUpdatableInstance(address _newKernel)`. This will generate a pending request for upgrading an instance 30 days later and trigger an UpdateRequested event. 
-- `updateConfirmUpdatableInstance(address _newKernel)`. After 30 days pass, this function needs to be invoked to confirm the update process. Once the update process is completed a UpdateConfirmed event is triggered.
+- `updateRequestUpdatableInstance(address _newKernel)`. This will generate a pending request for upgrading an instance `30 days` later and trigger an UpdateRequested event. 
+- `updateConfirmUpdatableInstance(address _newKernel)`. After `30 days` pass, this function needs to be invoked to confirm the update process. Once the update process is completed a UpdateConfirmed event is triggered.
 - An request for update can be cancelled if it hasn't been approved yet. This is done using the function `updateCancelUpdatableInstance()` with the same execute/approve process 
 
 Kernel addresses could be obtained using the `getVersion` function of the `IdentityFactory`
