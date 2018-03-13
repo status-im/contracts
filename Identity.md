@@ -7,7 +7,9 @@
 - - [Identity Creation](#identity-creation)
 - - [Executions and Approvals](#executions-and-approvals)
 - - [Management Activities](#management-activities)
+- - [Constants / View functions](#constants--view-functions)
 - - [Adding new functionality to identitities](#adding-new-functionality-to-identitities)
+- - [Upgrade an `IdentityKernel` instance](#upgrade-an-identitykernel-instance)
 
 ## Summary
 This is a proposed proof of concept for the implementation of interfaces [ERC-725](https://github.com/ethereum/EIPs/issues/725) and [ERC735](https://github.com/ethereum/EIPs/issues/725), providing the following functionality:
@@ -99,10 +101,10 @@ New versions of identities should extend from `IdentityKernel` and need to be re
 Once updated, a `NewKernel` event is triggered.
 
 ### Upgrade an `IdentityKernel` instance 
-When an identity instance needs to be upgraded, we can use the execute/approve process to upgrade it to an specific version. The payload for the execute function needs to be a call to the function
-`updateUpdatableInstance` with the address of the new identity kernel. 
-
-Once this execution is approved, the update process is completed and a InstanceUpdated event is triggered.
+When an identity instance needs to be upgraded, we can use the execute/approve process to upgrade it to an specific version. This upgrade process requires using `execute` to call two functions
+- `updateRequestUpdatableInstance(address _newKernel)`. This will generate a pending request for upgrading an instance 30 days later and trigger an UpdateRequested event. 
+- `updateConfirmUpdatableInstance(address _newKernel)`. After 30 days pass, this function needs to be invoked to confirm the update process. Once the update process is completed a UpdateConfirmed event is triggered.
+- An request for update can be cancelled if it hasn't been approved yet. This is done using the function `updateCancelUpdatableInstance()` with the same execute/approve process 
 
 Kernel addresses could be obtained using the `getVersion` function of the `IdentityFactory`
 
