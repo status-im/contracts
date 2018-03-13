@@ -103,6 +103,21 @@ const _setupRecovery = function(address){
     }, [address]);
 }
 
+const _managerReset = function(address){
+    if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
+        throw new Error('Address "'+ address +'" is not a valid Ethereum address.');
+
+    return web3EthAbi.encodeFunctionCall({
+        name: 'managerReset',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_newKey'
+        }]
+    }, [address]);
+}
+
+
 const _updateUpdatableInstance = function(address){
     if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
         throw new Error('Address "'+ address +'" is not a valid Ethereum address.');
@@ -167,6 +182,7 @@ module.exports = {
         removeKey: _removeKey,
         setMinimumApprovalsByKeyType: _setMinimumApprovalsByKeyType,
         setupRecovery: _setupRecovery,
+        managerReset: _managerReset,
         updateUpdatableInstance: _updateUpdatableInstance,
         updateRequestUpdatableInstance: _updateRequestUpdatableInstance,
         updateConfirmUpdatableInstance: _updateConfirmUpdatableInstance,
