@@ -15,22 +15,22 @@
     ],
     "gas": "auto",
     "contracts": {
-	"Controlled": { "deploy": false },
-	"DelayedUpdatableInstance": { "deploy": false },
-	"DelayedUpdatableInstanceStorage": { 	"deploy": false },
-	"DelegatedCall": { "deploy": false },
-	"Factory": { "deploy": false },
-	"Instance": { "deploy": false },
-	"InstanceStorage": { "deploy": false },
-	"UpdatableInstance": { "deploy": false },
-	"ERC725": { "deploy": false },
-	"ERC735": { "deploy": false },
-	"FriendsRecovery": { "deploy": false },
-	"TestContract": {  "deploy": false },
-	"UpdatedIdentityKernel": { "deploy": false },
-	"Identity": { "gas": 5000000 },
-	"IdentityFactory": { "gas": 5000000 },
-	"IdentityKernel": { "gas": 5000000 }
+      "Controlled": { "deploy": false },
+      "DelayedUpdatableInstance": { "deploy": false },
+      "DelayedUpdatableInstanceStorage": { 	"deploy": false },
+      "DelegatedCall": { "deploy": false },
+      "Factory": { "deploy": false },
+      "Instance": { "deploy": false },
+      "InstanceStorage": { "deploy": false },
+      "UpdatableInstance": { "deploy": false },
+      "ERC725": { "deploy": false },
+      "ERC735": { "deploy": false },
+      "FriendsRecovery": { "deploy": false },
+      "TestContract": {  "deploy": false },
+      "UpdatedIdentityKernel": { "deploy": false },
+      "Identity": { "gas": 5000000 },
+      "IdentityFactory": { "deploy": false },
+      "IdentityKernel": { "gas": 5000000 }
     }
   }
 }
