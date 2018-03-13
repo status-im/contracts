@@ -5,6 +5,9 @@
 - [Smart Contracts Overview](#smart-contracts-overview)
 - [Tutorials](#tutorials)
 - - [Identity Creation](#identity-creation)
+- - [Executions and Approvals](#executions-and-approvals)
+- - [Management Activities](#management-activities)
+- - [Adding new functionality to identitities](#adding-new-functionality-to-identitities)
 
 ## Summary
 This is a proposed proof of concept for the implementation of interfaces [ERC-725](https://github.com/ethereum/EIPs/issues/725) and [ERC735](https://github.com/ethereum/EIPs/issues/725), providing the following functionality:
@@ -39,7 +42,38 @@ We recommend to not create `Identity` instances directly, but create them throug
 The event `IdentityCreated` is triggered when the new identity is created successfully.
 
 ### Executions and Approvals
+Identities can perform management activities on themselves, as well as performing actions in other contracts. These operations are performed with the `execute()` and `approve()` functions.
 
+`execute(address _to, uint256 _value, bytes _data)` is called when you wish to perform an operation. This function may be called by a management key or by an action key and triggers an `ExecutionRequested` event. Management keys are required when `_to` refers to the identity itself, otherwise, action keys are required.
+
+The `_value` parameters refer to the amount in ether that this transaction will send to the contract/wallet address specified in `_to`. The identity contract should have funds if the value is greater than `0`.
+
+`_data` refers to the byte encoding of the operations and parameters to be executed.  `web3.eth.abi.encodeFunctionCall` is useful to generate the bytecode to be sent in this function. Here's an example on how to use it to call the `addKey` function of the identity contract: 
+
+```
+const web3EthAbi = require("web3-eth-abi");
+let data = web3EthAbi.encodeFunctionCall({
+    name: 'addKey',
+    type: 'function',
+    inputs: [{
+        type: 'bytes32',
+        name: '_key'
+    },{
+        type: 'uint256',
+        name: '_purpose'
+    },{
+        type: 'uint256',
+        name: '_type'
+    }]
+}, ["0x1234567", 1, 1]);
+
+let receipt = await identityContractInstance.execute(identityContractInstance.address, 0, data).send({from: accounts[0]});
+```
+A javascript utils library is provided in `utils/identityUtils.js` which can be used to generate the payloads used in the `_data` parameter of the `execute` function
+
+Once the `execute` function is executed, if the minimum required approvals by key purpose is one, the transaction is executed immediatly (Triggering the `Approved` and `Executed` events).
+
+In case the minimum required approvals are greater than 1, `approve(uint256 _id, bool _approval)` needs to be called by N management or action keys depending on the operation to perform, each call triggering an `Approved` event. Once the minimum approvals required is reached, the transaction will be executed immediatly. This `approve` function requires an transaction execution id, which can be obtained by the `ExecutionRequested` event triggered by the `execute` function.
 
 ### Management Activities
 Identity management is limited to the addition, removal and setting of the minimum required approvals to perform a transaction. These activities will fall into the approval process requiring that N managers approve their execution before it is performed.
@@ -51,16 +85,12 @@ Identity management is limited to the addition, removal and setting of the minim
 ### Claims
 Lorem Ipsum
 
-### Management Activities
-Lorem Ipsum
-
 ### Constants / View functions
-
-### Adding new functionality
 Lorem Ipsum
 
-### Register a new `IdentityKernel` version
-Lorem Ipsum
+### Adding new functionality to identitities
+New versions of identities should extend from `IdentityKernel` and need to be registered in the `IdentityFactory`. This is done by creating a new instance of the new contract which inherits from `IdentityKernel`, and then calling the `setKernel` function of the `IdentityFactory` specifiying the address of the updated identity kernel, and an `bytes32` info hash with the description of the new version.
+Once updated, a `NewKernel` event is triggered.
 
 ### Upgrade an `IdentityKernel` instance 
 Lorem Ipsum
