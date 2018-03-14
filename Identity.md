@@ -10,7 +10,8 @@
 - - [Constants / View functions](#constants--view-functions)
 - - [Adding new functionality to identitities](#adding-new-functionality-to-identitities)
 - - [Upgrade an `IdentityKernel` instance](#upgrade-an-identitykernel-instance)
-
+- - [Setting up Identity Recovery contract](#setting-up-identity-recovery-contract)
+- - [Recovering an Identity](#recovering-an-identity)
 ## Summary
 This is a proposed proof of concept for the implementation of interfaces [ERC-725](https://github.com/ethereum/EIPs/issues/725) and [ERC735](https://github.com/ethereum/EIPs/issues/725), providing the following functionality:
 - Public key register, composed of Ethereum Addresses and ECDSA keys. These keys can perform management activities over the identity itself, as well as performing operations in other contracts and transfer of ether.
@@ -108,8 +109,34 @@ When an identity instance needs to be upgraded, we can use the execute/approve p
 
 Kernel addresses could be obtained using the `getVersion` function of the `IdentityFactory`
 
-### Identity Recovery
-Lorem Ipsum
+### Setting up Identity Recovery contract
+After creating an identity with the `IdentityFactory`, an instance of `FriendsRecovery` need to be created. The constructor of this contract expects the following parameters:
+- `_identity`: The identity contract address
+- `_setupDelay`: Time for users to be able to change the selected friends for recovery.
+- `_threshold`: Minimum number of friends required to recover an identity
+- `_secret`: sha3 of the identity address + a secret word
+- `friendHashes`: an array of sha3 hashes compossed of the identity address + secret word + friend ethereum address.
+
+Once this recovery contract is created, we need to associate it with the identity. This is done through the execute/approve mechanism of the identity, sending a payload to invoke the `setupRecovery` function of the identity, passing the recovery contract address as a parameter.
 
 
+### Recovering an Identity
+Recovery of an identity happens when you lose access to the management key(s). The recovery is done having the friends sign a message. This message is a sha3 hash compossed of:
+
+```
+identity address + secret word + the function and parameters of the function to invoke encoded + 
+new secret word hash + new friend hashes. 
+```
+
+Where new `new secret word hash` is a sha3 of the identity address + secret word; and `new friend hashes` is an array of sha3 hashes compossed of the identity address + secret word + friend ethereum address).
+
+Normally the function that is going to be encoded should be the identity `managerReset` with the address of the new management key.
+
+A minimum of (threshold) friends should approve this recovery attempt, and this can be done by them spending gas, calling the `approve` function of the recovery contract; or by having a single address (probably the identity owner) calling `approvePreSigned`.
+
+`approve` should be called sending  the sha3 hashed message described previously, and `approvePreSigned` needs gathering the signatures of the hashed message into different arrays (for v, r, and s)
+
+Once the approvation is complete, the `execute` function of the recovery contract needs to be called, with the parameters used to generate the hashed message, and after the recovery is completed, `processManagerReset` needs to be executedn on the identity to remove all the management keys different from the new management key used for the recovery
+
+An example of how to use the recovery contract is available in `test/friendsRecovery.js`.
 
