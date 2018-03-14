@@ -1,11 +1,9 @@
-/*
-COMMENTED TEMPORARLY WHILE PROJECT IS MIGRATED TO EMBARK - @rramos
-
 const TestUtils = require("../utils/testUtils.js")
 const idUtils = require("../utils/identityUtils");
 
 const Identity = artifacts.require("./identity/Identity.sol");
 const FriendsRecovery = artifacts.require("./identity/FriendsRecovery.sol");
+const TestContract = artifacts.require("./tests/TestContract.sol");
 
 const web3Utils = require("web3-utils");
 const web3EthAbi = require("web3-eth-abi");
@@ -23,23 +21,26 @@ contract('FriendsRecovery', function(accounts) {
 
     describe("FriendsRecovery()", () => {
         it("Execute a full recovery", async () => {
+            let testContractInstance = await TestContract.new({from: accounts[0]});
+
             let identity = await Identity.new({from: accounts[0]})
 
             // A bytes32 string that represents some user data
             const secret = '0x0000000000000000000000000000000000000000000000000000000000123456';
-            const hashedSecret = web3.sha3(secret, {encoding: 'hex'});
+            const hashedSecret = web3Utils.soliditySha3(identity.address, secret);
+            
 
-            const newController = accounts[1];
+            const newController = accounts[9];
             
             let threshold = 3;
             let friendHashes = [
-                web3Utils.soliditySha3(friends[0].address, secret),
-                web3Utils.soliditySha3(friends[2].address, secret), 
-                web3Utils.soliditySha3(friends[3].address, secret),
-                web3Utils.soliditySha3(friends[1].address, secret), 
+                web3Utils.soliditySha3(identity.address, secret, friends[0].address),
+                web3Utils.soliditySha3(identity.address, secret, friends[1].address), 
+                web3Utils.soliditySha3(identity.address, secret, friends[2].address),
+                web3Utils.soliditySha3(identity.address, secret, friends[3].address), 
             ];
 
-            let recoveryContract = await FriendsRecovery.new(threshold, hashedSecret, friendHashes, {from: accounts[0]});
+            let recoveryContract = await FriendsRecovery.new(identity.address, 600, threshold, hashedSecret, friendHashes, {from: accounts[0]});
 
             // Setting up recovery contract for identity
             let tx1 = await identity.execute(
@@ -48,14 +49,20 @@ contract('FriendsRecovery', function(accounts) {
                 idUtils.encode.setupRecovery(recoveryContract.address), 
                 {from: accounts[0]} 
             );
-            
             //console.log(tx1.logs);
 
-            // RECOVER
-            const newControllerHash = web3Utils.soliditySha3(web3Utils.soliditySha3(secret), newController);
-            let message = web3Utils.soliditySha3(recoveryContract.address, newControllerHash);
-            let msgHash = ethUtils.hashPersonalMessage(ethUtils.toBuffer(message, 'hex'));
-          
+            const newSecret = '0x0000000000000000000000000000000000000000000000000000000000abcdef';
+            const data = idUtils.encode.managerReset(newController);
+            const newHashedSecret = web3Utils.soliditySha3(identity.address, newSecret);
+            const newFriendHashes = [
+                web3Utils.soliditySha3(accounts[3], newSecret),
+                web3Utils.soliditySha3(accounts[4], newSecret), 
+                web3Utils.soliditySha3(accounts[5], newSecret)
+            ];
+
+            // Normaly we would use soliditySha3, but it doesn't like arrays
+            const hashedMessageToSign = await testContractInstance.hash.call(identity.address, secret, identity.address, data, newHashedSecret, newFriendHashes);
+            let msgHash = ethUtils.hashPersonalMessage(ethUtils.toBuffer(hashedMessageToSign, 'hex'));
             const friendSignatures = [
                 ethUtils.ecsign(msgHash, ethUtils.toBuffer(friends[0].private, 'hex')),
                 ethUtils.ecsign(msgHash, ethUtils.toBuffer(friends[1].private, 'hex')),
@@ -63,8 +70,8 @@ contract('FriendsRecovery', function(accounts) {
                 ethUtils.ecsign(msgHash, ethUtils.toBuffer(friends[3].private, 'hex'))
             ];
 
-            let nonce = await recoveryContract.recover.call(
-                newController, 
+            let tx2 = await recoveryContract.approvePreSigned(
+                hashedMessageToSign, 
                 [
                     friendSignatures[0].v, 
                     friendSignatures[1].v, 
@@ -74,68 +81,38 @@ contract('FriendsRecovery', function(accounts) {
                     '0x' + friendSignatures[0].r.toString('hex'), 
                     '0x' + friendSignatures[1].r.toString('hex'), 
                     '0x' + friendSignatures[2].r.toString('hex')                    
-                ], 
-                {from: accounts[9]});
-
-            let tx2 = await recoveryContract.recover(
-                newController, 
-                [
-                    friendSignatures[0].v, 
-                    friendSignatures[1].v, 
-                    friendSignatures[2].v
                 ],
-                [
-                    '0x' + friendSignatures[0].r.toString('hex'), 
-                    '0x' + friendSignatures[1].r.toString('hex'), 
-                    '0x' + friendSignatures[2].r.toString('hex')                    
-                ], 
-                {from: accounts[9]});
-
-                
-
-            // REVEAL
-            const newSecret = '0x0000000000000000000000000000000000000000000000000000000000abcdef';
-            const newHashedSecret = web3.sha3(secret, {encoding: 'hex'});
-
-            const newFriendHashes = [
-                web3Utils.soliditySha3(accounts[3], newSecret),
-                web3Utils.soliditySha3(accounts[4], newSecret), 
-                web3Utils.soliditySha3(accounts[5], newSecret)
-            ];
-
-            let tx3 = await recoveryContract.reveal(
-                nonce, 
-                secret, 
-                newHashedSecret, 
                 [
                     '0x' + friendSignatures[0].s.toString('hex'), 
                     '0x' + friendSignatures[1].s.toString('hex'), 
-                    '0x' + friendSignatures[2].s.toString('hex')
-                ],
+                    '0x' + friendSignatures[2].s.toString('hex')                    
+                ], 
+                {from: accounts[9]});
+
+            let tx3 = await recoveryContract.execute(
+                secret,
+                identity.address,
+                data,
                 [
                     friends[0].address, 
                     friends[1].address, 
                     friends[2].address
-                ], newFriendHashes );
+                ],
+                newHashedSecret,
+                newFriendHashes,
+                {from: accounts[5]});
 
-            
-            const recoveryCompletedLog = tx3.logs[tx3.logs.length - 1];
-            assert.strictEqual(recoveryCompletedLog.event, "RecoveryCompleted");
-  
-            
-            // Execute something with new controller address
-            // In this case, adding new controller address key
+            await identity.processManagerReset(0, {from: accounts[0]});
 
-            let tx4 = await recoveryContract.execute(
-                identity.address, 
-                idUtils.encode.addKey(newController, idUtils.purposes.MANAGEMENT, idUtils.types.ADDRESS), 
-                {from: newController});
+            assert.equal(
+                await identity.getKeyPurpose(TestUtils.addressToBytes32(newController)),
+                idUtils.purposes.MANAGEMENT,
+                identity.address + ".getKeyPurpose(" + newController + ") is not MANAGEMENT_KEY")
 
             assert.equal(
                 await identity.getKeyPurpose(TestUtils.addressToBytes32(newController)),
                 idUtils.purposes.MANAGEMENT,
                 identity.address+".getKeyPurpose("+newController+") is not correct")
-
         });
         
     });
@@ -143,5 +120,3 @@ contract('FriendsRecovery', function(accounts) {
     
 
 });
-
-*/

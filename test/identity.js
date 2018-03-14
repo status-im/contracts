@@ -2,9 +2,8 @@
 const assert = require('assert');
 const Embark = require('embark');
 let EmbarkSpec = Embark.initTests();
-const web3 = EmbarkSpec.web3;
+// const web3 = EmbarkSpec.web3;
 const TestUtils = require("../utils/testUtils.js");
-const web3EthAbi = require("web3-eth-abi");
 const idUtils = require('../utils/identityUtils.js');
 
 describe("Identity", function() {
@@ -17,7 +16,10 @@ describe("Identity", function() {
         
         EmbarkSpec = Embark.initTests();
 
-        EmbarkSpec.deployAll({ "Identity": {}}, (_accounts) => { 
+        EmbarkSpec.deployAll({ 
+                "Identity": {},
+                "TestContract": {}
+            }, (_accounts) => { 
             accounts = _accounts;  
             done();          
         });
@@ -206,53 +208,51 @@ describe("Identity", function() {
                 idUtils.encode.removeKey(accounts[1], idUtils.purposes.ACTION))
                 .send({from: accounts[0]});
 
-            const keyRemoved = await TestUtils.eventValues(receipt, "KeyRemoved");
+            const keyRemoved = TestUtils.eventValues(receipt, "KeyRemoved");
             assert(keyRemoved.key, TestUtils.addressToBytes32(accounts[1]), "Key is not correct");
             assert(keyRemoved.keyType, idUtils.types.ADDRESS, "Type is not correct");
         });
     });
 
-/*
+
     describe("getKeyPurpose(address _key)", () => {
 
         it("should start only with initializer as only key", async () => {
             assert.equal(
-                await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[0])),
+                await Identity.methods.getKeyPurpose(TestUtils.addressToBytes32(accounts[0])).call(),
                 idUtils.purposes.MANAGEMENT,
-                identity.address+".getKeyPurpose("+accounts[0]+") is not correct")
+                Identity.address+".getKeyPurpose("+accounts[0]+") is not correct")
 
             assert.equal(
-                await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
+                await Identity.methods.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])).call(),
                 idUtils.purposes.NONE,
-                identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
+                Identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
         });
 
         it("should get type 2 after addKey type 2", async () => {
-            await identity.execute(
-                identity.address, 
+            await Identity.methods.execute(
+                Identity.address, 
                 0, 
-                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
-                {from: accounts[0]}
-            );
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS))
+                .send({from: accounts[0]});
             
             assert.equal(
-                await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
+                await Identity.methods.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])).call(),
                 idUtils.purposes.ACTION,
-                identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
+                Identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
             });
             
         it("should get type 3 after addKey type 3", async () => {       
-            await identity.execute(
-                identity.address, 
+            await Identity.methods.execute(
+                Identity.address, 
                 0, 
-                idUtils.encode.addKey(accounts[1], idUtils.purposes.CLAIM_SIGNER, idUtils.types.ADDRESS),
-                {from: accounts[0]}
-            );
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.CLAIM_SIGNER, idUtils.types.ADDRESS))
+                .send({from: accounts[0]});
 
             assert.equal(
-                await identity.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])),
+                await Identity.methods.getKeyPurpose(TestUtils.addressToBytes32(accounts[1])).call(),
                 idUtils.purposes.CLAIM_SIGNER,
-                identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
+                Identity.address+".getKeyPurpose("+accounts[1]+") is not correct")
         });
 
     });
@@ -273,61 +273,57 @@ describe("Identity", function() {
         });
     });
     */
-/*
+
     describe("execute(address _to, uint256 _value, bytes _data)", () => {
-        let testContractInstance;
         let functionPayload;
 
         it("Identity should receive ether", async() => {
 
-            const amountToSend = web3.toWei(0.05, "ether");
+            const amountToSend = web3.utils.toWei('0.05', "ether");
 
-            let idBalance0 = web3.eth.getBalance(identity.address);
+            let idBalance0 = web3.eth.getBalance(Identity.address);
 
-            await web3.eth.sendTransaction({from:accounts[0], to:identity.address, value: amountToSend}) 
+            await web3.eth.sendTransaction({from:accounts[0], to:Identity.address, value: amountToSend}) 
 
-            let idBalance1 = web3.eth.getBalance(identity.address);
+            let idBalance1 = web3.eth.getBalance(Identity.address);
 
-            assert.equal(idBalance0.toNumber() + amountToSend, idBalance1.toNumber(), identity.address + " did not receive ether");
+            assert.equal(idBalance0.toNumber() + amountToSend, idBalance1.toNumber(), Identity.address + " did not receive ether");
         });
-
+/*
         it("ACTOR_KEY execute arbitrary transaction", async () => {
-            await identity.execute(
-                identity.address, 
+            await Identity.methods.execute(
+                Identity.address, 
                 0, 
-                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
-                {from: accounts[0]}
-            );
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS))
+                .send({from: accounts[0]});
 
-            testContractInstance = await TestContract.new({from: accounts[0]});
-
-            functionPayload = web3EthAbi.encodeFunctionCall({
+            
+            functionPayload = web3.eth.abi.encodeFunctionCall({
                 name: 'test',
                 type: 'function',
                 inputs: []
             }, []);
 
-            await identity.execute(
-                testContractInstance.address, 
+            let receipt = await Identity.methods.execute(
+                TestContract.address, 
                 0, 
-                functionPayload,
-                {from: accounts[1]}
-            );
+                functionPayload)
+                .send({from: accounts[1]});
             
-            assert.notEqual(
-                await TestUtils.listenForEvent(testContractInstance.TestFunctionExecuted()),
-                undefined,
-                "Test function was not executed");
+                assert.notEqual(
+                    await TestUtils.listenForEvent(TestContract.event.TestFunctionExecuted),
+                    undefined,
+                    "Test function was not executed");
+           
         });
-        
+        */
         it("MANAGEMENT_KEY cannot execute arbitrary transaction", async () => {
             try {
-                await identity.execute(
-                    testContractInstance.address, 
+                await Identity.methods.execute(
+                    TestContract.address, 
                     0, 
-                    functionPayload,
-                    {from: accounts[0]}
-                );
+                    functionPayload)
+                    .send({from: accounts[0]});
             } catch(error) {
                 TestUtils.assertJump(error);
             }
@@ -335,12 +331,11 @@ describe("Identity", function() {
 
         it("Other keys NOT execute arbitrary transaction", async () => {
             try {
-                await identity.execute(
-                    testContractInstance.address, 
+                await Identity.methods.execute(
+                    TestContract.address, 
                     0, 
-                    functionPayload,
-                    {from: accounts[3]}
-                );
+                    functionPayload)
+                    .send({from: accounts[3]});
                 assert.fail('should have reverted before');
             } catch(error) {
                 TestUtils.assertJump(error);
@@ -349,29 +344,27 @@ describe("Identity", function() {
 
 
         it("ACTION_KEY should send ether from contract", async () => {
-            await identity.execute(
-                identity.address, 
+            await Identity.methods.execute(
+                Identity.address, 
                 0, 
-                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
-                {from: accounts[0]}
-            );
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS))
+                .send({from: accounts[0]});
 
             // Adding funds to contract
-            await web3.eth.sendTransaction({from:accounts[0], to:identity.address, value: web3.toWei(0.05, "ether")}) 
+            await web3.eth.sendTransaction({from:accounts[0], to:Identity.address, value: web3.utils.toWei('0.05', "ether")}) 
 
-            const amountToSend = web3.toWei(0.01, "ether");
+            const amountToSend = web3.utils.toWei('0.01', "ether");
 
-            let idBalance0 = web3.eth.getBalance(identity.address);
+            let idBalance0 = web3.eth.getBalance(Identity.address);
             let a2Balance0 = web3.eth.getBalance(accounts[2]);
 
-            await identity.execute(
+            await Identity.methods.execute(
                 accounts[2], 
                 amountToSend, 
-                '',
-                {from: accounts[1]}
-            );
+                '')
+                .send({from: accounts[1]});
 
-            let idBalance1 = web3.eth.getBalance(identity.address);
+            let idBalance1 = web3.eth.getBalance(Identity.address);
             let a2Balance1 = web3.eth.getBalance(accounts[2]);
 
             assert(idBalance1.toNumber, idBalance0.toNumber - amountToSend, "Contract did not send ether");
@@ -379,43 +372,39 @@ describe("Identity", function() {
         });
 
         it("fire ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data)", async () => {
-            await identity.execute(
-                identity.address, 
+            await Identity.methods.execute(
+                Identity.address, 
                 0, 
-                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
-                {from: accounts[0]}
-            );
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS))
+                .send({from: accounts[0]});
             
-            await identity.execute(
-                testContractInstance.address, 
+            let receipt = await Identity.methods.execute(
+                TestContract.address, 
                 0, 
-                functionPayload,
-                {from: accounts[1]}
-            );
-            
-            const executionRequested = await TestUtils.listenForEvent(identity.ExecutionRequested());
-            assert(executionRequested.to, testContractInstance.address, "To is not correct");
+                functionPayload)
+                .send({from: accounts[1]});
+
+            const executionRequested = TestUtils.eventValues(receipt, "ExecutionRequested");
+            assert(executionRequested.to, TestContract.address, "To is not correct");
             assert(executionRequested.value, 0, "Value is not correct");
             assert(executionRequested.data, functionPayload, "Data is not correct");
         });
 
         it("fire Executed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data)", async () => {
-            await identity.execute(
-                identity.address, 
+            await Identity.methods.execute(
+                Identity.address, 
                 0, 
-                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS),
-                {from: accounts[0]}
-            );
+                idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS))
+                .send({from: accounts[0]});
             
-            await identity.execute(
-                testContractInstance.address, 
+            let receipt = await Identity.methods.execute(
+                TestContract.address, 
                 0, 
-                functionPayload,
-                {from: accounts[1]}
-            );
+                functionPayload)
+                .send({from: accounts[1]});
             
-            const executed = await TestUtils.listenForEvent(identity.Executed());
-            assert(executed.to, testContractInstance.address, "To is not correct");
+            const executed = TestUtils.eventValues(receipt, "Executed")
+            assert(executed.to, TestContract.address, "To is not correct");
             assert(executed.value, 0, "Value is not correct");
             assert(executed.data, functionPayload, "Data is not correct");
         });

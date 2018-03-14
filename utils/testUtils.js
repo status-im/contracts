@@ -33,7 +33,10 @@ exports.listenForEvent = event => new Promise((resolve, reject) => {
     })
 });
 
-exports.eventValues = (receipt, eventName) => receipt.events[eventName].returnValues;
+exports.eventValues = (receipt, eventName) => {
+    if(receipt.events[eventName])
+        return receipt.events[eventName].returnValues;
+}
 
 exports.addressToBytes32 = (address) => {
     const stringed = "0000000000000000000000000000000000000000000000000000000000000000" + address.slice(2);
