@@ -67,6 +67,7 @@ describe('FriendsRecovery', function() {
                                              .send({from: accounts[0], gas: 5000000, gasPrice: 1});
 
         // Setting up recovery contract for identity
+        // @rramos - ERROR on this line because provider is not set
         let tx1 = await identity.methods.execute(
             identity.options.address, 
             0, 
