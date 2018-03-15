@@ -28,12 +28,12 @@ Defines kernel vars that an `IdentityKernel` contract share with a `Instance` co
 - `UpdatableInstance`. A contract that can be updated, if the contract itself calls `updateUpdatableInstance()`. This contract inherits from `Instance`
 - `DelayedUpdatableInstanceStorage`. This contract defines kernel vars that an `IdentityKernel` contract shares with and `Instance`. See `InstanceStorage` fro restrictions in case of reuse. This contract inherits from `InstanceStorage`
 - `DelayedUpdatableInstance`. Extending the functionality of `UpdatableInstance`, this contract introduces a delay functionality based in the `block.timestamp` in order to limit updates with a 30 days lock. 
-- `Factory`. Contract used as a version control for `IdentityKernel` contracts
+- `Factory`. Contract used as a version control for child factories contracts
 - `ERC725` and `ERC735`. Interfaces based on EIPs [ERC-725: Identity](https://github.com/ethereum/EIPs/issues/725) and [ERC735: Claims Holder](https://github.com/ethereum/EIPs/issues/725)
 - `Identity`. Implementation of ERC725 and ERC735. Includes additional management functions to handle minimum required approvals for execution of transactions, as well as recovery related functions.
 - `IdentityKernel`. Represents a version of the identity contract that can be created with the `IdentityFactory`, as well as be updated with calls to itself. This contract inherits from `DelayedUpdatableInstanceStorage` and `Identity`
 - `FriendsRecovery`. Contract that handles the recovery process of an `Identity` in case the management keys are lost, or were compromised. A `FriendsRecovery` contract instance has an 1:1 association with an `Identity`
-- `IdentityFactory`. Factory pattern implementation for handling `IdentityKernel` instance generation.
+- `IdentityFactory`. Deploys `DelayedUpdatableInstanceStorage` configured to a deployed `IdentityKernel` and initializes the Instance with `initIdentity` function from kernel.  
 
 ## Tutorials
 
