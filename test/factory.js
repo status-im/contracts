@@ -3,12 +3,11 @@ const Embark = require('embark');
 let EmbarkSpec = Embark.initTests();
 let web3 = EmbarkSpec.web3;
 
-const identityJson = require('../build/contracts/Identity.json');
-const updatedIdentityKernelJson = require('../build/contracts/UpdatedIdentityKernel.json');
+const identityJson = require('../dist/contracts/Identity.json');
+const updatedIdentityKernelJson = require('../dist/contracts/UpdatedIdentityKernel.json');
 
 const TestUtils = require("../utils/testUtils.js")
 const idUtils = require("../utils/identityUtils.js")
-const web3EthAbi = require("web3-eth-abi");
 
 describe('IdentityFactory', function(accounts) {
 
