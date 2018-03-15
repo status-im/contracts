@@ -124,7 +124,7 @@ Once this recovery contract is created, we need to associate it with the identit
 Recovery of an identity happens when you lose access to the management key(s). The recovery is done having the friends sign a message. This message is a sha3 hash compossed of:
 
 ```
-identity address + secret word + the function and parameters of the function to invoke encoded + 
+identity address + secret word + contract to invoke +  the function and parameters of the function to invoke encoded + 
 new secret word hash + new friend hashes. 
 ```
 
