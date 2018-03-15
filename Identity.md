@@ -121,10 +121,10 @@ Once this recovery contract is created, we need to associate it with the identit
 
 
 ### Recovering an Identity
-Recovery of an identity happens when you lose access to the management key(s). The recovery is done having the friends sign a message. This message is a sha3 hash compossed of:
+Recovery of an identity happens when you lose access to the management key(s) or Identity. The recovery is done having the friends sign a message. This message is a sha3 hash compossed of:
 
 ```
-identity address + secret word + contract to invoke +  the function and parameters of the function to invoke encoded + 
+recovery address + secret word + contract to invoke (identity) +  the function and parameters of the function to invoke encoded (recover function of identity) + 
 new secret word hash + new friend hashes. 
 ```
 
@@ -134,7 +134,9 @@ Normally the function that is going to be encoded should be the identity `manage
 
 A minimum of (threshold) friends should approve this recovery attempt, and this can be done by them spending gas, calling the `approve` function of the recovery contract; or by having a single address (probably the identity owner) calling `approvePreSigned`.
 
-`approve` should be called sending  the sha3 hashed message described previously, and `approvePreSigned` needs gathering the signatures of the hashed message into different arrays (for v, r, and s)
+`approve` could be called sending the sha3 hashed message described previously through a regular transaction , and `approvePreSigned` needs gathering the signatures of the hashed message into different arrays (for v, r, and s)
+
+To enhance privacy, any account can approve anything, however only revealed addresses will be used.
 
 Once the approvation is complete, the `execute` function of the recovery contract needs to be called, with the parameters used to generate the hashed message, and after the recovery is completed, `processManagerReset` needs to be executedn on the identity to remove all the management keys different from the new management key used for the recovery
 
