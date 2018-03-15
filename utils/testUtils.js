@@ -63,3 +63,9 @@ exports.expectThrow = async promise => {
     }
     assert.fail('Expected throw not received');
   };
+
+  
+
+exports.assertJump = (error) => {
+    assert.isAbove(error.message.search('revert'), -1, 'Revert should happen');
+}

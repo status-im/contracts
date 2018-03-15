@@ -12,62 +12,117 @@ contract Identity is ERC725, ERC735 {
     mapping (uint256 => bytes32[]) claimsByType;
     mapping (bytes32 => uint256) indexes;
     mapping (uint => Transaction) txx;
-    mapping (uint => Action) actionCatalogByTrx;
-    mapping (uint => bytes32) claimCatalogByTrx;
-
-    mapping (uint256 => uint8) minimumApprovalsByKeyType;
-    mapping (bytes32 => Claim) pendingClaims;
+    mapping (uint256 => uint256) minimumApprovalsByKeyPurpose;
+    bytes32[] pendingTransactions;
     uint nonce = 0;
+    address recoveryContract;
+    address recoveryManager;
 
-    struct Action {
+    struct Transaction {
         address to;
         uint value;
         bytes data;
-    }
-
-    uint8 constant ACTION_TRANSACTION = 1;
-    uint8 constant CLAIM_TRANSACTION = 2;
-
-    struct Transaction {
-        uint8 trxType;
         uint nonce;
         uint approverCount;
-        mapping(uint256 => uint8) approvalsByKeyType;
         mapping(bytes32 => bool) approvals;
-        bool executed;
     }
 
     modifier managerOnly {
-        require(isKeyType(bytes32(msg.sender), MANAGEMENT_KEY));
+        require(
+            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY)
+        );
         _;
     }
 
     modifier selfOnly {
-        require(msg.sender == address(this));
+        require(
+            msg.sender == address(this)
+        );
         _;
     }
 
-    modifier actorOnly {
-        require(isKeyType(bytes32(msg.sender), ACTION_KEY));
+    modifier recoveryOnly {
+        require(
+            (recoveryContract != address(0) && msg.sender == address(recoveryContract))
+        );
         _;
     }
 
-    modifier claimSignerOnly {
-        require(isKeyType(bytes32(msg.sender), CLAIM_SIGNER_KEY));
+    modifier actorOnly(bytes32 _key) {
+        require(isKeyType(_key, ACTION_KEY));
         _;
     }
     
-    modifier managerOrActor {
+    modifier managerOrActor(bytes32 _key) {
         require(
             isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
             isKeyType(bytes32(msg.sender), ACTION_KEY)
         );
         _;
     }
+    
+    modifier validECDSAKey (
+        bytes32 _key, 
+        bytes32 _signHash, 
+        uint8 _v, 
+        bytes32 _r,
+        bytes32 _s
+    ) 
+    {
+        require(address(_key) == ecrecover(
+            keccak256("\x19Ethereum Signed Message:\n32", _signHash),
+            _v,
+            _r,
+            _s
+            ));
+        require(keys[_key].purpose != 0);
+        _;
+    }
 
     function Identity() public {
-        _addKey(bytes32(msg.sender), MANAGEMENT_KEY, 1);
-        minimumApprovalsByKeyType[MANAGEMENT_KEY] = 1;
+        _constructIdentity(msg.sender);
+    }    
+
+    function () 
+        public 
+        payable 
+    {
+
+    }
+
+    function managerReset(address _newKey) 
+        public 
+        recoveryOnly
+    {
+        recoveryManager = _newKey;
+        _addKey(bytes32(recoveryManager), MANAGEMENT_KEY, 0);
+        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
+    }
+    
+    function processManagerReset(uint256 limit) 
+        public 
+    {
+        require(recoveryManager != address(0));
+        bytes32 newKey = bytes32(recoveryManager);
+        bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
+        uint256 totalManagers = managers.length;
+        
+        if (limit == 0) {
+            limit = totalManagers;
+        }
+
+        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = totalManagers - limit + 1;
+        for (uint256 i = 0; i < limit; i++) {
+            bytes32 manager = managers[i];
+            if (manager != newKey) {
+                _removeKey(manager, MANAGEMENT_KEY);
+                totalManagers--;
+            }
+        }
+
+        if (totalManagers == 1) {
+            recoveryManager = address(0);
+        }
     }
 
     function addKey(
@@ -78,10 +133,25 @@ contract Identity is ERC725, ERC735 {
         public
         selfOnly
         returns (bool success)
-    {
+    {   
         _addKey(_key, _purpose, _type);
         return true;
     }
+
+    function replaceKey(
+        bytes32 _oldKey,
+        bytes32 _newKey,
+        uint256 _newType
+    )
+        public
+        selfOnly
+        returns (bool success)
+    {
+        uint256 purpose = keys[_oldKey].purpose;
+        _addKey(_newKey, purpose, _newType);
+        _removeKey(_oldKey, purpose);
+        return true;
+    } 
 
     function removeKey(
         bytes32 _key,
@@ -101,118 +171,34 @@ contract Identity is ERC725, ERC735 {
         bytes _data
     ) 
         public 
-        managerOrActor
+        managerOrActor(bytes32(msg.sender))
         returns (uint256 executionId)
     {
-        executionId = createTransaction(ACTION_TRANSACTION);
-        ExecutionRequested(executionId, _to, _value, _data);
-        
-        actionCatalogByTrx[nonce] = Action({to: _to, value: _value, data: _data});
+        executionId = _execute(_to, _value, _data);
         approve(executionId, true);
     }
 
-    function approve(uint256 _id, bool _approve) 
+    function approve(uint256 _id, bool _approval) 
         public 
-        managerOrActor
+        managerOrActor(bytes32(msg.sender))
         returns (bool success)
     {   
-        Transaction storage trx = txx[_id];
-        require(trx.executed == false);
-        
-        bytes32 managerKeyHash = keccak256(bytes32(msg.sender), MANAGEMENT_KEY);
-        bytes32 actorKeyHash = keccak256(bytes32(msg.sender), ACTION_KEY);
-        
-        uint8 approvalCount;
-        uint256 requiredKeyType;
-        if (trx.trxType == ACTION_KEY) {
-            Action memory action = actionCatalogByTrx[_id];
-            if (action.to == address(this)) {
-                requiredKeyType = MANAGEMENT_KEY;
-                if (keys[managerKeyHash].purpose == MANAGEMENT_KEY)
-                    approvalCount = _calculateApprovals(managerKeyHash, MANAGEMENT_KEY, _approve, trx);
-            } else {
-                requiredKeyType = ACTION_KEY;
-                if (keys[managerKeyHash].purpose == ACTION_KEY)
-                    approvalCount = _calculateApprovals(actorKeyHash, ACTION_KEY, _approve, trx);
-            }
-            
-            if (approvalCount >= minimumApprovalsByKeyType[requiredKeyType]) {
-                trx.executed = true;
-                Executed(_id, action.to, action.value, action.data);
-                success = action.to.call.value(action.value)(action.data);
-            }
-        } else {
-            // It is a claim
-            bytes32 claimHash = claimCatalogByTrx[_id];
-            if (keys[managerKeyHash].purpose == MANAGEMENT_KEY)
-                approvalCount = _calculateApprovals(managerKeyHash, MANAGEMENT_KEY, _approve, trx);
-            
-            if (approvalCount >= minimumApprovalsByKeyType[MANAGEMENT_KEY]) {
-                Claim memory c = pendingClaims[claimHash];
-                claims[claimHash] = Claim(
-                                    {
-                                        claimType: c.claimType,
-                                        scheme: c.scheme,
-                                        issuer: c.issuer,
-                                        signature: c.signature,
-                                        data: c.data,
-                                        uri: c.uri
-                                    });
-                                    
-                indexes[claimHash] = claimsByType[c.claimType].length;
-                claimsByType[c.claimType].push(claimHash);
-                ClaimAdded(claimHash, c.claimType, c.scheme, c.issuer, c.signature, c.data, c.uri);
-                trx.executed = true;
-            }
-
-        }
+        return _approve(bytes32(msg.sender), _id, _approval);
     }
 
-    function setMiminumApprovalsByKeyType(
-        uint256 _type,
-        uint8 _minimumApprovals
+    function setMinimumApprovalsByKeyType(
+        uint256 _purpose,
+        uint256 _minimumApprovals
     ) 
         public 
         selfOnly
     {
-        minimumApprovalsByKeyType[_type] = _minimumApprovals;
-    }
-
-    function _calculateApprovals(
-        bytes32 _keyHash,
-        uint256 _keyType,
-        bool _approve,
-        Transaction storage trx
-    )
-        private 
-        returns (uint8 approvalCount) 
-    {
-        if (trx.approvals[_keyHash] == false && _approve) {
-            trx.approvalsByKeyType[_keyType]++;
-        } else if (trx.approvals[_keyHash] == true && !_approve && trx.approverCount > 0) {
-            trx.approvalsByKeyType[_keyType]--;
-        }
-        trx.approvals[_keyHash] = _approve;
-        trx.approverCount++;
-        return trx.approvalsByKeyType[_keyType];
+        require(_minimumApprovals > 0);
+        require(_minimumApprovals <= keysByPurpose[_purpose].length);
+        minimumApprovalsByKeyPurpose[_purpose] = _minimumApprovals;
     }
     
-    function createTransaction(uint8 _trxType) private returns (uint256 id){
-        id = nonce;
-        txx[nonce] = Transaction(
-                            {
-                                nonce: nonce,
-                                trxType: _trxType,
-                                approverCount: 0,
-                                executed: false
-                            });  
-        nonce++;
-    }
-
-    function getTransactionIdByClaim(bytes32 _claimHash) public view returns (uint256 id) {
-        return indexes[_claimHash];
-    }
-
+    
     function addClaim(
         uint256 _claimType,
         uint256 _scheme,
@@ -222,59 +208,44 @@ contract Identity is ERC725, ERC735 {
         string _uri
     ) 
         public 
-        claimSignerOnly
-        returns (bytes32 claimRequestId)
+        returns (bytes32 claimHash)
     {
-        
-        bytes32 claimHash = keccak256(_issuer, _claimType);
-        
-        claimRequestId = claimHash;
-        
-        uint256 executionId = createTransaction(CLAIM_TRANSACTION);
-        claimCatalogByTrx[executionId] = claimHash;
-        indexes[claimHash] = executionId;
-
-        if (claims[claimHash].claimType > 0) {
-            // Claim existed, needs approval
-            ClaimChanged(
-                claimRequestId,
-                _claimType,
-                _scheme,
-                _issuer,
-                _signature,
-                _data,
-                _uri);
-        } else {
-            ClaimRequested(
-                claimRequestId,
-                _claimType,
-                _scheme,
-                _issuer,
-                _signature,
-                _data,
-                _uri);
-        }
-        
-        pendingClaims[claimHash] = Claim(
-            {
-                claimType: _claimType,
-                scheme: _scheme,
-                issuer: _issuer,
-                signature: _signature,
-                data: _data,
-                uri: _uri
+        claimHash = keccak256(_issuer, _claimType);
+        if (msg.sender == address(this)) {
+            if (claims[claimHash].claimType > 0) {
+                _modifyClaim(claimHash, _claimType, _scheme, _issuer, _signature, _data, _uri);
+            } else {
+                _includeClaim(claimHash, _claimType, _scheme, _issuer, _signature, _data, _uri);
             }
-        );        
+        } else {
+            require(_issuer == msg.sender);
+            require(isKeyType(bytes32(msg.sender), CLAIM_SIGNER_KEY));
+            _execute(address(this), 0, msg.data);
+            ClaimRequested(
+                claimHash,
+                _claimType,
+                _scheme,
+                _issuer,
+                _signature,
+                _data,
+                _uri
+            );
+        }
     }
     
-    function removeClaim(bytes32 _claimId) public returns (bool success) {
+    function removeClaim(bytes32 _claimId) 
+        public 
+        returns (bool success) 
+    {
         Claim memory c = claims[_claimId];
         
         require(
             msg.sender == c.issuer ||
-            msg.sender == address(this) ||
-            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY)
+            msg.sender == address(this)
             );
+        
+        // MUST only be done by the issuer of the claim, or KEYS OF PURPOSE 1, or the identity itself.
+        // TODO If its the identity itself, the approval process will determine its approval.
         
         uint claimIdTypePos = indexes[_claimId];
         delete indexes[_claimId];
@@ -285,43 +256,6 @@ contract Identity is ERC725, ERC735 {
         delete claims[_claimId];
         claimsTypeArr.length--;
         return true;
-    }
-
-    function _addKey(bytes32 _key, uint256 _purpose, uint256 _type) private {
-        bytes32 keyHash = keccak256(_key, _purpose);
-        
-        require(keys[keyHash].purpose == 0);
-        require(
-            _purpose == MANAGEMENT_KEY ||
-            _purpose == ACTION_KEY ||
-            _purpose == CLAIM_SIGNER_KEY ||
-            _purpose == ENCRYPTION_KEY
-            );
-        KeyAdded(_key, _purpose, _type);
-        keys[keyHash] = Key(_purpose, _type, _key);
-        indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
-    }
-
-    function _removeKey(bytes32 _key, uint256 _purpose) private {
-        bytes32 keyHash = keccak256(_key, _purpose);
-        Key storage myKey = keys[keyHash];
-        KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
-        
-        uint index = indexes[keyHash];
-        delete indexes[keyHash];
-        bytes32 replacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
-        keysByPurpose[_purpose][index] = replacer;
-        indexes[keccak256(replacer, _purpose)] = index;
-        keysByPurpose[_purpose].length--;
-
-        if (_purpose == MANAGEMENT_KEY) {
-            require(keysByPurpose[MANAGEMENT_KEY].length >= 1);
-        }
-
-        delete keys[keyHash];
-        
-        // MUST only be done by keys of purpose 1, or the identity itself.
-        // TODO If its the identity itself, the approval process will determine its approval.
     }
 
     function getKey(
@@ -384,7 +318,7 @@ contract Identity is ERC725, ERC735 {
     function getKeysByPurpose(uint256 _purpose)
         public
         constant
-        returns(bytes32[] keys)
+        returns(bytes32[])
     {
         return keysByPurpose[_purpose];
     }
@@ -392,7 +326,14 @@ contract Identity is ERC725, ERC735 {
     function getClaim(bytes32 _claimId)
         public
         constant 
-        returns(uint256 claimType, uint256 scheme, address issuer, bytes signature, bytes data, string uri) 
+        returns(
+            uint256 claimType,
+            uint256 scheme,
+            address issuer,
+            bytes signature,
+            bytes data,
+            string uri
+            ) 
     {
         Claim memory _claim = claims[_claimId];
         return (_claim.claimType, _claim.scheme, _claim.issuer, _claim.signature, _claim.data, _claim.uri);
@@ -405,6 +346,276 @@ contract Identity is ERC725, ERC735 {
     {
         return claimsByType[_claimType];
     }
-}
 
+    function approveECDSA(
+        uint256 _id,
+        bool _approval,
+        bytes32 _key, 
+        uint8 _v, 
+        bytes32 _r, 
+        bytes32 _s
+    ) 
+        public 
+        validECDSAKey(
+            _key,
+            keccak256(
+                address(this),
+                bytes4(keccak256("approve(uint256,bool)")),
+                _id,
+                _approval
+                ),
+            _v,
+            _r,
+            _s
+        )
+        managerOrActor(_key)
+        returns (bool success)
+    {   
+        return _approve(_key, _id, _approval);
+    }
+    
+    function executeECDSA(
+        address _to,
+        uint256 _value,
+        bytes _data,
+        uint _nonce,
+        bytes32 _key, 
+        uint8 _v, 
+        bytes32 _r, 
+        bytes32 _s
+    ) 
+        public 
+        validECDSAKey(
+            _key,
+            keccak256(
+                address(this), 
+                bytes4(
+                    keccak256("execute(address,uint256,bytes)")), 
+                    _to,
+                    _value,
+                    _data,
+                    _nonce
+                    ),
+                _v,
+                _r,
+                _s
+                )
+        managerOrActor(_key)
+        returns (uint256 executionId)
+    {
+        executionId = _execute(_to, _value, _data);
+        _approve(_key, executionId, true);
+    }
+
+    function setupRecovery(address _recoveryContract) 
+        public
+        selfOnly
+    {
+        require(recoveryContract == address(0));
+        recoveryContract = _recoveryContract;
+    }
+    
+    function _constructIdentity(address _manager)
+        internal 
+    {
+        require(minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] == 0);
+        _addKey(bytes32(_manager), MANAGEMENT_KEY, 0);
+
+        minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = 1;
+        minimumApprovalsByKeyPurpose[ACTION_KEY] = 1;
+    }
+
+    function _execute(
+        address _to,
+        uint256 _value,
+        bytes _data
+    ) 
+        private
+        returns (uint256 executionId)
+    {
+        executionId = nonce;
+        ExecutionRequested(executionId, _to, _value, _data);
+        txx[executionId] = Transaction(
+                            {
+                                to: _to,
+                                value: _value,
+                                data: _data,
+                                nonce: nonce,
+                                approverCount: 0
+                            });            
+        nonce++;
+    }
+    
+    function _approve(
+        bytes32 _key,
+        uint256 _id,
+        bool _approval
+    ) 
+        private 
+        returns(bool success)
+    {
+        
+        Transaction storage trx = txx[_id];
+        
+        uint256 approvalCount;
+        uint256 requiredKeyPurpose;
+        
+        Approved(_id, _approval);
+
+        if (trx.to == address(this)) {
+            require(isKeyType(_key, MANAGEMENT_KEY));
+            bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
+            requiredKeyPurpose = MANAGEMENT_KEY;
+            approvalCount = _calculateApprovals(managerKeyHash, _approval, trx);
+        } else {
+            require(isKeyType(_key, ACTION_KEY));
+            bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
+            requiredKeyPurpose = ACTION_KEY;
+            approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
+        }
+
+        if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
+            Executed(_id, trx.to, trx.value, trx.data);
+            success = trx.to.call.value(trx.value)(trx.data);
+        }
+    }
+
+    function _addKey(
+        bytes32 _key,
+        uint256 _purpose,
+        uint256 _type
+    ) 
+        private
+    {
+        bytes32 keyHash = keccak256(_key, _purpose);
+        
+        require(keys[keyHash].purpose == 0);
+        require(
+            _purpose == MANAGEMENT_KEY ||
+            _purpose == ACTION_KEY ||
+            _purpose == CLAIM_SIGNER_KEY ||
+            _purpose == ENCRYPTION_KEY
+            );
+        KeyAdded(_key, _purpose, _type);
+        keys[keyHash] = Key(_purpose, _type, _key);
+        indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
+    }
+
+    function _removeKey(
+        bytes32 _key,
+        uint256 _purpose
+    )
+        private 
+    {
+        bytes32 keyHash = keccak256(_key, _purpose);
+        Key storage myKey = keys[keyHash];
+        KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
+     
+        uint index = indexes[keyHash];
+        delete indexes[keyHash];
+        bytes32 replacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
+        keysByPurpose[_purpose][index] = replacer;
+        indexes[keccak256(replacer, _purpose)] = index;
+        keysByPurpose[_purpose].length--;
+
+        if (_purpose == MANAGEMENT_KEY) {
+            require(
+                keysByPurpose[MANAGEMENT_KEY].length >= 1 && 
+                keysByPurpose[MANAGEMENT_KEY].length >= minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]
+            );
+
+        }
+
+        delete keys[keyHash];
+    }
+
+    function _calculateApprovals(
+        bytes32 _keyHash,
+        bool _approval,
+        Transaction storage trx
+    )
+        private 
+        returns (uint256 approvalCount) 
+    {
+        require(trx.approvals[_keyHash] != _approval);
+
+        trx.approvals[_keyHash] = _approval;
+        if (_approval) {
+            trx.approverCount++;
+        } else {
+            trx.approverCount--;
+        }
+        
+        return trx.approverCount;
+    }
+
+    
+    function _includeClaim(
+        bytes32 _claimHash,
+        uint256 _claimType,
+        uint256 _scheme,
+        address _issuer,
+        bytes _signature,
+        bytes _data,
+        string _uri
+    ) 
+        private
+    {
+        claims[_claimHash] = Claim(
+            {
+                claimType: _claimType,
+                scheme: _scheme,
+                issuer: _issuer,
+                signature: _signature,
+                data: _data,
+                uri: _uri
+            }
+        );
+        indexes[_claimHash] = claimsByType[_claimType].length;
+        claimsByType[_claimType].push(_claimHash);
+        ClaimAdded(
+            _claimHash,
+            _claimType,
+            _scheme,
+            _issuer,
+            _signature,
+            _data,
+            _uri
+        );
+    }
+
+
+    function _modifyClaim(
+        bytes32 _claimHash,
+        uint256 _claimType,
+        uint256 _scheme,
+        address _issuer,
+        bytes _signature,
+        bytes _data,
+        string _uri
+    ) 
+        private
+    {
+        require(msg.sender == _issuer);
+        ClaimChanged(
+            _claimHash,
+            _claimType,
+            _scheme,
+            _issuer,
+            _signature,
+            _data,
+            _uri
+            );
+        claims[_claimHash] = Claim({
+            claimType: _claimType,
+            scheme: _scheme,
+            issuer: _issuer,
+            signature: _signature,
+            data: _data,
+            uri: _uri
+        });
+    }
+
+
+}
 
