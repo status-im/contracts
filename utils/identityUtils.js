@@ -103,6 +103,20 @@ const _setupRecovery = function(address){
     }, [address]);
 }
 
+const _managerReset = function(address){
+    if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
+        throw new Error('Address "'+ address +'" is not a valid Ethereum address.');
+
+    return web3EthAbi.encodeFunctionCall({
+        name: 'managerReset',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_newKey'
+        }]
+    }, [address]);
+}
+
 const _updateUpdatableInstance = function(address){
     if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
         throw new Error('Address "'+ address +'" is not a valid Ethereum address.');
@@ -117,6 +131,45 @@ const _updateUpdatableInstance = function(address){
     }, [address]);
 }
 
+const _updateRequestUpdatableInstance = function(address){
+    if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
+        throw new Error('Address "'+ address +'" is not a valid Ethereum address.');
+
+    return web3EthAbi.encodeFunctionCall({
+        name: 'updateRequestUpdatableInstance',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_kernel'
+        }]
+    }, [address]);
+}
+
+const _updateConfirmUpdatableInstance = function(address){
+    if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
+        throw new Error('Address "'+ address +'" is not a valid Ethereum address.');
+
+    return web3EthAbi.encodeFunctionCall({
+        name: 'updateConfirmUpdatableInstance',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_kernel'
+        }]
+    }, [address]);
+}
+
+const _updateCancelUpdatableInstance = function(address){
+    if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
+        throw new Error('Address "'+ address +'" is not a valid Ethereum address.');
+
+    return web3EthAbi.encodeFunctionCall({
+        name: 'updateCancelUpdatableInstance',
+        type: 'function',
+        inputs: []
+    }, []);
+}
+
 
 
 
@@ -128,6 +181,10 @@ module.exports = {
         removeKey: _removeKey,
         setMinimumApprovalsByKeyType: _setMinimumApprovalsByKeyType,
         setupRecovery: _setupRecovery,
-        updateUpdatableInstance: _updateUpdatableInstance
+        managerReset: _managerReset,
+        updateUpdatableInstance: _updateUpdatableInstance,
+        updateRequestUpdatableInstance: _updateRequestUpdatableInstance,
+        updateConfirmUpdatableInstance: _updateConfirmUpdatableInstance,
+        updateCancelUpdatableInstance: _updateCancelUpdatableInstance
     }
 }
