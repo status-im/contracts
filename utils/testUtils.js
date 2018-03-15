@@ -73,3 +73,25 @@ exports.expectThrow = async promise => {
 exports.assertJump = (error) => {
     assert(error.message.search('revert') > -1, 'Revert should happen');
 }
+
+
+var callbackToResolve = function (resolve, reject) {
+    return function (error, value) {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(value);
+            }
+        };
+};
+
+
+
+exports.promisify = (func) =>
+    (...args) => {
+        return new Promise((resolve, reject) => {
+        const callback = (err, data) => err ? reject(err) : resolve(data);
+        func.apply(this, [...args, callback]);
+        });
+    }
+        
