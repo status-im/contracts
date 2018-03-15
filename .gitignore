@@ -5,6 +5,7 @@ __pycache__/
 
 # embark
 .embark/
+chains.json
 
 # egg-related
 viper.egg-info/
@@ -33,3 +34,4 @@ coverage.json
 # node
 node_modules/
 npm-debug.log
+
