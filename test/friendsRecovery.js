@@ -5,13 +5,10 @@ let web3 = EmbarkSpec.web3;
 
 const TestUtils = require("../utils/testUtils.js")
 const idUtils = require("../utils/identityUtils");
-
-const web3Utils = require("web3-utils");
-const web3EthAbi = require("web3-eth-abi");
 const ethUtils = require('ethereumjs-util')
 
-const identityJson = require('../build/contracts/Identity.json');
-const friendsRecoveryJson = require('../build/contracts/FriendsRecovery.json');
+const identityJson = require('../dist/contracts/Identity.json');
+const friendsRecoveryJson = require('../dist/contracts/FriendsRecovery.json');
 
 
 describe('FriendsRecovery', function() {
@@ -26,7 +23,9 @@ describe('FriendsRecovery', function() {
         EmbarkSpec = Embark.initTests();
         web3 = EmbarkSpec.web3;
 
-        EmbarkSpec.deployAll({}, (_accounts) => { 
+        EmbarkSpec.deployAll({
+                "TestContract": {}
+            }, (_accounts) => { 
             accounts = _accounts;  
    
             done();          
@@ -34,10 +33,11 @@ describe('FriendsRecovery', function() {
     });
     
     it("Execute a full recovery", async () => {
-        let identityContract = new web3.eth.Contract(identityJson.abi, {from: accounts[0]});
-        let recoveryContract = new web3.eth.Contract(friendsRecoveryJson.abi, {from: accounts[0]});
+        let identityContract = new web3.eth.Contract(identityJson.abi);
+            let recoveryContract = new web3.eth.Contract(friendsRecoveryJson.abi);
     
-        let identity = await identityContract.deploy({data: identityJson.bytecode }).send({from: accounts[0], gas: 5000000, gasPrice: 1});
+        let identity = await identityContract.deploy({data: identityJson.code }).send({from: accounts[0], gas: 5000000, gasPrice: 1});
+        identity.setProvider(web3.currentProvider);
 
         const friends = [ 
             {address: '0xe6fa5ca5836572e0da4804fe3599958dcfc6ac2a', private: '0xffe4e190cedfdff279f903701ac14b34e082c4e20bf600bcc73239486f24ea0e' },
@@ -49,37 +49,33 @@ describe('FriendsRecovery', function() {
         
         // A bytes32 string that represents some user data
         const secret = '0x0000000000000000000000000000000000000000000000000000000000123456';
-        const hashedSecret = web3Utils.soliditySha3(identity.options.address, secret);
+        const hashedSecret = web3.utils.soliditySha3(identity.options.address, secret);
         
-        let newController;
         let threshold = 3;
         let friendHashes = [
-            web3Utils.soliditySha3(identity.options.address, secret, friends[0].address),
-            web3Utils.soliditySha3(identity.options.address, secret, friends[1].address), 
-            web3Utils.soliditySha3(identity.options.address, secret, friends[2].address),
-            web3Utils.soliditySha3(identity.options.address, secret, friends[3].address), 
+            web3.utils.soliditySha3(identity.options.address, secret, friends[0].address),
+            web3.utils.soliditySha3(identity.options.address, secret, friends[1].address), 
+            web3.utils.soliditySha3(identity.options.address, secret, friends[2].address),
+            web3.utils.soliditySha3(identity.options.address, secret, friends[3].address), 
         ];
 
-        newController = accounts[9];
+        let newController = accounts[9];
 
-        let recovery = await recoveryContract.deploy({data: friendsRecoveryJson.bytecode,
+        let recovery = await recoveryContract.deploy({data: friendsRecoveryJson.code,
                                                       arguments: [identity.options.address, 600, threshold, hashedSecret, friendHashes] })
                                              .send({from: accounts[0], gas: 5000000, gasPrice: 1});
+        recovery.setProvider(web3.currentProvider);
 
         // Setting up recovery contract for identity
-        // @rramos - ERROR on this line because provider is not set
         let tx1 = await identity.methods.execute(
             identity.options.address, 
             0, 
             idUtils.encode.setupRecovery(recovery.options.address))
-            .send({from: accounts[0]});
+            .send({from: accounts[0], gas: 5000000});
         
-
-
-        /* @rramos - uncomment this
         const newSecret = '0x0000000000000000000000000000000000000000000000000000000000abcdef';
         const data = idUtils.encode.managerReset(newController);
-        const newHashedSecret = web3Utils.soliditySha3(identity.options.address, newSecret);
+        const newHashedSecret = web3.utils.soliditySha3(identity.options.address, newSecret);
         const newFriendHashes = [
             web3.utils.soliditySha3(accounts[3], newSecret),
             web3.utils.soliditySha3(accounts[4], newSecret), 
@@ -87,7 +83,7 @@ describe('FriendsRecovery', function() {
         ];
 
         // Normaly we would use soliditySha3, but it doesn't like arrays
-        const hashedMessageToSign = await testContractInstance.hash.call(identity.address, secret, identity.address, data, newHashedSecret, newFriendHashes);
+        const hashedMessageToSign = await TestContract.methods.hash(identity.options.address, secret, identity.options.address, data, newHashedSecret, newFriendHashes).call();
         let msgHash = ethUtils.hashPersonalMessage(ethUtils.toBuffer(hashedMessageToSign, 'hex'));
         const friendSignatures = [
             ethUtils.ecsign(msgHash, ethUtils.toBuffer(friends[0].private, 'hex')),
@@ -96,7 +92,7 @@ describe('FriendsRecovery', function() {
             ethUtils.ecsign(msgHash, ethUtils.toBuffer(friends[3].private, 'hex'))
         ];
 
-        let tx2 = await recoveryContract.approvePreSigned(
+        let tx2 = await recovery.methods.approvePreSigned(
             hashedMessageToSign, 
             [
                 friendSignatures[0].v, 
@@ -112,12 +108,13 @@ describe('FriendsRecovery', function() {
                 '0x' + friendSignatures[0].s.toString('hex'), 
                 '0x' + friendSignatures[1].s.toString('hex'), 
                 '0x' + friendSignatures[2].s.toString('hex')                    
-            ], 
-            {from: accounts[9]});
+            ])
+            .send({from: accounts[9], gas: 5000000});
 
-        let tx3 = await recoveryContract.execute(
+
+        let tx3 = await recovery.methods.execute(
             secret,
-            identity.address,
+            identity.options.address,
             data,
             [
                 friends[0].address, 
@@ -125,22 +122,21 @@ describe('FriendsRecovery', function() {
                 friends[2].address
             ],
             newHashedSecret,
-            newFriendHashes,
-            {from: accounts[5]});
+            newFriendHashes)
+            .send({from: accounts[5], gas: 5000000});
 
-        await identity.processManagerReset(0, {from: accounts[0]});
-
-        assert.equal(
-            await identity.getKeyPurpose(TestUtils.addressToBytes32(newController)),
-            idUtils.purposes.MANAGEMENT,
-            identity.address + ".getKeyPurpose(" + newController + ") is not MANAGEMENT_KEY")
+       await identity.methods.processManagerReset(0).send({from: accounts[0], gas: 5000000});
 
         assert.equal(
-            await identity.getKeyPurpose(TestUtils.addressToBytes32(newController)),
+            await identity.methods.getKeyPurpose(TestUtils.addressToBytes32(newController)).call(),
             idUtils.purposes.MANAGEMENT,
-            identity.address+".getKeyPurpose("+newController+") is not correct")
+            identity.options.address + ".getKeyPurpose(" + newController + ") is not MANAGEMENT_KEY")
 
-         */
+        assert.equal(
+            await identity.methods.getKeyPurpose(TestUtils.addressToBytes32(newController)).call(),
+            idUtils.purposes.MANAGEMENT,
+            identity.options.address+".getKeyPurpose("+newController+") is not correct")
+         
     });
     
 
