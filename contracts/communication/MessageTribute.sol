@@ -84,6 +84,8 @@ contract MessageTribute is Controlled {
     {
         Fee memory f = getFee(_from);
         require(f.amount <= balances[msg.sender]);
+        require(audienceRequested[_from][msg.sender].blockNum == 0);
+        
         AudienceRequested(_from, msg.sender);
         audienceRequested[_from][msg.sender] = Audience(block.number, f);
         balances[msg.sender] -= f.amount;
