@@ -21,13 +21,13 @@ contract MessageDeliveryPayout {
      * @param _receiver the address of message destination
      * @param _message the hash of the message
      * @param _deliveryFee the amount willing to pay to deliver the message
-     * @param _senderSignature signature of contract address, message receiver, message hash, and delivery fee by `_sender`
+     * @param _senderSignature signature of contract address, message receiver, message hash, the node that contains the message and the delivery fee by `_sender`
      * @param _receiverSignature signature of contract adress, message hash
      */
     function confirmDelivery(address _sender, address _receiver, bytes32 _message, uint256 _deliveryFee, bytes _senderSignature, bytes _receiverSignature) public {
         require(!delivered[_message]);
         var (v,r,s) = signatureSplit(_senderSignature);
-        require(ecrecover(getSignedHash(keccak256(address(this), _receiver, _message, _deliveryFee)), v,r,s) == address(_sender));
+        require(ecrecover(getSignedHash(keccak256(address(this), _receiver, _message, address(msg.sender), _deliveryFee)), v,r,s) == address(_sender));
         (v,r,s) = signatureSplit(_receiverSignature);
         require(ecrecover(getSignedHash(keccak256(address(this), _message)), v,r,s) == address(_receiver));
         SNT.transferFrom(_sender, msg.sender, _deliveryFee);
