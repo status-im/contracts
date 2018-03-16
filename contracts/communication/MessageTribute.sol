@@ -69,7 +69,7 @@ contract MessageTribute is Controlled {
         return balances[msg.sender];
     }
 
-    function widthdraw(uint256 _value) public {
+    function withdraw(uint256 _value) public {
         require(balances[msg.sender] > 0);
         require(_value <= balances[msg.sender]);
         require(SNT.transferFrom(msg.sender, this, _value));
