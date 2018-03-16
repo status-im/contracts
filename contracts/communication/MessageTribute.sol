@@ -119,6 +119,8 @@ contract MessageTribute is Controlled {
             } else {
                 balances[_to] += amount;
             }
+        } else {
+            balances[_to] += amount;
         }
     }
 
