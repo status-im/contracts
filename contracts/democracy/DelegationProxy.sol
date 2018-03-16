@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import "../token/MiniMeToken.sol";
 
@@ -16,6 +16,13 @@ contract DelegationProxy {
     mapping (address => Delegation[]) public delegations;
     //storage of indexes of the addresses to `delegations[to].from` 
     mapping (address => uint256) toIndexes;
+
+    mapping(bytes32 => FinalDelegateSearch) delegateSearch;
+
+    struct FinalDelegateSearch {
+        address delegate;
+        bool found;
+    }
 
     struct Delegation {
         uint128 fromBlock; //when this was updated
@@ -39,7 +46,70 @@ contract DelegationProxy {
     function delegate(address _to) external {
         _updateDelegate(msg.sender, _to);
     }
-    
+
+    /**
+      * @notice dig into delegate chain to find final delegate, makes delegationOfAt cheaper to call;
+      * @param _delegator Address to lookup final delegate.
+      * @param _block From what block.
+      * @return True when found final delegate.
+      */
+    function findFinalDelegate(address _delegator, uint256 _block, uint256 loopLimit) 
+        public
+        returns (bool) 
+    {
+        bytes32 searchIndex = keccak256(_delegator,_block);
+        FinalDelegateSearch memory search = delegateSearch[searchIndex];
+        require(!search.found);
+        for (uint i = 0; i < loopLimit; i++) {
+            if (search.delegate == address(0)) {
+                search.delegate = _delegator;
+            }
+            address delegateFrom = delegatedToAt(search.delegate, _block);
+            if (delegateFrom == address(0)) {
+                search.found = true;
+            } else {
+                search.delegate = delegateFrom;
+            }
+            if (search.found) {
+                break;
+            }
+        }
+        delegateSearch[searchIndex] = search;
+        return search.found;
+    }
+
+    /**
+     * @notice Explore the chain from `_delegator`, saving search indexes for all delegates
+     * @param _delegator Address to lookup final delegate.
+     * @param _block From what block.
+     * @param stackLimit how much deep explore to build the indexes
+     * @return True when found final delegate.
+     */
+    function buildSearchIndexingFrom(address _delegator, uint256 _block, uint256 stackLimit) 
+        public
+        returns (address delegate, bool found) 
+    {
+        bytes32 searchIndex = keccak256(_delegator,_block);
+        FinalDelegateSearch memory search = delegateSearch[searchIndex];
+        if (!search.found) {
+            if (search.delegate == address(0)) {
+                delegate = delegatedToAt(_delegator, _block);
+                if (delegate == 0) {
+                    delegate = _delegator;
+                    found = true;
+                }
+            }
+
+            if (!found && stackLimit > 0) {
+                (delegate, found) = buildSearchIndexingFrom(delegate, _block, stackLimit-1);
+            } 
+            delegateSearch[searchIndex] = FinalDelegateSearch(delegate, found);
+        }
+        return (delegate, found);
+    }
+
+
+
     /**
      * @notice Reads `_who` configured delegation in this level, 
      *         or from parent level if `_who` never defined/defined to parent address.
@@ -131,13 +201,20 @@ contract DelegationProxy {
      * @return Final delegate address.
      */
     function delegationOfAt(address _who, uint _block) public constant returns(address) {
+        bytes32 searchIndex = keccak256(_who, _block);
+        FinalDelegateSearch memory search = delegateSearch[searchIndex];
+        if (search.found) {
+            return search.delegate;
+        } else if (search.delegate != address(0)) {
+            _who = search.delegate;
+        }
         address delegate = delegatedToAt(_who, _block);
         if (delegate != 0x0) { //_who is delegating?
             return delegationOfAt(delegate, _block); //load the delegation of _who delegation
         } else {
             return _who; //reached the endpoint of delegation
-        }
-    }  
+        }        
+    } 
 
     /**
      * @dev Reads amount delegated influence received from other addresses.
