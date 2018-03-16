@@ -6,7 +6,7 @@ contract Controlled {
     modifier onlyController { 
         require(msg.sender == controller); 
         _; 
-        }
+    }
 
     address public controller;
 
