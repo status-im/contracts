@@ -16,10 +16,10 @@ contract DelegationProxy {
     mapping (address => Delegation[]) public delegations;
     //storage of indexes of the addresses to `delegations[to].from` 
     mapping (address => uint256) toIndexes;
+    //storage of preprocessed view of FinalDelegate
+    mapping(bytes32 => FinalDelegate) delegationView;
 
-    mapping(bytes32 => FinalDelegateSearch) delegateSearch;
-
-    struct FinalDelegateSearch {
+    struct FinalDelegate {
         address delegate;
         bool found;
     }
@@ -48,17 +48,17 @@ contract DelegationProxy {
     }
 
     /**
-      * @notice dig into delegate chain to find final delegate, makes delegationOfAt cheaper to call;
+      * @notice Dig into delegate chain to find final delegate, makes delegationOfAt cheaper to call;
       * @param _delegator Address to lookup final delegate.
       * @param _block From what block.
       * @return True when found final delegate.
       */
     function findFinalDelegate(address _delegator, uint256 _block, uint256 loopLimit) 
-        public
+        external
         returns (bool) 
     {
         bytes32 searchIndex = keccak256(_delegator,_block);
-        FinalDelegateSearch memory search = delegateSearch[searchIndex];
+        FinalDelegate memory search = delegationView[searchIndex];
         require(!search.found);
         for (uint i = 0; i < loopLimit; i++) {
             if (search.delegate == address(0)) {
@@ -74,36 +74,39 @@ contract DelegationProxy {
                 break;
             }
         }
-        delegateSearch[searchIndex] = search;
+        delegationView[searchIndex] = search;
         return search.found;
     }
 
     /**
-     * @notice Explore the chain from `_delegator`, saving search indexes for all delegates
+     * @notice Explore the chain from `_delegator`, saving FinalDelegate indexes for all delegates, makes delegationOfAt cheaper to call.
      * @param _delegator Address to lookup final delegate.
      * @param _block From what block.
-     * @param stackLimit how much deep explore to build the indexes
-     * @return True when found final delegate.
+     * @param _stackLimit how much deep explore to build the indexes
+     * @return address of delegate when found, or the last top delegate found if stacklimit reached without getting into FinalDelegate.
      */
-    function buildSearchIndexingFrom(address _delegator, uint256 _block, uint256 stackLimit) 
+    function buildFinalDelegateChain(address _delegator, uint256 _block, uint256 _stackLimit) 
         public
         returns (address delegate, bool found) 
     {
-        bytes32 searchIndex = keccak256(_delegator,_block);
-        FinalDelegateSearch memory search = delegateSearch[searchIndex];
+        require(_block > block.number); //cannot renderize current state view ?
+        bytes32 searchIndex = keccak256(_delegator, _block);
+        FinalDelegate memory search = delegationView[searchIndex];
         if (!search.found) {
             if (search.delegate == address(0)) {
                 delegate = delegatedToAt(_delegator, _block);
-                if (delegate == 0) {
+                if (delegate == address(0)) {
+                    //`_delegator` FinalDelegate is itself
                     delegate = _delegator;
                     found = true;
                 }
             }
 
-            if (!found && stackLimit > 0) {
-                (delegate, found) = buildSearchIndexingFrom(delegate, _block, stackLimit-1);
+            if (!found && _stackLimit > 0) {
+                //`_delegator` FinalDelegate is the same FinalDelegate of it's `delegate`
+                (delegate, found) = buildFinalDelegateChain(delegate, _block, _stackLimit - 1);
             } 
-            delegateSearch[searchIndex] = FinalDelegateSearch(delegate, found);
+            delegationView[searchIndex] = FinalDelegate(delegate, found);
         }
         return (delegate, found);
     }
@@ -200,16 +203,17 @@ contract DelegationProxy {
      * @param _block From what block.
      * @return Final delegate address.
      */
-    function delegationOfAt(address _who, uint _block) public constant returns(address) {
+    function delegationOfAt(address _who, uint _block) public constant returns(address delegate) {
         bytes32 searchIndex = keccak256(_who, _block);
-        FinalDelegateSearch memory search = delegateSearch[searchIndex];
+        FinalDelegate memory search = delegationView[searchIndex];
         if (search.found) {
-            return search.delegate;
+            delegate = search.delegate;
         } else if (search.delegate != address(0)) {
             _who = search.delegate;
+            delegate = delegatedToAt(_who, _block);
+            delegate = delegate == 0x0 ? _who : delegate;
         }
-        address delegate = delegatedToAt(_who, _block);
-        if (delegate != 0x0) { //_who is delegating?
+        if (delegate != _who) { //_who is delegating?
             return delegationOfAt(delegate, _block); //load the delegation of _who delegation
         } else {
             return _who; //reached the endpoint of delegation
