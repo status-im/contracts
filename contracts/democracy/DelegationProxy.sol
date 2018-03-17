@@ -49,6 +49,7 @@ contract DelegationProxy {
 
     /**
       * @notice Dig into delegate chain to find final delegate, makes delegationOfAt cheaper to call;
+      *         Should be used when you want to track an isolated long delegation chain FinalDelegate
       * @param _delegator Address to lookup final delegate.
       * @param _block From what block.
       * @return True when found final delegate.
@@ -80,6 +81,7 @@ contract DelegationProxy {
 
     /**
      * @notice Explore the chain from `_delegator`, saving FinalDelegate indexes for all delegates, makes delegationOfAt cheaper to call.
+     *         Should be used to track a common FinalDelegates in a small delegation chain, saving gas on repetitive lookups;
      * @param _delegator Address to lookup final delegate.
      * @param _block From what block.
      * @param _stackLimit how much deep explore to build the indexes
