@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
 
 import "../token/MiniMeTokenInterface.sol";
-import "./DelegateProxyInterface.sol";
+import "./DelegationProxyInterface.sol";
 
 
 /**
@@ -9,7 +9,7 @@ import "./DelegateProxyInterface.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @dev Creates a delegation proxy layer for MiniMeTokenInterface. 
  */
-contract DelegationProxy is DelegateProxyInterface {
+contract DelegationProxy is DelegationProxyInterface {
 
     //default delegation proxy, being used when user didn't set any delegation at this level.
     address public parentProxy;
