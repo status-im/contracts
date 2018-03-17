@@ -2,7 +2,7 @@ pragma solidity ^0.4.17;
 
 import "../common/Controlled.sol";
 
-contract EmojiCheck is Controlled {
+contract EmojiTable is Controlled {
 
     struct Range {
         uint32 start;
