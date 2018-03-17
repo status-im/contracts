@@ -25,6 +25,6 @@ contract BountyManagerKernel is BountyManagerPreSigned {
         required = _owners.length;
         pivot = _owners[0];
         repoOwner = _owners[1];
-        factory = StandardBountyFactory(_factory);
+        factory = BountyFactory(_factory);
     }
 }

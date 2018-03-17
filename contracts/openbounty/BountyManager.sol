@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import "./StandardBounty.sol";
-import "./StandardBountyFactory.sol";
+import "./Bounty.sol";
+import "./BountyFactory.sol";
 import "../deploy/Instance.sol";
 import "../common/MultiSig.sol";
 
@@ -9,7 +9,7 @@ contract BountyManager is MultiSig {
     
     address public pivot;
     address public repoOwner;
-    StandardBountyFactory factory;
+    BountyFactory factory;
     /**
      *
      */
@@ -30,7 +30,7 @@ contract BountyManager is MultiSig {
      *
      */
     modifier onlyControlled(address instance) {
-        require(StandardBounty(instance).controller() == address(this));
+        require(Bounty(instance).controller() == address(this));
         _;
     }
     
@@ -41,7 +41,7 @@ contract BountyManager is MultiSig {
         require(_owners.length > 1);
         pivot = _owners[0];
         repoOwner = _owners[1];
-        factory = StandardBountyFactory(_factory);
+        factory = BountyFactory(_factory);
     }
 
 
@@ -77,7 +77,7 @@ contract BountyManager is MultiSig {
         onlyMultiSig
         onlyControlled(_instance) 
     {
-        StandardBounty(_instance).finalize();
+        Bounty(_instance).finalize();
     }
 
     function drainBounty(address _instance, address _destination, address[] _drainTokens) 
@@ -85,7 +85,7 @@ contract BountyManager is MultiSig {
         onlyMultiSig
         onlyControlled(_instance)
     {
-        StandardBounty(_instance).drainBounty(_destination, _drainTokens);
+        Bounty(_instance).drainBounty(_destination, _drainTokens);
     }
 
     ///////
@@ -95,7 +95,7 @@ contract BountyManager is MultiSig {
         internal
         ownerExists(_caller)
     {
-        factory.createStandardBounty(_timeout);
+        factory.createBounty(_timeout);
     }
 
     // Only Pivot
@@ -104,7 +104,7 @@ contract BountyManager is MultiSig {
         onlyPivot(_caller)
         onlyControlled(_instance)
     {
-        StandardBounty(_instance).increaseReward(_destination, _amount);
+        Bounty(_instance).increaseReward(_destination, _amount);
     }
 
     function decreaseRewardBounty(address _caller, address _instance, address _destination, uint256 _amount) 
@@ -112,7 +112,7 @@ contract BountyManager is MultiSig {
         onlyPivot(_caller)
         onlyControlled(_instance)
     {
-        StandardBounty(_instance).decreaseReward(_destination, _amount);
+        Bounty(_instance).decreaseReward(_destination, _amount);
     }
 
     //Only Repo Owner
@@ -121,7 +121,7 @@ contract BountyManager is MultiSig {
         onlyRepoOwner(_caller)
         onlyControlled(_instance)
     {
-        StandardBounty(_instance).close();
+        Bounty(_instance).close();
     }
 
 

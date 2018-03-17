@@ -1,5 +1,5 @@
 pragma solidity ^0.4.17;
-import "../token/Token.sol";
+import "../token/ERC20Token.sol";
 import "../token/ApproveAndCallFallBack.sol";
 import "../common/Controlled.sol";
 
@@ -100,7 +100,7 @@ contract Bounty is Controlled {
         requiredState(State.OPEN)
     {
         require(_token != address(0));
-        uint tokenBalance = Token(_token).balanceOf(address(this));
+        uint tokenBalance = ERC20Token(_token).balanceOf(address(this));
         if (tokenBalance != balances[_token]) { //could be require
             balances[_token] = tokenBalance;
             BalanceChanged(_token, tokenBalance);
@@ -240,8 +240,8 @@ contract Bounty is Controlled {
                 toPay = this.balance;
                 _destination.transfer(toPay);
             } else {
-                toPay = Token(_drainToken).balanceOf(address(this));
-                require(Token(_drainToken).transfer(_destination, toPay));
+                toPay = ERC20Token(_drainToken).balanceOf(address(this));
+                require(ERC20Token(_drainToken).transfer(_destination, toPay));
             }
         }
     }    
@@ -261,7 +261,7 @@ contract Bounty is Controlled {
     {
         require(_amount > 0);
         require(_token != address(0));
-        require(Token(_token).transferFrom(msg.sender, address(this), _amount));
+        require(ERC20Token(_token).transferFrom(msg.sender, address(this), _amount));
         contribution[keccak256(_contributor, _token)] += _amount;
         balances[_token] += _amount;
         BalanceChanged(_token, balances[_token]);
@@ -297,7 +297,7 @@ contract Bounty is Controlled {
         if (_payoutToken == address(0x0)) {
             _destination.transfer(toPay);
         } else {
-            require(Token(_payoutToken).transfer(_destination, toPay));
+            require(ERC20Token(_payoutToken).transfer(_destination, toPay));
         }
     }
 
@@ -313,7 +313,7 @@ contract Bounty is Controlled {
         if (_refundToken == address(0)) { 
             _from.transfer(amount);
         } else {
-            require(Token(_refundToken).transfer(_from, amount));
+            require(ERC20Token(_refundToken).transfer(_from, amount));
         }
     }
 
