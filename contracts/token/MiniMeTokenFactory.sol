@@ -28,7 +28,7 @@ contract MiniMeTokenFactory {
         uint8 _decimalUnits,
         string _tokenSymbol,
         bool _transfersEnabled
-    ) returns (MiniMeToken) {
+    ) public returns (MiniMeToken) {
         MiniMeToken newToken = new MiniMeToken(
             this,
             _parentToken,
