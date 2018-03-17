@@ -48,7 +48,7 @@ import "./DelegatedCall.sol";
      /**
      * @dev returns system if system has code, otherwise return recover
      */
-    function _target()
+    function targetDelegatedCall()
         internal
         constant
         returns(address)
