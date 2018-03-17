@@ -11,7 +11,7 @@ import "./DelegationProxy.sol";
  * New layers need to be defined under a unique topic address topic, and all fall back to root topic (topic 0x0)   
  */
 contract TrustNetwork is Controlled {
-    mapping (address => Topic) topics;
+    mapping (bytes32 => Topic) topics;
     DelegationProxyFactory delegationFactory;
     
     struct Topic {
@@ -24,8 +24,7 @@ contract TrustNetwork is Controlled {
         topics[0x0] = newTopic(0x0, 0x0);
     }
     
-    function addTopic(address topicId, address parentTopic) public onlyController {
-        
+    function addTopic(bytes32 topicId, bytes32 parentTopic) public onlyController {
         Topic memory parent = topics[parentTopic];
         address vote = address(parent.voteProxy);
         address veto = address(parent.vetoProxy);
@@ -40,7 +39,7 @@ contract TrustNetwork is Controlled {
         topics[topicId] = newTopic(vote, veto);
     }
     
-    function getTopic(address _topicId) public constant returns (DelegationProxy vote, DelegationProxy veto) {
+    function getTopic(bytes32 _topicId) public constant returns (DelegationProxy vote, DelegationProxy veto) {
         Topic memory topic = topics[_topicId];
         vote = topic.voteProxy;
         veto = topic.vetoProxy;
