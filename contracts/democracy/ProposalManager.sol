@@ -54,7 +54,7 @@ contract ProposalManager is Controlled {
         Veto  
     }
      
-    function ProposalManager(MiniMeToken _SNT, TrustNetwork _trustNet, address _stakeBank) public {
+    function ProposalManager(MiniMeToken _SNT, TrustNetwork _trustNet) public {
         trustNet = _trustNet;
         SNT = _SNT;
     }
