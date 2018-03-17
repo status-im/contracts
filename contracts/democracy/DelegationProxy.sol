@@ -1,15 +1,16 @@
 pragma solidity ^0.4.17;
 
-import "../token/MiniMeToken.sol";
+import "../token/MiniMeTokenInterface.sol";
+import "./DelegateProxyInterface.sol";
 
 
 /**
  * @title DelegationProxy
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * @dev Creates a delegation proxy layer for MiniMeToken. 
+ * @dev Creates a delegation proxy layer for MiniMeTokenInterface. 
  */
-contract DelegationProxy {
-    event Delegate(address who, address to);
+contract DelegationProxy is DelegateProxyInterface {
+
     //default delegation proxy, being used when user didn't set any delegation at this level.
     address public parentProxy;
     //snapshots of changes, allow delegation changes be done at any time without compromising vote results.
@@ -54,7 +55,11 @@ contract DelegationProxy {
       * @param _block From what block.
       * @return True when found final delegate.
       */
-    function findFinalDelegate(address _delegator, uint256 _block, uint256 loopLimit) 
+    function findFinalDelegate(
+        address _delegator,
+        uint256 _block,
+        uint256 loopLimit
+    ) 
         external
         returns (bool) 
     {
@@ -87,7 +92,11 @@ contract DelegationProxy {
      * @param _stackLimit how much deep explore to build the indexes
      * @return address of delegate when found, or the last top delegate found if stacklimit reached without getting into FinalDelegate.
      */
-    function buildFinalDelegateChain(address _delegator, uint256 _block, uint256 _stackLimit) 
+    function buildFinalDelegateChain(
+        address _delegator,
+        uint256 _block,
+        uint256 _stackLimit
+    ) 
         public
         returns (address delegate, bool found) 
     {
@@ -121,7 +130,11 @@ contract DelegationProxy {
      * @param _who What address to lookup.
      * @return The address `_who` choosen delegate to.
      */
-    function delegatedTo(address _who) public constant returns (address) {
+    function delegatedTo(address _who)
+        public
+        constant 
+        returns (address) 
+    {
         return delegatedToAt(_who, block.number);
     }
 
@@ -130,34 +143,52 @@ contract DelegationProxy {
      * @param _who Address to lookup.
      * @return Final delegate address.
      */
-    function delegationOf(address _who) public constant returns(address) {
+    function delegationOf(address _who)
+        public
+        constant
+        returns(address)
+    {
         return delegationOfAt(_who, block.number);
     }
 
     /**
      * @notice Reads the sum of votes a `_who' have at block number `_block`.
      * @param _who From what address.
-     * @param _token Address of source MiniMeToken.
+     * @param _token Address of source MiniMeTokenInterface.
      * @return Amount of influence of `who` have.
      */
-    function influenceOf(address _who, MiniMeToken _token) public constant returns(uint256 _total) {
+    function influenceOf(
+        address _who,
+        MiniMeTokenInterface _token
+    ) 
+        public 
+        constant 
+        returns(uint256 _total)
+    {
         return influenceOfAt(_who, _token, block.number);
     }   
 
     /**
      * @notice Reads amount delegated influence `_who` received from other addresses.
      * @param _who What address to lookup.
-     * @param _token Source MiniMeToken.
+     * @param _token Source MiniMeTokenInterface.
      * @return Sum of delegated influence received by `_who` in block `_block` from other addresses.
      */
-    function delegatedInfluenceFrom(address _who, address _token) public constant returns(uint256 _total) {
+    function delegatedInfluenceFrom(
+        address _who,
+        address _token
+    )
+        public 
+        constant 
+        returns(uint256 _total) 
+    {
         return delegatedInfluenceFromAt(_who, _token, block.number, address(this));
     }
 
     /**
      * @notice Reads amount delegated influence `_who` received from other addresses at block number `_block`.
      * @param _who What address to lookup.
-     * @param _token Source MiniMeToken.
+     * @param _token Source MiniMeTokenInterface.
      * @param _block Position in history to lookup.
      * @return Sum of delegated influence received by `_who` in block `_block` from other addresses
      */
@@ -180,7 +211,14 @@ contract DelegationProxy {
      * @param _block Block number of what height in history.
      * @return The address `_who` choosen delegate to.
      */
-    function delegatedToAt(address _who, uint _block) public constant returns (address addr) {
+    function delegatedToAt(
+        address _who,
+        uint _block
+    )
+        public
+        constant
+        returns (address addr)
+    {
         Delegation[] storage checkpoints = delegations[_who];
 
         //In case there is no registry
@@ -205,7 +243,14 @@ contract DelegationProxy {
      * @param _block From what block.
      * @return Final delegate address.
      */
-    function delegationOfAt(address _who, uint _block) public constant returns(address delegate) {
+    function delegationOfAt(
+        address _who,
+        uint _block
+    )
+        public
+        constant
+        returns(address delegate)
+    {
         bytes32 searchIndex = keccak256(_who, _block);
         FinalDelegate memory search = delegationView[searchIndex];
         if (search.found) {
@@ -225,7 +270,7 @@ contract DelegationProxy {
     /**
      * @dev Reads amount delegated influence received from other addresses.
      * @param _who What address to lookup.
-     * @param _token Source MiniMeToken.
+     * @param _token Source MiniMeTokenInterface.
      * @param _block Position in history to lookup.
      * @param _childProxy The child DelegationProxy requesting the call to parent.
      * @return Sum of delegated influence received by `_who` in block `_block` from other addresses.
@@ -269,7 +314,7 @@ contract DelegationProxy {
         uint _len = d.from.length;
         for (uint256 i = 0; _len > i; i++) {
             address _from = d.from[i];
-            _total += MiniMeToken(_token).balanceOfAt(_from, _block); // source of _who votes
+            _total += MiniMeTokenInterface(_token).balanceOfAt(_from, _block); // source of _who votes
             _total += DelegationProxy(_childProxy).delegatedInfluenceFromAt(
                 _from,
                 _token,
@@ -283,13 +328,21 @@ contract DelegationProxy {
     /**
      * @notice Reads the sum of votes a `_who' have at block number `_block`.
      * @param _who From what address.
-     * @param _token Address of source MiniMeToken.
+     * @param _token Address of source MiniMeTokenInterface.
      * @param _block From what block
      * @return Amount of influence of `who` have.
      */
-    function influenceOfAt(address _who, MiniMeToken _token, uint _block) public constant returns(uint256 _total) {
+    function influenceOfAt(
+        address _who,
+        MiniMeTokenInterface _token,
+        uint _block
+    )
+        public
+        constant
+        returns(uint256 _total)
+    {
         if (delegationOfAt(_who, _block) == _who) { //is endpoint of delegation?
-            _total = MiniMeToken(_token).balanceOfAt(_who, _block); // source of _who votes
+            _total = MiniMeTokenInterface(_token).balanceOfAt(_who, _block); // source of _who votes
             _total += delegatedInfluenceFromAt(_who, _token, _block, address(this)); //votes delegated to `_who`
         } else { 
             _total = 0; //no influence because were delegated
