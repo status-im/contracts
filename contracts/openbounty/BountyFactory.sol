@@ -2,7 +2,7 @@ pragma solidity ^0.4.17;
 
 import "../common/Controlled.sol";
 import "../deploy/Instance.sol";
-import "../BountyKernel.sol";
+import "./BountyKernel.sol";
 
 /** 
  * @title BountyKernel

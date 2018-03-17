@@ -3,6 +3,9 @@ pragma solidity ^0.4.11;
 import "../token/MiniMeToken.sol";
 import "../token/TokenController.sol";
 import "../common/Owned.sol";
+import "../common/SafeMath.sol";
+import "../token/ERC20Token.sol";
+import "./DynamicCeiling.sol";
 
 /*
     Copyright 2017, Jordi Baylina

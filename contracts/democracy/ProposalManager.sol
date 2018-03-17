@@ -1,11 +1,10 @@
 pragma solidity ^0.4.17;
 
-import "./TrustNetwork.sol";
-import "./DelegationProxy.sol";
-import "./ProposalExecutor.sol";
-import "../token/MiniMeToken.sol";
+import "./TrustNetworkInterface.sol";
+import "./DelegationProxyInterface.sol";
+import "../token/MiniMeTokenInterface.sol";
 import "../common/Controlled.sol";
-
+import "./ProposalExecutor.sol";
 
 /**
  * @title ProposalManager
@@ -14,8 +13,8 @@ import "../common/Controlled.sol";
  */
 contract ProposalManager is Controlled {
  
-    TrustNetwork public trustNet;
-    MiniMeToken public SNT;
+    TrustNetworkInterface public trustNet;
+    MiniMeTokenInterface public token;
     uint256 public tabulationBlockDelay = 10000;
 
     Proposal[]  proposals;
@@ -54,14 +53,14 @@ contract ProposalManager is Controlled {
         Veto  
     }
      
-    function ProposalManager(MiniMeToken _SNT, TrustNetwork _trustNet) public {
+    function ProposalManager(MiniMeTokenInterface _SNT, TrustNetworkInterface _trustNet) public {
         trustNet = _trustNet;
-        SNT = _SNT;
+        token = _SNT;
     }
 
     function addProposal(bytes32 _topic, bytes32 _txHash, uint _stake) public returns (uint) {
         require(_stake > 1000);
-        require(SNT.transferFrom(msg.sender, address(this), _stake));
+        require(token.transferFrom(msg.sender, address(this), _stake));
         uint pos = proposals.length++;
         Proposal storage p = proposals[pos];
         
@@ -114,15 +113,15 @@ contract ProposalManager is Controlled {
         proposal.tabulated[_delegator].vote = true;
         Vote _vote = proposal.voteMap[_delegator];
         if(_vote == Vote.Null) {
-            DelegationProxy voteDelegation;
-            DelegationProxy vetoDelegation;
+            DelegationProxyInterface voteDelegation;
+            DelegationProxyInterface vetoDelegation;
             (voteDelegation, vetoDelegation) = trustNet.getTopic(proposal.topic);
             address delegate = voteDelegation.delegationOfAt(_delegator, proposal.vetoBlockEnd);
             _vote = proposal.voteMap[delegate];
         }
 
         if (_vote == Vote.Reject || _vote == Vote.Approve) {
-            proposal.results[uint8(_vote)] += MiniMeToken(SNT).balanceOfAt(_delegator, proposal.voteBlockEnd);
+            proposal.results[uint8(_vote)] += token.balanceOfAt(_delegator, proposal.voteBlockEnd);
         }
     }
 
@@ -133,15 +132,15 @@ contract ProposalManager is Controlled {
         proposal.tabulated[_delegator].veto = true;
         Vote _vote = proposal.voteMap[_delegator];
         if (_vote == Vote.Null) {
-            DelegationProxy voteDelegation;
-            DelegationProxy vetoDelegation;
+            DelegationProxyInterface voteDelegation;
+            DelegationProxyInterface vetoDelegation;
             (voteDelegation, vetoDelegation) = trustNet.getTopic(proposal.topic);
             address delegate = vetoDelegation.delegationOfAt(_delegator, proposal.vetoBlockEnd);
             _vote = proposal.voteMap[delegate];
         }
 
         if (_vote == Vote.Veto) {
-            proposal.results[uint8(Vote.Veto)] += MiniMeToken(SNT).balanceOfAt(_delegator, proposal.vetoBlockEnd);
+            proposal.results[uint8(Vote.Veto)] += token.balanceOfAt(_delegator, proposal.vetoBlockEnd);
         }
         
     }
@@ -150,7 +149,7 @@ contract ProposalManager is Controlled {
         Proposal storage proposal = proposals[_proposal];
         require(proposal.vetoBlockEnd + tabulationBlockDelay > block.number);
         require(!proposal.approved);
-        uint256 totalTokens = MiniMeToken(SNT).totalSupplyAt(proposal.vetoBlockEnd);
+        uint256 totalTokens = token.totalSupplyAt(proposal.vetoBlockEnd);
         uint256 approvals = proposal.results[uint8(Vote.Approve)];
         uint256 veto = proposal.results[uint8(Vote.Veto)];
         uint256 approvalQuorum = (totalTokens / 2);
@@ -158,6 +157,6 @@ contract ProposalManager is Controlled {
         require(veto < vetoQuorum); 
         require(approvals >= approvalQuorum);
         proposal.approved = true;
-        require(SNT.transferFrom(address(this), proposal.staker, proposal.stake));
+        require(token.transferFrom(address(this), proposal.staker, proposal.stake));
     }
 }

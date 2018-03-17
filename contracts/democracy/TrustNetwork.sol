@@ -1,8 +1,9 @@
 pragma solidity ^0.4.10;
 
 import "../common/Controlled.sol";
+import "./TrustNetworkInterface.sol";
 import "./DelegationProxyFactory.sol";
-import "./DelegationProxy.sol";
+
 
 /**
  * @title TrustNetwork
@@ -10,7 +11,7 @@ import "./DelegationProxy.sol";
  * Defines two contolled DelegationProxy chains: vote and veto chains.
  * New layers need to be defined under a unique topic address topic, and all fall back to root topic (topic 0x0)   
  */
-contract TrustNetwork is Controlled {
+contract TrustNetwork is TrustNetworkInterface, Controlled {
     mapping (bytes32 => Topic) topics;
     DelegationProxyFactory delegationFactory;
     
@@ -39,7 +40,7 @@ contract TrustNetwork is Controlled {
         topics[topicId] = newTopic(vote, veto);
     }
     
-    function getTopic(bytes32 _topicId) public constant returns (DelegationProxy vote, DelegationProxy veto) {
+    function getTopic(bytes32 _topicId) public constant returns (DelegationProxyInterface vote, DelegationProxyInterface veto) {
         Topic memory topic = topics[_topicId];
         vote = topic.voteProxy;
         veto = topic.vetoProxy;
@@ -51,6 +52,8 @@ contract TrustNetwork is Controlled {
             vetoProxy: delegationFactory.create(_veto)
         });
     }
+
+    
 
     
 
