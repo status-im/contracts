@@ -28,11 +28,13 @@ pragma solidity ^0.4.6;
 import "../common/Controlled.sol";
 import "./TokenController.sol";
 import "./ApproveAndCallFallBack.sol";
+import "./MiniMeTokenInterface.sol";
+import "./MiniMeTokenFactory.sol";
 
 /// @dev The actual token contract, the default controller is the msg.sender
 ///  that deploys the contract, so usually this token will be deployed by a
 ///  token controller contract, which Giveth will call a "Campaign"
-contract MiniMeToken is Controlled {
+contract MiniMeToken is MiniMeTokenInterface, Controlled {
 
     string public name;                //The Token's name: e.g. DigixDAO Tokens
     uint8 public decimals;             //Number of decimals of the smallest unit
@@ -43,7 +45,7 @@ contract MiniMeToken is Controlled {
     /// @dev `Checkpoint` is the structure that attaches a block number to a
     ///  given value, the block number attached is the one that last changed the
     ///  value
-    struct  Checkpoint {
+    struct Checkpoint {
 
         // `fromBlock` is the block number that the value was generated from
         uint128 fromBlock;
