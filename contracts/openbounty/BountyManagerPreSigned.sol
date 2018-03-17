@@ -16,7 +16,7 @@ contract BountyManagerPreSigned is BountyManager {
     }
 
     ///////
-    /// Token proxied calls
+    /// ERC20Token proxied calls
 
     /**
      *
