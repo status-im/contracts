@@ -1,6 +1,5 @@
 pragma solidity ^0.4.17;
 
-import "../common/Controlled.sol";
 import "../token/MiniMeToken.sol";
 
 
@@ -13,7 +12,7 @@ import "../token/MiniMeToken.sol";
         SNT is deposited, and transferred from stakeholders to recipients upon receiving 
         a reply from the recipient.
  */
-contract MessageTribute is Controlled {
+contract MessageTribute {
 
     MiniMeToken public SNT;
 
@@ -23,11 +22,11 @@ contract MessageTribute is Controlled {
         bool permanent;
     }
 
-    mapping(address => mapping(address => Fee)) feeCatalog;
-    mapping(address => uint256) balances;
+    mapping(address => mapping(address => Fee)) public feeCatalog;
+    mapping(address => uint256) public balances;
     
-    mapping(bytes32 => uint256) friendIndex;
-    address[] friends; 
+    mapping(bytes32 => uint256) private friendIndex;
+    address[] private friends; 
 
     struct Audience {
         uint256 blockNum;
@@ -113,8 +112,7 @@ contract MessageTribute is Controlled {
         balances[msg.sender] -= f.amount;
     }
 
-    function hasPendingAudience(address _from)
-        public view returns (bool) {
+    function hasPendingAudience(address _from) public view returns (bool) {
         return audienceRequested[_from][msg.sender].blockNum > 0;
     }
 
@@ -126,7 +124,7 @@ contract MessageTribute is Controlled {
         }
     }
 
-    function grantAudience(address _to, bool _approve) public {
+    function grantAudience(address _to, bool _approve, bool refund) public {
 
         Audience memory aud = audienceRequested[msg.sender][_to];
 
@@ -178,7 +176,4 @@ contract MessageTribute is Controlled {
             feeCatalog[_from][_to].permanent = false;
         }
     }
-
-    
-    
 }

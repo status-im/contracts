@@ -269,9 +269,40 @@ describe('MessageTribute', function() {
             "Deposited balance must be 100"); 
      });
 
-     it("Missing tests", async () => {
-        // Cancelling Audience - account8
+     it("Cancelling an audience", async() => {
+        
+        assert.equal(
+            await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[8]}),
+            true,
+            "Must have a pending audience");
 
+        let tx = await MessageTribute.methods.cancelAudienceRequest(accounts[0]).send({from: accounts[8]});
+
+        assert.notEqual(tx.events.AudienceCancelled, undefined, "AudienceCancelled wasn't triggered");
+
+        assert.equal(
+            await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[8]}),
+            false,
+            "Must not have a pending audience");
+
+     });
+
+     it("Cancelling an audience without having one", async() => {
+        
+        assert.equal(
+            await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[6]}),
+            false,
+            "Must not have a pending audience");
+
+        try {
+            let tx = await MessageTribute.methods.cancelAudienceRequest(accounts[0]).send({from: accounts[6]});
+            assert.fail('should have reverted before');
+        } catch(error) {
+            TestUtils.assertJump(error);
+        }
+     });
+
+     it("Missing tests", async () => {
         // Granting Audience - account7
 
         // Deniying Audience
@@ -304,6 +335,7 @@ describe('MessageTribute', function() {
             "Deposited balance must be 100"); 
 
         // TODO grant audience
+        
         // TODO request another audience
      });
 
