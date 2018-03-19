@@ -25,6 +25,9 @@ contract MessageTribute is Controlled {
 
     mapping(address => mapping(address => Fee)) feeCatalog;
     mapping(address => uint256) balances;
+    
+    mapping(bytes32 => uint256) friendIndex;
+    address[] friends; 
 
     struct Audience {
         uint256 blockNum;
@@ -33,12 +36,39 @@ contract MessageTribute is Controlled {
 
     mapping(address => mapping(address => Audience)) audienceRequested;
     
-
     function MessageTribute(address _SNT) public {
         SNT = MiniMeToken(_SNT);
     }
 
+    function addFriends(address[] _friends) public {
+        uint256 len = _friends.length;
+        for (uint256 i = 0; i < len; i++) {
+            bytes32 frHash = keccak256(_friends[i], msg.sender);
+            if (friendIndex[frHash] == 0)
+                friendIndex[frHash] = friends.push(_friends[i]);
+        }
+    }
+
+    function removeFriends(address[] _friends) public {
+        uint256 len = _friends.length;
+        for (uint256 i = 0; i < len; i++) {
+            bytes32 frHash = keccak256(_friends[i], msg.sender);
+            require(friendIndex[frHash] > 0);
+            uint index = friendIndex[frHash] - 1;
+            delete friendIndex[frHash];
+            address replacer = friends[friends.length - 1];
+            friends[index] = replacer;
+            friendIndex[keccak256(replacer, msg.sender)] = index;
+            friends.length--;
+        }
+    }
+
+    function isFriend(address _friend) public view returns(bool) {
+        return friendIndex[keccak256(_friend, msg.sender)] > 0;
+    }
+
     function setRequiredTribute(address _to, uint _amount, bool _isTribute, bool _isPermanent) public {
+        require(friendIndex[keccak256(msg.sender, _to)] == 0);
         feeCatalog[msg.sender][_to] = Fee(_amount, _isTribute, _isPermanent);
     }
 
@@ -49,20 +79,11 @@ contract MessageTribute is Controlled {
         fee = f.amount;
         tribute = f.tribute;
     }
-
-    function getFee(address _from) internal 
-        returns (Fee) 
-    {
-        Fee memory generalFee  = feeCatalog[_from][address(0)];
-        Fee memory specificFee = feeCatalog[_from][msg.sender];
-        return specificFee.amount > 0 ? specificFee : generalFee;
-    }
     
-
     function deposit(uint256 _value) public {
         require(_value > 0);
         balances[msg.sender] += _value;
-        require(SNT.transferFrom(msg.sender, this, _value));
+        require(SNT.transferFrom(msg.sender, address(this), _value));
     }
 
     function balance() public view returns (uint256) {
@@ -72,7 +93,8 @@ contract MessageTribute is Controlled {
     function withdraw(uint256 _value) public {
         require(balances[msg.sender] > 0);
         require(_value <= balances[msg.sender]);
-        require(SNT.transferFrom(msg.sender, this, _value));
+        balances[msg.sender] -= _value;
+        require(SNT.transfer(msg.sender, _value)); 
     }
 
     event AudienceRequested(address from, address to);
@@ -91,6 +113,11 @@ contract MessageTribute is Controlled {
         balances[msg.sender] -= f.amount;
     }
 
+    function hasPendingAudience(address _from)
+        public view returns (bool) {
+        return audienceRequested[_from][msg.sender].blockNum > 0;
+    }
+
     function cancelAudienceRequest(address _from) public {
         if (audienceRequested[_from][msg.sender].blockNum > 0) {
             AudienceCancelled(_from, msg.sender);
@@ -99,7 +126,7 @@ contract MessageTribute is Controlled {
         }
     }
 
-    function grantAudience(address _to, bool _approve) {
+    function grantAudience(address _to, bool _approve) public {
 
         Audience memory aud = audienceRequested[msg.sender][_to];
 
@@ -132,6 +159,18 @@ contract MessageTribute is Controlled {
         return getFee(_to).amount <= balances[msg.sender];
     }
 
+    function getFee(address _from) internal view
+        returns (Fee) 
+    {
+        Fee memory generalFee  = feeCatalog[_from][address(0)];
+        Fee memory specificFee = feeCatalog[_from][msg.sender];
+
+        if (friendIndex[keccak256(msg.sender, _from)] > 0)
+            return Fee(0, false, false);
+
+        return specificFee.amount > 0 ? specificFee : generalFee;
+    }
+
     function clearFee(address _from, address _to) private {
         if (!feeCatalog[_from][_to].permanent) {
             feeCatalog[_from][_to].amount = 0;
@@ -139,5 +178,7 @@ contract MessageTribute is Controlled {
             feeCatalog[_from][_to].permanent = false;
         }
     }
+
+    
     
 }

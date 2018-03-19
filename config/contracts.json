@@ -30,7 +30,10 @@
       "UpdatedIdentityKernel": { "deploy": false },
       "Identity": { "gas": 5000000 },
       "IdentityFactory": { "deploy": false },
-      "IdentityKernel": { "gas": 5000000 }
+      "IdentityKernel": { "gas": 5000000 },
+      "MessageTribute": {"args": ["0xc55cf4b03948d7ebc8b9e8bad92643703811d162"]},
+      "MiniMeTokenFactory": {"deploy": false},
+      "MiniMeToken": {"deploy": false}
     }
   }
 }
