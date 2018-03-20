@@ -69,12 +69,14 @@ contract Identity is ERC725, ERC735 {
         bytes32 _s
     ) 
     {
-        require(address(_key) == ecrecover(
-            keccak256("\x19Ethereum Signed Message:\n32", _signHash),
-            _v,
-            _r,
-            _s
-            ));
+        require(
+            address(_key) == ecrecover(
+                keccak256("\x19Ethereum Signed Message:\n32", _signHash),
+                _v,
+                _r,
+                _s
+                )
+            );
         require(keys[_key].purpose != 0);
         _;
     }
@@ -221,7 +223,7 @@ contract Identity is ERC725, ERC735 {
             require(_issuer == msg.sender);
             require(isKeyType(bytes32(msg.sender), CLAIM_SIGNER_KEY));
             _execute(address(this), 0, msg.data);
-            ClaimRequested(
+            emit ClaimRequested(
                 claimHash,
                 _claimType,
                 _scheme,
@@ -389,17 +391,16 @@ contract Identity is ERC725, ERC735 {
             _key,
             keccak256(
                 address(this), 
-                bytes4(
-                    keccak256("execute(address,uint256,bytes)")), 
-                    _to,
-                    _value,
-                    _data,
-                    _nonce
-                    ),
-                _v,
-                _r,
-                _s
-                )
+                bytes4(keccak256("execute(address,uint256,bytes)")), 
+                _to,
+                _value,
+                _data,
+                _nonce
+            ),
+            _v,
+            _r,
+            _s
+        )
         managerOrActor(_key)
         returns (uint256 executionId)
     {
@@ -434,15 +435,14 @@ contract Identity is ERC725, ERC735 {
         returns (uint256 executionId)
     {
         executionId = nonce;
-        ExecutionRequested(executionId, _to, _value, _data);
-        txx[executionId] = Transaction(
-                            {
-                                to: _to,
-                                value: _value,
-                                data: _data,
-                                nonce: nonce,
-                                approverCount: 0
-                            });            
+        emit ExecutionRequested(executionId, _to, _value, _data);
+        txx[executionId] = Transaction({
+            to: _to,
+            value: _value,
+            data: _data,
+            nonce: nonce,
+            approverCount: 0
+        });            
         nonce++;
     }
     
@@ -460,7 +460,7 @@ contract Identity is ERC725, ERC735 {
         uint256 approvalCount;
         uint256 requiredKeyPurpose;
         
-        Approved(_id, _approval);
+        emit Approved(_id, _approval);
 
         if (trx.to == address(this)) {
             require(isKeyType(_key, MANAGEMENT_KEY));
@@ -475,7 +475,7 @@ contract Identity is ERC725, ERC735 {
         }
 
         if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
-            Executed(_id, trx.to, trx.value, trx.data);
+            emit Executed(_id, trx.to, trx.value, trx.data);
             success = trx.to.call.value(trx.value)(trx.data);
         }
     }
@@ -496,7 +496,7 @@ contract Identity is ERC725, ERC735 {
             _purpose == CLAIM_SIGNER_KEY ||
             _purpose == ENCRYPTION_KEY
             );
-        KeyAdded(_key, _purpose, _type);
+        emit KeyAdded(_key, _purpose, _type);
         keys[keyHash] = Key(_purpose, _type, _key);
         indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
     }
@@ -509,7 +509,7 @@ contract Identity is ERC725, ERC735 {
     {
         bytes32 keyHash = keccak256(_key, _purpose);
         Key storage myKey = keys[keyHash];
-        KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
+        emit KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
      
         uint index = indexes[keyHash];
         delete indexes[keyHash];
@@ -573,7 +573,7 @@ contract Identity is ERC725, ERC735 {
         );
         indexes[_claimHash] = claimsByType[_claimType].length;
         claimsByType[_claimType].push(_claimHash);
-        ClaimAdded(
+        emit ClaimAdded(
             _claimHash,
             _claimType,
             _scheme,
@@ -597,7 +597,7 @@ contract Identity is ERC725, ERC735 {
         private
     {
         require(msg.sender == _issuer);
-        ClaimChanged(
+        emit ClaimChanged(
             _claimHash,
             _claimType,
             _scheme,
