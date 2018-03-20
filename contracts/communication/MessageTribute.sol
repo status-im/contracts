@@ -30,6 +30,7 @@ contract MessageTribute {
 
     struct Audience {
         uint256 blockNum;
+        uint256 timestamp;
         Fee fee;
     }
 
@@ -96,9 +97,9 @@ contract MessageTribute {
         require(SNT.transfer(msg.sender, _value)); 
     }
 
-    event AudienceRequested(address from, address to);
-    event AudienceCancelled(address from, address to);
-    event AudienceGranted(address from, address to, bool approve);
+    event AudienceRequested(address indexed from, address indexed to);
+    event AudienceCancelled(address indexed from, address indexed to);
+    event AudienceGranted(address indexed from, address indexed to, bool approve);
 
     function requestAudience(address _from)
         public 
@@ -108,7 +109,8 @@ contract MessageTribute {
         require(audienceRequested[_from][msg.sender].blockNum == 0);
         
         AudienceRequested(_from, msg.sender);
-        audienceRequested[_from][msg.sender] = Audience(block.number, f);
+        audienceRequested[_from][msg.sender] = Audience(block.number, now, f);
+
         balances[msg.sender] -= f.amount;
     }
 
@@ -117,16 +119,16 @@ contract MessageTribute {
     }
 
     function cancelAudienceRequest(address _from) public {
-        if (audienceRequested[_from][msg.sender].blockNum > 0) {
-            AudienceCancelled(_from, msg.sender);
-            balances[msg.sender] += audienceRequested[_from][msg.sender].fee.amount;
-            delete audienceRequested[_from][msg.sender];
-        }
+        require(audienceRequested[_from][msg.sender].blockNum > 0);
+        require(audienceRequested[_from][msg.sender].timestamp + 2 hours <= now);
+        AudienceCancelled(_from, msg.sender);
+        balances[msg.sender] += audienceRequested[_from][msg.sender].fee.amount;
+        delete audienceRequested[_from][msg.sender];
     }
 
-    function grantAudience(address _to, bool _approve, bool refund) public {
+    function grantAudience(address _to, bool _approve) public {
 
-        Audience memory aud = audienceRequested[msg.sender][_to];
+        Audience storage aud = audienceRequested[msg.sender][_to];
 
         require(aud.blockNum > 0);
        
@@ -140,7 +142,7 @@ contract MessageTribute {
 
         if (isTribute) {
             if (_approve) {
-                require(SNT.transferFrom(this, msg.sender, amount));  
+                require(SNT.transfer(msg.sender, amount));
             } else {
                 balances[_to] += amount;
             }
