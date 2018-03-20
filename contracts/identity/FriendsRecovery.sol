@@ -1,5 +1,9 @@
 pragma solidity ^0.4.17;
 
+/**
+ * @notice Select privately other accounts that will allow the execution of actions
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
+ */
 contract FriendsRecovery {
     
     address private identity;
@@ -33,13 +37,21 @@ contract FriendsRecovery {
         _;
     }
 
+    /**
+     * @notice Contructor of FriendsRecovery
+     * @param _identity Controller of this contract
+     * @param _setupDelay Delay for changes being active
+     * @param _threshold Amount of approvals required
+     * @param _secret Double hash of User Secret
+     * @param _friendHashes Friends addresses hashed with single hash of User Secret
+     **/
     function FriendsRecovery(
         address _identity,
         uint256 _setupDelay,
         uint256 _threshold,
         bytes32 _secret,
         bytes32[] _friendHashes
-        ) 
+    ) 
         public 
     {
         identity = _identity;
@@ -49,21 +61,34 @@ contract FriendsRecovery {
         addFriends(_friendHashes);
     }
 
+    /**
+     * @notice Withdraw funds sent incorrectly to this contract
+     */
     function withdraw() 
         external
         identityOnly
     {
-        identity.transfer(this.balance);
+        identity.transfer(address(this).balance);
     }
 
+    /** 
+     * @notice Cancels a pending setup to change the recovery parameters
+     */
     function cancelSetup() 
         external 
         identityOnly 
     {
         delete pendingSetup;
-        SetupRequested(0);
+        emit SetupRequested(0);
     }
 
+    /**
+     * @notice reconfigure recovery parameters
+     * @param _newSecret Double hash of User Secret
+     * @param _setupDelay Delay for changes being active
+     * @param _threshold Amount of approvals required
+     * @param _newFriendsHashes Friends addresses hashed with single hash of User Secret
+     */
     function setup(
         bytes32 _newSecret,
         uint256 _setupDelay,
@@ -79,9 +104,12 @@ contract FriendsRecovery {
         pendingSetup.friends = _newFriendsHashes;
         pendingSetup.threshold = _threshold;
         pendingSetup.setupDelay = _setupDelay;
-        SetupRequested(block.timestamp + setupDelay);
+        emit SetupRequested(block.timestamp + setupDelay);
     }
 
+    /**
+     * @notice Activate a pending setup of recovery parameters
+     */
     function activate()
         external
     {
@@ -92,17 +120,28 @@ contract FriendsRecovery {
         secret = pendingSetup.secret;
         addFriends(pendingSetup.friends);
         delete pendingSetup;
-        Activated();
+        emit Activated();
     }
 
+    /**
+     * @notice Approves a recovery
+     * @param _secretHash Hash of the transaction
+     */
     function approve(bytes32 _secretHash) 
         external 
     {
         require(!signed[_secretHash][msg.sender]);
         signed[_secretHash][msg.sender] = true;
-        Approved(_secretHash, msg.sender);
+        emit Approved(_secretHash, msg.sender);
     }
 
+    /**
+     * @notice Approve a recovery using an ethereum signed message
+     * @param _secretHash Hash of the transaction
+     * @param _v signatures v
+     * @param _r signatures r
+     * @param _s signatures s
+     */
     function approvePreSigned(bytes32 _secretHash, uint8[] _v, bytes32[] _r, bytes32[] _s) 
         external 
     {
@@ -116,10 +155,19 @@ contract FriendsRecovery {
             require(!signed[_secretHash][recovered]);
             require(recovered != address(0));
             signed[_secretHash][recovered] = true;
-            Approved(_secretHash, recovered);
+            emit Approved(_secretHash, recovered);
         }        
     }
 
+    /**
+     * @notice executes an approved transaction revaling secret hash, friends addresses and set new recovery parameters
+     * @param _revealedSecret Single hash of User Secret
+     * @param _dest Address will be called
+     * @param _data Data to be sent
+     * @param _friendList friends addresses that approved
+     * @param _newSecret new recovery double hashed user secret
+     * @param _newFriendsHashes new friends list hashed with new recovery secret hash
+     */
     function execute(
         bytes32 _revealedSecret,
         address _dest,
@@ -147,9 +195,12 @@ contract FriendsRecovery {
         secret = _newSecret;
         addFriends(_newFriendsHashes);
 
-        Execution(_dest.call(_data));
+        emit Execution(_dest.call(_data));
     }
 
+    /**
+     * @dev add friends to recovery parameters
+     */
     function addFriends(bytes32[] _newFriendsHashes) private {
         uint256 len = _newFriendsHashes.length;
         require(len >= threshold);
