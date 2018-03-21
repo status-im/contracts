@@ -419,6 +419,7 @@ contract Identity is ERC725, ERC735 {
     function _constructIdentity(address _manager)
         internal 
     {
+        require(keysByPurpose[MANAGEMENT_KEY].length == 0);
         require(minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] == 0);
         _addKey(bytes32(_manager), MANAGEMENT_KEY, 0);
 
