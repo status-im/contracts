@@ -101,10 +101,11 @@ contract Identity is ERC725, ERC735 {
         minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
     }
     
-    function processManagerReset(uint256 limit) 
+    function processManagerReset(uint256 _limit) 
         public 
     {
         require(recoveryManager != address(0));
+        uint limit = _limit;
         bytes32 newKey = bytes32(recoveryManager);
         bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
         uint256 totalManagers = managers.length;
