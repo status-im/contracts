@@ -9,7 +9,7 @@ import "./DelegatedCall.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @dev Contract that recovers from dead system to recoverer.
  */
-    contract RecoverableSystem is BasicSystemStorage, DelegatedCall {
+contract RecoverableSystem is BasicSystemStorage, DelegatedCall {
 
     /**
      * @dev Requires at least valid _recoverer, that can elect the first system.
