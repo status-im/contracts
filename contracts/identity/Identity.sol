@@ -49,9 +49,8 @@ contract Identity is ERC725, ERC735 {
         _;
     }
 
-    
-    modifier actorOnly(bytes32 _key) {
-        require(isKeyPurpose(_key, ACTION_KEY));
+    modifier keyPurposeOnly(bytes32 _key, uint256 _purpose) {
+        require(isKeyPurpose(_key, _purpose));
         _;
     }
     
