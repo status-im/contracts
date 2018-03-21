@@ -29,7 +29,7 @@ contract Identity is ERC725, ERC735 {
 
     modifier managerOnly {
         require(
-            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY)
+            isKeyPurpose(bytes32(msg.sender), MANAGEMENT_KEY)
         );
         _;
     }
@@ -48,15 +48,16 @@ contract Identity is ERC725, ERC735 {
         _;
     }
 
+    
     modifier actorOnly(bytes32 _key) {
-        require(isKeyType(_key, ACTION_KEY));
+        require(isKeyPurpose(_key, ACTION_KEY));
         _;
     }
     
     modifier managerOrActor(bytes32 _key) {
         require(
-            isKeyType(bytes32(msg.sender), MANAGEMENT_KEY) || 
-            isKeyType(bytes32(msg.sender), ACTION_KEY)
+            isKeyPurpose(bytes32(msg.sender), MANAGEMENT_KEY) || 
+            isKeyPurpose(bytes32(msg.sender), ACTION_KEY)
         );
         _;
     }
@@ -222,7 +223,7 @@ contract Identity is ERC725, ERC735 {
             }
         } else {
             require(_issuer == msg.sender);
-            require(isKeyType(bytes32(msg.sender), CLAIM_SIGNER_KEY));
+            require(isKeyPurpose(bytes32(msg.sender), CLAIM_SIGNER_KEY));
             _execute(address(this), 0, msg.data);
             emit ClaimRequested(
                 claimHash,
@@ -273,7 +274,7 @@ contract Identity is ERC725, ERC735 {
         return (myKey.purpose, myKey.keyType, myKey.key);
     }
     
-    function isKeyType(bytes32 _key, uint256 _type) 
+    function isKeyPurpose(bytes32 _key, uint256 _type) 
         public
         constant 
         returns (bool)
@@ -290,22 +291,22 @@ contract Identity is ERC725, ERC735 {
         uint256[] memory purposeHolder = new uint256[](4);
         uint8 counter = 0;
         
-        if (isKeyType(_key, MANAGEMENT_KEY)) {
+        if (isKeyPurpose(_key, MANAGEMENT_KEY)) {
             purposeHolder[counter] = MANAGEMENT_KEY;
             counter++;
         }
         
-        if (isKeyType(_key, ACTION_KEY)) {
+        if (isKeyPurpose(_key, ACTION_KEY)) {
             purposeHolder[counter] = ACTION_KEY;
             counter++;
         }
             
-        if (isKeyType(_key, CLAIM_SIGNER_KEY)) {
+        if (isKeyPurpose(_key, CLAIM_SIGNER_KEY)) {
             purposeHolder[counter] = CLAIM_SIGNER_KEY;
             counter++;
         }
             
-        if (isKeyType(_key, ENCRYPTION_KEY)) {
+        if (isKeyPurpose(_key, ENCRYPTION_KEY)) {
             purposeHolder[counter] = ENCRYPTION_KEY;
             counter++;
         }
@@ -465,12 +466,12 @@ contract Identity is ERC725, ERC735 {
         emit Approved(_id, _approval);
 
         if (trx.to == address(this)) {
-            require(isKeyType(_key, MANAGEMENT_KEY));
+            require(isKeyPurpose(_key, MANAGEMENT_KEY));
             bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
             requiredKeyPurpose = MANAGEMENT_KEY;
             approvalCount = _calculateApprovals(managerKeyHash, _approval, trx);
         } else {
-            require(isKeyType(_key, ACTION_KEY));
+            require(isKeyPurpose(_key, ACTION_KEY));
             bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
             requiredKeyPurpose = ACTION_KEY;
             approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
