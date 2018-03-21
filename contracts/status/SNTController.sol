@@ -7,7 +7,8 @@ import "../token/MiniMeToken.sol";
 
 /**
  * @title SNTController
- * @author Ricardo Guilherme Schmidt
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
+ * @notice enables economic abstraction for SNT
  */
 contract SNTController is TokenController, Owned {
 
