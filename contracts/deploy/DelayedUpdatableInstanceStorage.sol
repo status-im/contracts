@@ -1,17 +1,16 @@
 pragma solidity ^0.4.17;
 
-import "./InstanceStorage.sol";
-
 /**
- * @title InstanceStorage
+ * @title DelayedUpdatableInstanceStorage
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
- * @dev Defines kernel vars that Kernel contract share with Instance.
+ * @dev Defines kernel vars that Kernel contract share with DelayedUpdatableInstance.
  *      Important to avoid overwriting wrong storage pointers is that 
  *      InstanceStorage should be always the first contract at heritance.
  */
-contract DelayedUpdatableInstanceStorage is InstanceStorage {    
+contract DelayedUpdatableInstanceStorage {    
     // protected zone start (InstanceStorage vars)
-    Update update;
+    address public kernel;
+    Update public update;
     
     struct Update {
         address kernel;
