@@ -5,11 +5,11 @@ import "../token/ERC20Token.sol";
 
 contract IdentityGasRelay is Identity {
     
-    bytes4 public constant EXECUTE_PREFIX = bytes4(keccak256("executeGasRelayed"));
+    bytes4 public constant EXECUTE_PREFIX = bytes4(keccak256("executeGasRelayed(address,uint256,bytes32,uint256,uint256,address)"));
 
     event ExecutedGasRelayed(bytes32 signHash);
 
-    function executeSigned(
+    function executeGasRelayed(
         address _to,
         uint256 _value,
         bytes _data,
@@ -29,7 +29,7 @@ contract IdentityGasRelay is Identity {
         nonce++;
         
         bytes32 _signedHash = getSignHash(
-            executeHash(
+            executeGasRelayedHash(
                 _to,
                 _value,
                 keccak256(_data),
@@ -65,7 +65,7 @@ contract IdentityGasRelay is Identity {
         }        
     }
 
-    function executeMultiSigned(
+    function executeGasRelayedMultiSigned(
         address _to,
         uint256 _value,
         bytes _data,
@@ -81,7 +81,7 @@ contract IdentityGasRelay is Identity {
         require(startGas > _gasMinimum);
         require(_nonce == nonce);
         nonce++;
-        _executeMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimum, _gasToken, _messageSignatures);
+        _executeGasRelayedMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimum, _gasToken, _messageSignatures);
         if (_gasPrice > 0) {
             payInclusionFee(
                 startGas - gasleft(),
@@ -92,7 +92,7 @@ contract IdentityGasRelay is Identity {
         }        
     }
 
-    function executeHash(
+    function executeGasRelayedHash(
         address _to,
         uint256 _value,
         bytes32 _dataHash,
@@ -183,7 +183,7 @@ contract IdentityGasRelay is Identity {
     }
 
     
-    function _executeMultiSigned(
+    function _executeGasRelayedMultiSigned(
         address _to,
         uint256 _value,
         bytes _data,
@@ -200,7 +200,7 @@ contract IdentityGasRelay is Identity {
         require(len == minimumApprovalsByKeyPurpose[requiredKey]);
 
         bytes32 _signedHash = getSignHash(
-            executeHash(
+            executeGasRelayedHash(
                 _to,
                 _value,
                 keccak256(_data),
