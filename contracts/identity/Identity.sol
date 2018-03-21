@@ -43,7 +43,8 @@ contract Identity is ERC725, ERC735 {
 
     modifier recoveryOnly {
         require(
-            (recoveryContract != address(0) && msg.sender == address(recoveryContract))
+            recoveryContract != address(0) && 
+            msg.sender == address(recoveryContract)
         );
         _;
     }
@@ -566,12 +567,12 @@ contract Identity is ERC725, ERC735 {
     {
         claims[_claimHash] = Claim(
             {
-                claimType: _claimType,
-                scheme: _scheme,
-                issuer: _issuer,
-                signature: _signature,
-                data: _data,
-                uri: _uri
+            claimType: _claimType,
+            scheme: _scheme,
+            issuer: _issuer,
+            signature: _signature,
+            data: _data,
+            uri: _uri
             }
         );
         indexes[_claimHash] = claimsByType[_claimType].length;
