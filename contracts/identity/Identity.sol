@@ -56,8 +56,8 @@ contract Identity is ERC725, ERC735 {
     
     modifier managerOrActor(bytes32 _key) {
         require(
-            isKeyPurpose(bytes32(msg.sender), MANAGEMENT_KEY) || 
-            isKeyPurpose(bytes32(msg.sender), ACTION_KEY)
+            isKeyPurpose(_key, MANAGEMENT_KEY) || 
+            isKeyPurpose(_key, ACTION_KEY)
         );
         _;
     }
