@@ -3,39 +3,56 @@ pragma solidity ^0.4.17;
 import "./Identity.sol";
 import "../token/ERC20Token.sol";
 
+/**
+ * @title IdentityGasRelay
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
+ * @notice enables economic abstraction for Identity
+ */
 contract IdentityGasRelay is Identity {
     
-    bytes4 public constant EXECUTE_PREFIX = bytes4(keccak256("executeGasRelayed(address,uint256,bytes32,uint256,uint256,address)"));
+    bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelayed(address,uint256,bytes32,uint256,uint256,address)"));
 
     event ExecutedGasRelayed(bytes32 signHash);
 
-    function executeGasRelayed(
+    /**
+     * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
+     *         allows identity of being controlled without requiring ether in key balace
+     * @param _to destination of call
+     * @param _value call value (ether)
+     * @param _data call data
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasMinimal minimal amount of gas needed to complete the execution
+     * @param _gasToken token being used for paying `msg.sender`
+     * @param _messageSignature rsv concatenated ethereum signed message signature
+     */
+    function callGasRelayed(
         address _to,
         uint256 _value,
         bytes _data,
         uint _nonce,
         uint _gasPrice,
-        uint _gasMinimum, 
+        uint _gasMinimal, 
         address _gasToken,
         bytes _messageSignature
     ) 
         external
     {
         uint startGas = gasleft();
-        require(startGas > _gasMinimum);
+        require(startGas > _gasMinimal);
         uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
         require(minimumApprovalsByKeyPurpose[requiredKey] == 1);
         require(_nonce == nonce);
         nonce++;
         
         bytes32 _signedHash = getSignHash(
-            executeGasRelayedHash(
+            callGasRelayedHash(
                 _to,
                 _value,
                 keccak256(_data),
                 _nonce,
                 _gasPrice,
-                _gasMinimum,
+                _gasMinimal,
                 _gasToken                
             )
         );
@@ -65,7 +82,19 @@ contract IdentityGasRelay is Identity {
         }        
     }
 
-    function executeGasRelayedMultiSigned(
+    /**
+    * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
+     *         allows identity of being controlled without requiring ether in key balace
+     * @param _to destination of call
+     * @param _value call value (ether)
+     * @param _data call data
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasMinimal minimal amount of gas needed to complete the execution
+     * @param _gasToken token being used for paying `msg.sender`
+     * @param _messageSignatures rsv concatenated ethereum signed message signatures
+     */
+    function callGasRelayedMultiSigned(
         address _to,
         uint256 _value,
         bytes _data,
@@ -81,7 +110,7 @@ contract IdentityGasRelay is Identity {
         require(startGas > _gasMinimum);
         require(_nonce == nonce);
         nonce++;
-        _executeGasRelayedMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimum, _gasToken, _messageSignatures);
+        _callGasRelayedMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimum, _gasToken, _messageSignatures);
         if (_gasPrice > 0) {
             payInclusionFee(
                 startGas - gasleft(),
@@ -92,7 +121,17 @@ contract IdentityGasRelay is Identity {
         }        
     }
 
-    function executeGasRelayedHash(
+    /**
+     * @notice get callHash
+     * @param _to destination of call
+     * @param _value call value (ether)
+     * @param _data call data
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasMinimal minimal amount of gas needed to complete the execution
+     * @param _gasToken token being used for paying `msg.sender` 
+     */
+    function callGasRelayedHash(
         address _to,
         uint256 _value,
         bytes32 _dataHash,
@@ -103,11 +142,11 @@ contract IdentityGasRelay is Identity {
     )
         public 
         view 
-        returns (bytes32) 
+        returns (bytes32 callHash) 
     {
-        return keccak256(
+        callHash = keccak256(
             address(this), 
-            EXECUTE_PREFIX, 
+            CALL_PREFIX, 
             _to,
             _value,
             _dataHash,
@@ -117,7 +156,12 @@ contract IdentityGasRelay is Identity {
             _gasToken
         );
     }
-
+    /**
+     * @notice recovers address who signed the message 
+     * @param _signHash operation ethereum signed message hash
+     * @param _messageSignature message `_signHash` signature
+     * @param _pos which signature to read
+     */
     function recoverKey (
         bytes32 _signHash, 
         bytes _messageSignature,
@@ -142,9 +186,11 @@ contract IdentityGasRelay is Identity {
     }
 
     /**
-     * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s` 
+     * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`
+     * @param _pos which signature to read
+     * @param _signatures concatenated vrs signatures
      */
-    function signatureSplit(bytes _signature, uint256 _pos)
+    function signatureSplit(bytes _signatures, uint256 _pos)
         pure
         public
         returns (uint8 v, bytes32 r, bytes32 s)
@@ -154,14 +200,14 @@ contract IdentityGasRelay is Identity {
         //   {bytes32 r}{bytes32 s}{uint8 v}
         // Compact means, uint8 is not padded to 32 bytes.
         assembly {
-            r := mload(add(_signature, mul(32,pos)))
-            s := mload(add(_signature, mul(64,pos)))
+            r := mload(add(_signatures, mul(32,pos)))
+            s := mload(add(_signatures, mul(64,pos)))
             // Here we are loading the last 32 bytes, including 31 bytes
             // of 's'. There is no 'mload8' to do this.
             //
             // 'byte' is not working due to the Solidity parser, so lets
             // use the second best option, 'and'
-            v := and(mload(add(_signature, mul(65,pos))), 0xff)
+            v := and(mload(add(_signatures, mul(65,pos))), 0xff)
         }
 
         require(v == 27 || v == 28);
@@ -182,8 +228,10 @@ contract IdentityGasRelay is Identity {
         signHash = keccak256("\x19Ethereum Signed Message:\n32", _hash);
     }
 
-    
-    function _executeGasRelayedMultiSigned(
+    /**
+     * @dev needed function to avoid "too much variables, stack too deep"
+     */    
+    function _callGasRelayedMultiSigned(
         address _to,
         uint256 _value,
         bytes _data,
@@ -200,7 +248,7 @@ contract IdentityGasRelay is Identity {
         require(len == minimumApprovalsByKeyPurpose[requiredKey]);
 
         bytes32 _signedHash = getSignHash(
-            executeGasRelayedHash(
+            callGasRelayedHash(
                 _to,
                 _value,
                 keccak256(_data),
@@ -228,6 +276,13 @@ contract IdentityGasRelay is Identity {
         }
     }
 
+    /**
+     * @dev performs the gas payment in the selected token
+     * @param _gasUsed the amount of gas used
+     * @param _gasPrice selected gas price
+     * @param _msgIncluder address who included the message
+     * @param _gasToken ERC20Token to transfer, or if 0x0 uses ether in balance.
+     */
     function payInclusionFee(
         uint256 _gasUsed,
         uint256 _gasPrice,
