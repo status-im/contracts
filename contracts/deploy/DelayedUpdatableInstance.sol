@@ -27,7 +27,7 @@ contract DelayedUpdatableInstance is DelayedUpdatableInstanceStorage, DelegatedC
     }
 
     /**
-     * @dev returns kernel if kernel that is configured
+     * @dev returns configured kernel
      * @return kernel address
      */
     function targetDelegatedCall()
