@@ -34,13 +34,18 @@ contract Identity is ERC725, ERC735 {
         _;
     }
 
-    modifier selfOnly {
-        require(
-            msg.sender == address(this)
-        );
-        _;
+    modifier managementOnly {
+        if(msg.sender == address(this)) {
+            _;
+        } else {
+            require(isKeyPurpose(bytes32(msg.sender), MANAGEMENT_KEY));
+            if (minimumApprovalsByKeyPurpose[MANAGEMENT_KEY] == 1) {
+                _;
+            } else {
+                execute(address(this), 0, msg.data);
+            }
+        }
     }
-
     modifier recoveryOnly {
         require(
             recoveryContract != address(0) && 
@@ -135,7 +140,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _type
     )
         public
-        selfOnly
+        managementOnly
         returns (bool success)
     {   
         _addKey(_key, _purpose, _type);
@@ -148,7 +153,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _newType
     )
         public
-        selfOnly
+        managementOnly
         returns (bool success)
     {
         uint256 purpose = keys[_oldKey].purpose;
@@ -162,7 +167,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _purpose
     )
         public
-        selfOnly
+        managementOnly
         returns (bool success)
     {
         _removeKey(_key, _purpose);
@@ -175,11 +180,20 @@ contract Identity is ERC725, ERC735 {
         bytes _data
     ) 
         public 
-        managerOrActor(bytes32(msg.sender))
         returns (uint256 executionId)
     {
-        executionId = _execute(_to, _value, _data);
-        approve(executionId, true);
+        uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
+        if (minimumApprovalsByKeyPurpose[requiredKey] == 1) {
+            executionId = nonce; //(?) useless in this case
+            nonce++; //(?) should increment
+            require(isKeyPurpose(bytes32(msg.sender), requiredKey));
+            _to.call.value(_value)(_data); //(?) success not used
+            emit Executed(executionId, _to, _value, _data); //no information on success
+        } else {
+            executionId = _execute(_to, _value, _data);
+            approve(executionId, true);
+        }
+        
     }
 
     function approve(uint256 _id, bool _approval) 
@@ -195,7 +209,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _minimumApprovals
     ) 
         public 
-        selfOnly
+        managementOnly
     {
         require(_minimumApprovals > 0);
         require(_minimumApprovals <= keysByPurpose[_purpose].length);
@@ -412,7 +426,7 @@ contract Identity is ERC725, ERC735 {
 
     function setupRecovery(address _recoveryContract) 
         public
-        selfOnly
+        managementOnly
     {
         require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
@@ -455,7 +469,7 @@ contract Identity is ERC725, ERC735 {
         bool _approval
     ) 
         private 
-        returns(bool success)
+        returns(bool success) //(?) should return approved instead of success?
     {
         
         Transaction storage trx = txx[_id];
@@ -476,10 +490,11 @@ contract Identity is ERC725, ERC735 {
             requiredKeyPurpose = ACTION_KEY;
             approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
         }
-
+    
         if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
-            emit Executed(_id, trx.to, trx.value, trx.data);
+            //(?) success should be included in event?
             success = trx.to.call.value(trx.value)(trx.data);
+            emit Executed(_id, trx.to, trx.value, trx.data);
         }
     }
 
