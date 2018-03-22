@@ -67,26 +67,6 @@ contract Identity is ERC725, ERC735 {
         _;
     }
     
-    modifier validECDSAKey (
-        bytes32 _key, 
-        bytes32 _signHash, 
-        uint8 _v, 
-        bytes32 _r,
-        bytes32 _s
-    ) 
-    {
-        require(
-            address(_key) == ecrecover(
-                keccak256("\x19Ethereum Signed Message:\n32", _signHash),
-                _v,
-                _r,
-                _s
-                )
-            );
-        require(keys[_key].purpose != 0);
-        _;
-    }
-
     function Identity() public {
         _constructIdentity(msg.sender);
     }    
@@ -363,65 +343,6 @@ contract Identity is ERC725, ERC735 {
         returns(bytes32[] claimIds)
     {
         return claimsByType[_claimType];
-    }
-
-    function approveECDSA(
-        uint256 _id,
-        bool _approval,
-        bytes32 _key, 
-        uint8 _v, 
-        bytes32 _r, 
-        bytes32 _s
-    ) 
-        public 
-        validECDSAKey(
-            _key,
-            keccak256(
-                address(this),
-                bytes4(keccak256("approve(uint256,bool)")),
-                _id,
-                _approval
-                ),
-            _v,
-            _r,
-            _s
-        )
-        managerOrActor(_key)
-        returns (bool success)
-    {   
-        return _approve(_key, _id, _approval);
-    }
-    
-    function executeECDSA(
-        address _to,
-        uint256 _value,
-        bytes _data,
-        uint _nonce,
-        bytes32 _key, 
-        uint8 _v, 
-        bytes32 _r, 
-        bytes32 _s
-    ) 
-        public 
-        validECDSAKey(
-            _key,
-            keccak256(
-                address(this), 
-                bytes4(keccak256("execute(address,uint256,bytes)")), 
-                _to,
-                _value,
-                _data,
-                _nonce
-            ),
-            _v,
-            _r,
-            _s
-        )
-        managerOrActor(_key)
-        returns (uint256 executionId)
-    {
-        executionId = _execute(_to, _value, _data);
-        _approve(_key, executionId, true);
     }
 
     function setupRecovery(address _recoveryContract) 
