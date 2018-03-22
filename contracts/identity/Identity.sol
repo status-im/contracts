@@ -184,11 +184,11 @@ contract Identity is ERC725, ERC735 {
     {
         uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
         if (minimumApprovalsByKeyPurpose[requiredKey] == 1) {
-            executionId = nonce;
-            nonce++;
+            executionId = nonce; //(?) useless in this case
+            nonce++; //(?) should increment
             require(isKeyPurpose(bytes32(msg.sender), requiredKey));
-            _to.call.value(_value)(_data);
-            emit Executed(executionId, _to, _value, _data);
+            _to.call.value(_value)(_data); //(?) success not used
+            emit Executed(executionId, _to, _value, _data); //no information on success
         } else {
             executionId = _execute(_to, _value, _data);
             approve(executionId, true);
