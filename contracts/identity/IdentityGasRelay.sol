@@ -39,7 +39,7 @@ contract IdentityGasRelay is Identity {
         external
     {
         uint startGas = gasleft();
-        require(startGas > _gasMinimal);
+        require(startGas >= _gasMinimal);
         uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
         require(minimumApprovalsByKeyPurpose[requiredKey] == 1);
         require(_nonce == nonce);
@@ -100,17 +100,17 @@ contract IdentityGasRelay is Identity {
         bytes _data,
         uint _nonce,
         uint _gasPrice,
-        uint _gasMinimum,
+        uint _gasMinimal,
         address _gasToken, 
         bytes _messageSignatures
     ) 
         external 
     {
         uint startGas = gasleft();
-        require(startGas > _gasMinimum);
+        require(startGas >= _gasMinimal);
         require(_nonce == nonce);
         nonce++;
-        _callGasRelayedMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimum, _gasToken, _messageSignatures);
+        _callGasRelayedMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimal, _gasToken, _messageSignatures);
         if (_gasPrice > 0) {
             payInclusionFee(
                 startGas - gasleft(),
@@ -137,7 +137,7 @@ contract IdentityGasRelay is Identity {
         bytes32 _dataHash,
         uint _nonce,
         uint256 _gasPrice,
-        uint256 _gasMinimum,
+        uint256 _gasMinimal,
         address _gasToken
     )
         public 
@@ -152,7 +152,7 @@ contract IdentityGasRelay is Identity {
             _dataHash,
             _nonce,
             _gasPrice,
-            _gasMinimum,
+            _gasMinimal,
             _gasToken
         );
     }
@@ -237,7 +237,7 @@ contract IdentityGasRelay is Identity {
         bytes _data,
         uint _nonce,
         uint _gasPrice,
-        uint _gasMinimum, 
+        uint _gasMinimal, 
         address _gasToken,
         bytes _messageSignatures
     ) 
@@ -254,7 +254,7 @@ contract IdentityGasRelay is Identity {
                 keccak256(_data),
                 _nonce,
                 _gasPrice,
-                _gasMinimum,
+                _gasMinimal,
                 _gasToken                
             )
         );
