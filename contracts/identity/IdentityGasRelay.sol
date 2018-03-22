@@ -125,7 +125,7 @@ contract IdentityGasRelay is Identity {
      * @notice get callHash
      * @param _to destination of call
      * @param _value call value (ether)
-     * @param _data call data
+     * @param _dataHash call data hash
      * @param _nonce current identity nonce
      * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
      * @param _gasMinimal minimal amount of gas needed to complete the execution
