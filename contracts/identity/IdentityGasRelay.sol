@@ -12,7 +12,7 @@ contract IdentityGasRelay is Identity {
     
     bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelayed(address,uint256,bytes32,uint256,uint256,address)"));
 
-    event ExecutedGasRelayed(bytes32 signHash);
+    event ExecutedGasRelayed(bytes32 signHash, bool success);
 
     /**
      * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
@@ -68,10 +68,9 @@ contract IdentityGasRelay is Identity {
             )
         );
 
-        if (_to.call.value(_value)(_data)) {
-            emit ExecutedGasRelayed(_signedHash);
-        }
-
+        bool success = _to.call.value(_value)(_data);
+        emit ExecutedGasRelayed(_signedHash, success);
+        
         if(_gasPrice > 0) {
             payInclusionFee(
                 startGas - gasleft(),
