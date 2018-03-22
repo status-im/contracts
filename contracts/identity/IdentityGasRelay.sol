@@ -38,11 +38,11 @@ contract IdentityGasRelay is Identity {
     ) 
         external
     {
+        require(_nonce == nonce);
         uint startGas = gasleft();
         require(startGas >= _gasMinimal);
         uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
         require(minimumApprovalsByKeyPurpose[requiredKey] == 1);
-        require(_nonce == nonce);
         nonce++;
         
         bytes32 _signedHash = getSignHash(
@@ -105,9 +105,9 @@ contract IdentityGasRelay is Identity {
     ) 
         external 
     {
+        require(_nonce == nonce);
         uint startGas = gasleft();
         require(startGas >= _gasMinimal);
-        require(_nonce == nonce);
         nonce++;
         _callGasRelayedMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimal, _gasToken, _messageSignatures);
         if (_gasPrice > 0) {
