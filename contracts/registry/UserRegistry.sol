@@ -56,7 +56,7 @@ contract UserRegistry is UsingENS, UsingSNT {
 
 
     function register(string _userName, bytes32 _domainHash) private returns(bytes32 subdomainHash) {
-        require(domains[_domain]);
+        require(domains[_domainHash ]);
         SNT snt = SNT(SNT);
         require(snt.transferFrom(msg.sender, address(this), price));
         ENS ens = ENS(ENSroot);
