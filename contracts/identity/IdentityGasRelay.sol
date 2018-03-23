@@ -57,16 +57,20 @@ contract IdentityGasRelay is Identity {
         );
         
         //verify if signatures are valid and came from correct actors;
-        uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
-        verifySignatures(requiredKey, signHash, _messageSignatures);
+        verifySignatures(
+            _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY,
+            signHash, 
+            _messageSignatures
+        );
         
         //executes transaction
         nonce++;
+        bool success = _to.call.value(_value)(_data);
         emit ExecutedGasRelayed(
             signHash,
-            _to.call.value(_value)(_data)
+            success
         );
-        
+
         //refund gas used using contract held ERC20 tokens or ETH
         if (_gasPrice > 0) {
             uint256 _amount = 21000 + (startGas - gasleft());
