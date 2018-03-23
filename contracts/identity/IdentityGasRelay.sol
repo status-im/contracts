@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "./Identity.sol";
 import "../token/ERC20Token.sol";
@@ -10,76 +10,9 @@ import "../token/ERC20Token.sol";
  */
 contract IdentityGasRelay is Identity {
     
-    bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelayed(address,uint256,bytes32,uint256,uint256,address)"));
+    bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelay(address,uint256,bytes32,uint256,uint256,address)"));
 
     event ExecutedGasRelayed(bytes32 signHash, bool success);
-
-    /**
-     * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
-     *         allows identity of being controlled without requiring ether in key balace
-     * @param _to destination of call
-     * @param _value call value (ether)
-     * @param _data call data
-     * @param _nonce current identity nonce
-     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
-     * @param _gasMinimal minimal amount of gas needed to complete the execution
-     * @param _gasToken token being used for paying `msg.sender`
-     * @param _messageSignature rsv concatenated ethereum signed message signature
-     */
-    function callGasRelayed(
-        address _to,
-        uint256 _value,
-        bytes _data,
-        uint _nonce,
-        uint _gasPrice,
-        uint _gasMinimal, 
-        address _gasToken,
-        bytes _messageSignature
-    ) 
-        external
-    {
-        require(_nonce == nonce);
-        uint startGas = gasleft();
-        require(startGas >= _gasMinimal);
-        uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
-        require(minimumApprovalsByKeyPurpose[requiredKey] == 1);
-        nonce++;
-        
-        bytes32 _signedHash = getSignHash(
-            callGasRelayedHash(
-                _to,
-                _value,
-                keccak256(_data),
-                _nonce,
-                _gasPrice,
-                _gasMinimal,
-                _gasToken                
-            )
-        );
-
-        require(
-            isKeyPurpose(
-                recoverKey(
-                    _signedHash,
-                    _messageSignature,
-                    0
-                ),
-                requiredKey
-            )
-        );
-
-        bool success = _to.call.value(_value)(_data);
-        emit ExecutedGasRelayed(_signedHash, success);
-        
-        if(_gasPrice > 0) {
-            payInclusionFee(
-                startGas - gasleft(),
-                _gasPrice,
-                msg.sender,
-                _gasToken
-            );
-        }        
-    }
 
     /**
     * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
@@ -91,9 +24,9 @@ contract IdentityGasRelay is Identity {
      * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
      * @param _gasMinimal minimal amount of gas needed to complete the execution
      * @param _gasToken token being used for paying `msg.sender`
-     * @param _messageSignatures rsv concatenated ethereum signed message signatures
+     * @param _messageSignatures rsv concatenated ethereum signed message signatures required
      */
-    function callGasRelayedMultiSigned(
+    function callGasRelayed(
         address _to,
         uint256 _value,
         bytes _data,
@@ -105,20 +38,80 @@ contract IdentityGasRelay is Identity {
     ) 
         external 
     {
+        //verify transaction parameters
         require(_nonce == nonce);
         uint startGas = gasleft();
         require(startGas >= _gasMinimal);
-        nonce++;
-        _callGasRelayedMultiSigned(_to, _value, _data, _nonce, _gasPrice, _gasMinimal, _gasToken, _messageSignatures);
-        if (_gasPrice > 0) {
-            payInclusionFee(
-                startGas - gasleft(),
+        
+        // calculates signHash
+        bytes32 signHash = getSignHash(
+            callGasRelayHash(
+                _to,
+                _value,
+                keccak256(_data),
+                _nonce,
                 _gasPrice,
-                msg.sender,
-                _gasToken
-            );
+                _gasMinimal,
+                _gasToken                
+            )
+        );
+        
+        //verify if signatures are valid and came from correct actors;
+        uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
+        verifySignatures(requiredKey, signHash, _messageSignatures);
+        
+        //executes transaction
+        nonce++;
+        emit ExecutedGasRelayed(
+            signHash,
+            _to.call.value(_value)(_data)
+        );
+        
+        //refund gas used using contract held ERC20 tokens or ETH
+        if (_gasPrice > 0) {
+            uint256 _amount = 21000 + (startGas - gasleft());
+            _amount = _amount * _gasPrice;
+            if (_gasToken == address(0)) {
+                address(msg.sender).transfer(_amount);
+            } else {
+                ERC20Token(_gasToken).transfer(msg.sender, _amount);
+            }
         }        
     }
+
+
+    /**
+     * @notice reverts if signatures are not valid for the signed hash and required key type. 
+     * @param _requiredKey key required to call, if _to from payload is the identity itself, is `MANAGEMENT_KEY`, else `ACTION_KEY`
+     * @param _signHash ethereum signable callGasRelayHash message provided for the payload
+     * @param _messageSignatures ethereum signed `_signHash` messages
+     * @return true case valid
+     */    
+    function verifySignatures(
+        uint256 _requiredKey,
+        bytes32 _signHash,
+        bytes _messageSignatures
+    ) 
+        public
+        view
+        returns(bool)
+    {
+        uint _amountSignatures = _messageSignatures.length / 72;
+        require(_amountSignatures == minimumApprovalsByKeyPurpose[_requiredKey]);
+        bytes32 _lastKey = 0;
+        for (uint256 i = 0; i < _amountSignatures; i++) {
+            bytes32 _currentKey = recoverKey(
+                _signHash,
+                _messageSignatures,
+                i
+                );
+            require(_currentKey > _lastKey); //assert keys are different
+            require(isKeyPurpose(_currentKey, _requiredKey));
+            _lastKey = _currentKey;
+        }
+        return true;
+    }
+
 
     /**
      * @notice get callHash
@@ -129,8 +122,9 @@ contract IdentityGasRelay is Identity {
      * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
      * @param _gasMinimal minimal amount of gas needed to complete the execution
      * @param _gasToken token being used for paying `msg.sender` 
+     * @return callGasRelayHash the hash to be signed by wallet
      */
-    function callGasRelayedHash(
+    function callGasRelayHash(
         address _to,
         uint256 _value,
         bytes32 _dataHash,
@@ -141,9 +135,9 @@ contract IdentityGasRelay is Identity {
     )
         public 
         view 
-        returns (bytes32 callHash) 
+        returns (bytes32 _callGasRelayHash) 
     {
-        callHash = keccak256(
+        _callGasRelayHash = keccak256(
             address(this), 
             CALL_PREFIX, 
             _to,
@@ -155,6 +149,22 @@ contract IdentityGasRelay is Identity {
             _gasToken
         );
     }
+
+    /**
+     * @notice Hash a hash with `"\x19Ethereum Signed Message:\n32"`
+     * @param _hash Sign to hash.
+     * @return signHash Hash ethereum wallet signs.
+     */
+    function getSignHash(
+        bytes32 _hash
+    )
+        pure
+        public
+        returns(bytes32 signHash)
+    {
+        signHash = keccak256("\x19Ethereum Signed Message:\n32", _hash);
+    }
+
     /**
      * @notice recovers address who signed the message 
      * @param _signHash operation ethereum signed message hash
@@ -212,90 +222,4 @@ contract IdentityGasRelay is Identity {
         require(v == 27 || v == 28);
     }
     
-    /**
-     * @notice Hash a hash with `"\x19Ethereum Signed Message:\n32"`
-     * @param _hash Sign to hash.
-     * @return signHash Hash to be signed.
-     */
-    function getSignHash(
-        bytes32 _hash
-    )
-        pure
-        public
-        returns(bytes32 signHash)
-    {
-        signHash = keccak256("\x19Ethereum Signed Message:\n32", _hash);
-    }
-
-    /**
-     * @dev needed function to avoid "too much variables, stack too deep"
-     */    
-    function _callGasRelayedMultiSigned(
-        address _to,
-        uint256 _value,
-        bytes _data,
-        uint _nonce,
-        uint _gasPrice,
-        uint _gasMinimal, 
-        address _gasToken,
-        bytes _messageSignatures
-    ) 
-        private 
-    {
-        uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
-        uint256 len = _messageSignatures.length / 72;
-        require(len == minimumApprovalsByKeyPurpose[requiredKey]);
-
-        bytes32 _signedHash = getSignHash(
-            callGasRelayedHash(
-                _to,
-                _value,
-                keccak256(_data),
-                _nonce,
-                _gasPrice,
-                _gasMinimal,
-                _gasToken                
-            )
-        );
-
-        bytes32 _lastKey = 0;
-        for (uint256 i = 0; i < len; i++) {
-            bytes32 _key = recoverKey(
-                _signedHash,
-                _messageSignatures,
-                i
-                );
-            require(_key > _lastKey); //assert keys are different
-            require(isKeyPurpose(_key, requiredKey));
-            _lastKey = _key;
-        }
-        
-        if (_to.call.value(_value)(_data)) {
-            emit ExecutedGasRelayed(_signedHash);
-        }
-    }
-
-    /**
-     * @dev performs the gas payment in the selected token
-     * @param _gasUsed the amount of gas used
-     * @param _gasPrice selected gas price
-     * @param _msgIncluder address who included the message
-     * @param _gasToken ERC20Token to transfer, or if 0x0 uses ether in balance.
-     */
-    function payInclusionFee(
-        uint256 _gasUsed,
-        uint256 _gasPrice,
-        address _msgIncluder,
-        address _gasToken
-    ) 
-        private 
-    {
-        uint256 _amount = (21000 + _gasUsed) * _gasPrice;
-        if (_gasToken == address(0)) {
-            address(_msgIncluder).transfer(_amount);
-        } else {
-            ERC20Token(_gasToken).transfer(_msgIncluder, _amount);
-        }
-    }
-
 }
