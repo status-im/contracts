@@ -1,103 +1,151 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
-import "../ens/UsingENS.sol";
+import "../common/Controlled.sol";
 import "../ens/AbstractENS.sol";
 import "../ens/PublicResolverInterface.sol";
-import "../status/UsingSNT.sol";
-import "../identity/Identity.sol";
+import "../token/ERC20Token.sol";
+import "../democracy/FeeRecycler.sol";
 
-contract UserRegistry is UsingENS, UsingSNT {
-    event Registered(bytes32 indexed _domain, string _userName, address identity);
-    address public owner = 0x0;
-    address public ENSroot = 0x0;
-    address public SNT = 0x0;
-    address public resolver = 0x0;
-    mapping (bytes32 => bool) public domains;
+contract SubdomainRegistry is Controlled {
+    
+    struct Domain {
+        bool active;
+        uint256 price;
+    }
+
+    mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => address) public registry;
-    mapping (bytes32 => bool) public taken;
-    uint public price = 1000 * 10**18;
+    mapping (bytes32 => address) public taken;
+    
+    FeeRecycler public feeRecycler;
+    ERC20Token public token;
+    AbstractENS public ENSroot;
+    PublicResolverInterface public resolver;
+    
+    event Registered(bytes32 indexed _subDomainHash, address _identity);
 
-
-    modifier onlyOwner {
-        require(msg.sender == owner);
+    function SubdomainRegistry(
+        address _token,
+        address _ens,
+        address _resolver
+    ) 
+        public 
+    {
+        initialize(
+            ERC20Token(_token),
+            AbstractENS(_ens),
+            PublicResolverInterface(_resolver),
+            address(msg.sender)
+        );
     }
 
+    function register(
+        bytes32 _userHash,
+        bytes32 _domainHash
+    ) 
+        external 
+        returns(bytes32 subdomainHash) 
+    {
+        
+        Domain memory domain = domains[_domainHash];
+        require(domain.active);
 
-    function UserRegistry(address _resolver) public {
-        initialize(_resolver);
+        require(
+            token.transferFrom(
+                address(msg.sender),
+                address(this),
+                domain.price
+            )
+        );
+        token.approve(feeRecycler, domain.price);
+        feeRecycler.lock(address(msg.sender), domain.price);
+
+        subdomainHash = keccak256(_userHash, _domainHash);
+        require(taken[subdomainHash] == address(0));
+        taken[subdomainHash] = address(msg.sender);
+
+        ENSroot.setSubnodeOwner(_domainHash, _userHash, address(this));
+        ENSroot.setResolver(subdomainHash, resolver);
+        resolver.setAddr(subdomainHash, address(msg.sender));
+        
+        emit Registered(subdomainHash, address(msg.sender));
+    }
+    
+    function update(
+        bytes32 _subdomainHash,
+        address _newContract
+    ) 
+        external
+    {
+        require(
+            msg.sender == taken[_subdomainHash] ||
+            msg.sender == controller
+        );
+        require(PublicResolverInterface(resolver).addr(_subdomainHash) == msg.sender);
+        PublicResolverInterface(resolver).setAddr(_subdomainHash, _newContract);
+    }
+    
+    function addDomain(
+        bytes32 _domain,
+        uint256 _price
+    ) 
+        external
+        onlyController
+    {
+        require(!domains[_domain].active);
+        require(ENSroot.owner(_domain) == address(this));
+        domains[_domain] = Domain(true, _price);
     }
 
-
-    function initialize(address _resolver) public {
-        require(owner == 0x0);
-        require(ENSroot == 0x0);
-        require(SNT == 0x0);
-        require(resolver == 0x0);
-        ENSroot = ensAddress();
-        SNT = sntAddress();
-        resolver = _resolver;
-        owner = msg.sender;
-    }
-
-
-    function registerUser(string _userName, bytes32 _domainHash) public returns(address) {
-        bytes32 subdomainHash = register(_userName, _domainHash);
-        Identity newIdentity = new Identity(msg.sender);
-        PublicResolverInterface(resolver).setAddr(subdomainHash, address(newIdentity));
-        Registered(_domainHash, _userName, newIdentity);
-    }
-
-
-    function registerUser(string _userName, bytes32 _domainHash, address _identity) public {
-        bytes32 subdomainHash = register(_userName, _domainHash);
-        PublicResolverInterface(resolver).setAddr(subdomainHash, _identity);
-        Registered(_domainHash, _userName, _identity);
-    }
-
-
-    function register(string _userName, bytes32 _domainHash) private returns(bytes32 subdomainHash) {
-        require(domains[_domainHash ]);
-        SNT snt = SNT(SNT);
-        require(snt.transferFrom(msg.sender, address(this), price));
-        ENS ens = ENS(ENSroot);
-        bytes32 userHash = keccak256(_userName);
-        subdomainHash = keccak256(_userName, _domainHash);
-        require(taken[subdomainHash] == false);
-        taken[subdomain] = true;
-        ens.setSubnodeOwner(_domainHash, userHash, address(this));
-        ens.setResolver(subdomainHash, resolver);
-    }
-
-
-    function updateUser(string _userName, bytes32 _domainHash, address _newContract) public {
-        bytes32 subdomainHash = keccak256(_userName, _domainHash);
-        require(taken[subdomainHash]);
-        require(PublicResolverInterface(resolver).addr(subdomainHash) == msg.sender);
-        PublicResolverInterface(resolver).setAddr(subdomainHash, _newContract);
-    }
-
-
-    function listDomain(bytes32 _domain) public onlyOwner {
-        require(ENS(ENSroot).owner(_domain) == address(this));
-        domains[_domain] = true;
-    }
-
-
-    function recoverDomain(bytes32 _domain, address _dest) public onlyOwner {
-        require(domains[_domain]);
-        ENS(ENSroot).setOwner(_domain, _dest);
+    function removeDomain(
+        bytes32 _domain,
+        address _newOwner
+    ) 
+        external
+        onlyController
+    {
+        require(ENSroot.owner(_domain) == address(this));
+        ENSroot.setOwner(_domain, _newOwner);
         delete domains[_domain];
     }
 
+    function setResolver(
+        address _resolver
+    ) 
+        external
+        onlyController
+    {
+        resolver = PublicResolverInterface(_resolver);
+    }    
 
-    function setPrice(uint256 _price) public onlyOwner {
-        price = _price;
+    function setDomainPrice(
+        bytes32 _domain,
+        uint256 _price
+    ) 
+        external
+        onlyController
+    {
+        Domain storage domain = domains[_domain];
+        require(domain.active);
+        domain.price = _price;
+    }
+
+    function initialize(
+        ERC20Token _token,
+        AbstractENS _ens,
+        PublicResolverInterface _resolver,
+        address _controller
+    ) 
+        public
+    {
+        require(controller == 0x0);
+        require(address(ENSroot) == 0x0);
+        require(address(token) == 0x0);
+        require(address(resolver) == 0x0);
+        controller = _controller;
+        token = _token;
+        ENSroot = _ens;
+        resolver = _resolver;
     }
     
-
-    function setOwner(address _newOwner) public onlyOwner {
-        require(_newOwner != 0x0);
-        owner = _newOwner;
-    }
-
 }
