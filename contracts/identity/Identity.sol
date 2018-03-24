@@ -452,7 +452,7 @@ contract Identity is ERC725, ERC735 {
         returns (uint256 executionId)
     {
         executionId = nonce;
-        emit ExecutionRequested(executionId, _to, _value, _data);
+        nonce++;
         txx[executionId] = Transaction({
             to: _to,
             value: _value,
@@ -460,7 +460,7 @@ contract Identity is ERC725, ERC735 {
             nonce: nonce,
             approverCount: 0
         });            
-        nonce++;
+        emit ExecutionRequested(executionId, _to, _value, _data);
     }
     
     function _approve(
@@ -476,8 +476,6 @@ contract Identity is ERC725, ERC735 {
         
         uint256 approvalCount;
         uint256 requiredKeyPurpose;
-        
-        emit Approved(_id, _approval);
 
         if (trx.to == address(this)) {
             require(isKeyPurpose(_key, MANAGEMENT_KEY));
@@ -490,7 +488,9 @@ contract Identity is ERC725, ERC735 {
             requiredKeyPurpose = ACTION_KEY;
             approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
         }
-    
+
+        emit Approved(_id, _approval);
+        
         if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
             //(?) success should be included in event?
             success = trx.to.call.value(trx.value)(trx.data);
@@ -513,10 +513,10 @@ contract Identity is ERC725, ERC735 {
             _purpose == ACTION_KEY ||
             _purpose == CLAIM_SIGNER_KEY ||
             _purpose == ENCRYPTION_KEY
-            );
-        emit KeyAdded(_key, _purpose, _type);
+        );
         keys[keyHash] = Key(_purpose, _type, _key);
         indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
+        emit KeyAdded(_key, _purpose, _type);
     }
 
     function _removeKey(
@@ -526,9 +526,8 @@ contract Identity is ERC725, ERC735 {
         private 
     {
         bytes32 keyHash = keccak256(_key, _purpose);
-        Key storage myKey = keys[keyHash];
-        emit KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
-     
+        Key memory myKey = keys[keyHash];
+        
         uint index = indexes[keyHash];
         delete indexes[keyHash];
         bytes32 replacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
@@ -545,6 +544,7 @@ contract Identity is ERC725, ERC735 {
         }
 
         delete keys[keyHash];
+        emit KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
     }
 
     function _calculateApprovals(
@@ -615,15 +615,6 @@ contract Identity is ERC725, ERC735 {
         private
     {
         require(msg.sender == _issuer);
-        emit ClaimChanged(
-            _claimHash,
-            _claimType,
-            _scheme,
-            _issuer,
-            _signature,
-            _data,
-            _uri
-            );
         claims[_claimHash] = Claim({
             claimType: _claimType,
             scheme: _scheme,
@@ -632,6 +623,15 @@ contract Identity is ERC725, ERC735 {
             data: _data,
             uri: _uri
         });
+        emit ClaimChanged(
+            _claimHash,
+            _claimType,
+            _scheme,
+            _issuer,
+            _signature,
+            _data,
+            _uri
+        );
     }
 
 
