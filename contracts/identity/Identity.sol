@@ -14,12 +14,13 @@ contract Identity is ERC725, ERC735 {
     mapping (bytes32 => uint256) indexes;
     mapping (uint => Transaction) txx;
     mapping (uint256 => uint256) minimumApprovalsByKeyPurpose;
-    bytes32[] pendingTransactions;
+    
     uint nonce = 0;
     address recoveryContract;
     address recoveryManager;
 
     struct Transaction {
+        bool valid;
         address to;
         uint value;
         bytes data;
@@ -455,6 +456,7 @@ contract Identity is ERC725, ERC735 {
         executionId = nonce;
         nonce++;
         txx[executionId] = Transaction({
+            valid: true,
             to: _to,
             value: _value,
             data: _data,
@@ -473,29 +475,30 @@ contract Identity is ERC725, ERC735 {
         returns(bool success) //(?) should return approved instead of success?
     {
         
-        Transaction storage trx = txx[_id];
+        Transaction memory trx = txx[_id];
+        require(trx.valid);
+        uint256 requiredKeyPurpose = trx.to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
+        require(isKeyPurpose(_key, requiredKeyPurpose));
+        bytes32 keyHash = keccak256(_key, requiredKeyPurpose);
+        require(txx[_id].approvals[keyHash] != _approval);
         
-        uint256 approvalCount;
-        uint256 requiredKeyPurpose;
-
-        if (trx.to == address(this)) {
-            require(isKeyPurpose(_key, MANAGEMENT_KEY));
-            bytes32 managerKeyHash = keccak256(_key, MANAGEMENT_KEY);
-            requiredKeyPurpose = MANAGEMENT_KEY;
-            approvalCount = _calculateApprovals(managerKeyHash, _approval, trx);
+        if (_approval) {
+            trx.approverCount++;
         } else {
-            require(isKeyPurpose(_key, ACTION_KEY));
-            bytes32 actorKeyHash = keccak256(_key, ACTION_KEY);
-            requiredKeyPurpose = ACTION_KEY;
-            approvalCount = _calculateApprovals(actorKeyHash, _approval, trx);
+            trx.approverCount--;
         }
-
+    
         emit Approved(_id, _approval);
 
-        if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
+        if (trx.approverCount < minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
+            txx[_id].approvals[keyHash] = _approval;
+            txx[_id] = trx;
+        } else {
+            delete txx[_id];
             //(?) success should be included in event?
-            success = trx.to.call.value(trx.value)(trx.data);
+            success = address(trx.to).call.value(trx.value)(trx.data);
             emit Executed(_id, trx.to, trx.value, trx.data);
+            
         }
     }
 
@@ -541,31 +544,10 @@ contract Identity is ERC725, ERC735 {
 
         delete indexes[keyHash];
         delete keys[keyHash];
-        
+
         emit KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
     }
 
-    function _calculateApprovals(
-        bytes32 _keyHash,
-        bool _approval,
-        Transaction storage trx
-    )
-        private 
-        returns (uint256 approvalCount) 
-    {
-        require(trx.approvals[_keyHash] != _approval);
-
-        trx.approvals[_keyHash] = _approval;
-        if (_approval) {
-            trx.approverCount++;
-        } else {
-            trx.approverCount--;
-        }
-        
-        return trx.approverCount;
-    }
-
-    
     function _includeClaim(
         bytes32 _claimHash,
         uint256 _claimType,
