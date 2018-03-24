@@ -7,9 +7,10 @@ import "./ERC735.sol";
 contract Identity is ERC725, ERC735 {
 
     mapping (bytes32 => Key) keys;
-    mapping (bytes32 => Claim) claims;
     mapping (uint256 => bytes32[]) keysByPurpose;
+    mapping (bytes32 => Claim) claims;
     mapping (uint256 => bytes32[]) claimsByType;
+
     mapping (bytes32 => uint256) indexes;
     mapping (uint => Transaction) txx;
     mapping (uint256 => uint256) minimumApprovalsByKeyPurpose;
@@ -490,7 +491,7 @@ contract Identity is ERC725, ERC735 {
         }
 
         emit Approved(_id, _approval);
-        
+
         if (approvalCount >= minimumApprovalsByKeyPurpose[requiredKeyPurpose]) {
             //(?) success should be included in event?
             success = trx.to.call.value(trx.value)(trx.data);
@@ -525,25 +526,22 @@ contract Identity is ERC725, ERC735 {
     )
         private 
     {
-        bytes32 keyHash = keccak256(_key, _purpose);
-        Key memory myKey = keys[keyHash];
-        
-        uint index = indexes[keyHash];
-        delete indexes[keyHash];
-        bytes32 replacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
-        keysByPurpose[_purpose][index] = replacer;
-        indexes[keccak256(replacer, _purpose)] = index;
-        keysByPurpose[_purpose].length--;
-
         if (_purpose == MANAGEMENT_KEY) {
-            require(
-                keysByPurpose[MANAGEMENT_KEY].length >= 1 && 
-                keysByPurpose[MANAGEMENT_KEY].length >= minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]
-            );
-
+            require(keysByPurpose[MANAGEMENT_KEY].length > minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]);
         }
 
+        bytes32 keyHash = keccak256(_key, _purpose);
+        Key memory myKey = keys[keyHash];
+        uint index = indexes[keyHash];
+        bytes32 indexReplacer = keysByPurpose[_purpose][keysByPurpose[_purpose].length - 1];
+        
+        keysByPurpose[_purpose][index] = indexReplacer;
+        indexes[keccak256(indexReplacer, _purpose)] = index;
+        keysByPurpose[_purpose].length--;
+
+        delete indexes[keyHash];
         delete keys[keyHash];
+        
         emit KeyRemoved(myKey.key, myKey.purpose, myKey.keyType);
     }
 
