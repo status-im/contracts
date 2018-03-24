@@ -1,5 +1,7 @@
 pragma solidity ^0.4.17;
 
+import "./Resolver.sol";
+
 contract AbstractENS {
     function owner(bytes32 node) public constant returns (address);
     function resolver(bytes32 node) public constant returns (Resolver);
