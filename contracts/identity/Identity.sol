@@ -290,12 +290,12 @@ contract Identity is ERC725, ERC735 {
         return (myKey.purpose, myKey.keyType, myKey.key);
     }
     
-    function isKeyPurpose(bytes32 _key, uint256 _type) 
+    function isKeyPurpose(bytes32 _key, uint256 _purpose) 
         public
         constant 
         returns (bool)
     {
-        return keys[keccak256(_key, _type)].purpose == _type;
+        return keys[keccak256(_key, _purpose)].purpose == _purpose;
     }
 
     function getKeyPurpose(bytes32 _key)
