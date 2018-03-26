@@ -32,6 +32,7 @@ contract MessageTribute {
         uint256 blockNum;
         uint256 timestamp;
         Fee fee;
+        bytes32 hashedSecret;
     }
 
     mapping(address => mapping(address => Audience)) audienceRequested;
@@ -63,8 +64,8 @@ contract MessageTribute {
         }
     }
 
-    function isFriend(address _friend) public view returns(bool) {
-        return friendIndex[keccak256(_friend, msg.sender)] > 0;
+    function areFriends(address sourceAccount, address accountToCheck) public view returns(bool) {
+        return friendIndex[keccak256(sourceAccount, accountToCheck)] > 0;
     }
 
     function setRequiredTribute(address _to, uint _amount, bool _isTribute, bool _isPermanent) public {
@@ -101,7 +102,7 @@ contract MessageTribute {
     event AudienceCancelled(address indexed from, address indexed to);
     event AudienceGranted(address indexed from, address indexed to, bool approve);
 
-    function requestAudience(address _from)
+    function requestAudience(address _from, bytes32 hashedSecret)
         public 
     {
         Fee memory f = getFee(_from);
@@ -109,7 +110,7 @@ contract MessageTribute {
         require(audienceRequested[_from][msg.sender].blockNum == 0);
         
         AudienceRequested(_from, msg.sender);
-        audienceRequested[_from][msg.sender] = Audience(block.number, now, f);
+        audienceRequested[_from][msg.sender] = Audience(block.number, now, f, hashedSecret);
 
         balances[msg.sender] -= f.amount;
     }
@@ -126,11 +127,13 @@ contract MessageTribute {
         delete audienceRequested[_from][msg.sender];
     }
 
-    function grantAudience(address _to, bool _approve) public {
+    function grantAudience(address _to, bool _approve, bytes32 secret) public {
 
         Audience storage aud = audienceRequested[msg.sender][_to];
 
         require(aud.blockNum > 0);
+
+        require(aud.hashedSecret == keccak256(msg.sender, _to, _approve, secret));
        
         AudienceGranted(msg.sender, _to, _approve);
 
@@ -138,6 +141,7 @@ contract MessageTribute {
         uint256 amount = aud.fee.amount;
 
         delete audienceRequested[msg.sender][_to];
+
         clearFee(msg.sender, _to);
 
         if (isTribute) {
