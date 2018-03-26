@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "elliptic-curve": "^0.1.0",
+    "embark": "^2.7.0",
     "ethereumjs-util": "^5.1.5",
-    "solidity-coverage": "^0.4.4",
-    "web3": "^1.0.0-beta.30"
+    "solidity-coverage": "^0.4.4"
   }
 }
