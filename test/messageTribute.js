@@ -1,8 +1,15 @@
 const TestUtils = require("../utils/testUtils.js");
+const MessageTributeUtils = require("../utils/messageTributeUtils.js");
+const identityJson = require('../dist/contracts/Identity.json');
+const idUtils = require('../utils/identityUtils.js');
 
 describe('MessageTribute', function() {
 
+    let identityFactory;
+    let identity;
     let accounts;
+    let identities = [];
+    let idInstances = [];
     let SNT;
 
     this.timeout(0);
@@ -11,6 +18,10 @@ describe('MessageTribute', function() {
         this.timeout(0);
 
         EmbarkSpec.deployAll({
+                "IdentityFactory": {
+                    args: ["0xaaaa"],
+                    gas: 5000000
+                },
                 "MiniMeTokenFactory": {},
                 "MiniMeToken": {
                     "args": [
@@ -26,22 +37,46 @@ describe('MessageTribute', function() {
                 "MessageTribute": {
                     "args": ["$MiniMeToken"]
                 }
-            }, (_accounts) => { 
+            }, async (_accounts) => { 
             accounts = _accounts;  
 
-            SNT = MiniMeToken;
+        SNT = MiniMeToken;
 
-            Promise.all([
-                SNT.methods.generateTokens(accounts[0], 5000).send(),
-                SNT.methods.generateTokens(accounts[1], 5000).send(),
-                SNT.methods.generateTokens(accounts[2], 5000).send(),
-                SNT.methods.generateTokens(accounts[3], 5000).send(),
-                SNT.methods.generateTokens(accounts[4], 5000).send(),
-                SNT.methods.generateTokens(accounts[5], 5000).send(),
-                SNT.methods.generateTokens(accounts[6], 5000).send(),
-                SNT.methods.generateTokens(accounts[7], 5000).send(),
-                SNT.methods.generateTokens(accounts[8], 5000).send(),
-                SNT.methods.generateTokens(accounts[9], 5000).send()
+        identities[0] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[0]})).events.IdentityCreated.returnValues.instance, {from: accounts[0]});
+   /*     identities[1] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[1]})).events.IdentityCreated.returnValues.instance);
+        identities[2] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[2]})).events.IdentityCreated.returnValues.instance);
+        identities[3] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[3]})).events.IdentityCreated.returnValues.instance);
+        identities[4] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[4]})).events.IdentityCreated.returnValues.instance);
+        identities[5] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[5]})).events.IdentityCreated.returnValues.instance);
+        identities[6] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[6]})).events.IdentityCreated.returnValues.instance);
+        identities[7] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[7]})).events.IdentityCreated.returnValues.instance);
+        identities[8] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[8]})).events.IdentityCreated.returnValues.instance);
+        identities[9] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[9]})).events.IdentityCreated.returnValues.instance);
+*/
+
+try {
+    await identities[0].methods.execute(identities[0].options.address, 0, idUtils.encode.addKey(accounts[2], idUtils.purposes.ACTION, idUtils.types.ADDRESS)).send({from: accounts[0]})
+
+
+} catch(Er){
+    console.log(Er);
+}
+             
+
+
+        Promise.all([
+                //  identities[1].methods.execute(identities[1].options.address, 0, idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS)).send({from: accounts[1]}),
+
+                SNT.methods.generateTokens(identities[0].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[1].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[2].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[3].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[4].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[5].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[6].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[7].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[8].options.address, 5000).send(),
+                SNT.methods.generateTokens(identities[9].options.address, 5000).send()
             ])
             .then(() => {
                 console.log("  - Added balances");
@@ -51,32 +86,55 @@ describe('MessageTribute', function() {
     });
     
     it("Adding friends", async () => {
+        
+       /* let tx = await identities[0].methods.execute(
+            MessageTribute.options.address, 
+            0, 
+            MessageTributeUtils.encode.addFriends([accounts[1], accounts[2]])
+            ).send({from: accounts[0]});
+console.log(tx);
+*/
         await MessageTribute.methods.addFriends([accounts[1], accounts[2]]).send({from: accounts[0]});
         await MessageTribute.methods.addFriends([accounts[3]]).send({from: accounts[1]});
         await MessageTribute.methods.addFriends([accounts[4]]).send({from: accounts[1]});
         await MessageTribute.methods.addFriends([accounts[5]]).send({from: accounts[1]});
 
         assert.equal(
-            await MessageTribute.methods.isFriend(accounts[1]).call({from: accounts[0]}),
+            await MessageTribute.methods.areFriends(identities[0].options.address, identities[1].options.address).call(),
             true,
-            accounts[1] + " must be a friend of " + accounts[0]);
+            identities[1].options.address + " must be a friend of " + identities[0].options.address);
 
         assert.equal(
-            await MessageTribute.methods.isFriend(accounts[3]).call({from: accounts[1]}),
+            await MessageTribute.methods.areFriends(identities[1].options.address, identities[3].options.address).call(),
             true,
-            accounts[3] + " must be a friend of " + accounts[1]);
+            identities[3].options.address + " must be a friend of " + identities[1].options.address);
 
         assert.equal(
-            await MessageTribute.methods.isFriend(accounts[4]).call({from: accounts[0]}),
+            await MessageTribute.methods.areFriends(identities[0].options.address, identities[4].options.address).call(),
             false,
-            accounts[4] + " must not be a friend of " + accounts[0]);
+            identities[4].options.address + " must not be a friend of " + identities[0].options.address);
 
         assert.equal(
-            await MessageTribute.methods.isFriend(accounts[2]).call({from: accounts[1]}),
+            await MessageTribute.methods.areFriends(identities[1].options.address, identities[2].options.address).call(),
             false,
-            accounts[2] + " must not be a friend of " + accounts[1]);
+            identities[2].options.address + " must not be a friend of " + identities[1].options.address);
 
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     it("Removing friends", async () => {
         await MessageTribute.methods.removeFriends([accounts[3]]).send({from: accounts[1]});
