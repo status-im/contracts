@@ -1,15 +1,8 @@
 const TestUtils = require("../utils/testUtils.js");
-const MessageTributeUtils = require("../utils/messageTributeUtils.js");
-const identityJson = require('../dist/contracts/Identity.json');
-const idUtils = require('../utils/identityUtils.js');
 
 describe('MessageTribute', function() {
 
-    let identityFactory;
-    let identity;
     let accounts;
-    let identities = [];
-    let idInstances = [];
     let SNT;
 
     this.timeout(0);
@@ -18,10 +11,6 @@ describe('MessageTribute', function() {
         this.timeout(0);
 
         EmbarkSpec.deployAll({
-                "IdentityFactory": {
-                    args: ["0xaaaa"],
-                    gas: 5000000
-                },
                 "MiniMeTokenFactory": {},
                 "MiniMeToken": {
                     "args": [
@@ -37,46 +26,22 @@ describe('MessageTribute', function() {
                 "MessageTribute": {
                     "args": ["$MiniMeToken"]
                 }
-            }, async (_accounts) => { 
+            }, (_accounts) => { 
             accounts = _accounts;  
 
-        SNT = MiniMeToken;
+            SNT = MiniMeToken;
 
-        identities[0] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[0]})).events.IdentityCreated.returnValues.instance, {from: accounts[0]});
-   /*     identities[1] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[1]})).events.IdentityCreated.returnValues.instance);
-        identities[2] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[2]})).events.IdentityCreated.returnValues.instance);
-        identities[3] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[3]})).events.IdentityCreated.returnValues.instance);
-        identities[4] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[4]})).events.IdentityCreated.returnValues.instance);
-        identities[5] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[5]})).events.IdentityCreated.returnValues.instance);
-        identities[6] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[6]})).events.IdentityCreated.returnValues.instance);
-        identities[7] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[7]})).events.IdentityCreated.returnValues.instance);
-        identities[8] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[8]})).events.IdentityCreated.returnValues.instance);
-        identities[9] = new web3.eth.Contract(identityJson.abi, (await IdentityFactory.methods.createIdentity().send({from: accounts[9]})).events.IdentityCreated.returnValues.instance);
-*/
-
-try {
-    await identities[0].methods.execute(identities[0].options.address, 0, idUtils.encode.addKey(accounts[2], idUtils.purposes.ACTION, idUtils.types.ADDRESS)).send({from: accounts[0]})
-
-
-} catch(Er){
-    console.log(Er);
-}
-             
-
-
-        Promise.all([
-                //  identities[1].methods.execute(identities[1].options.address, 0, idUtils.encode.addKey(accounts[1], idUtils.purposes.ACTION, idUtils.types.ADDRESS)).send({from: accounts[1]}),
-
-                SNT.methods.generateTokens(identities[0].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[1].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[2].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[3].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[4].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[5].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[6].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[7].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[8].options.address, 5000).send(),
-                SNT.methods.generateTokens(identities[9].options.address, 5000).send()
+            Promise.all([
+                SNT.methods.generateTokens(accounts[0], 5000).send(),
+                SNT.methods.generateTokens(accounts[1], 5000).send(),
+                SNT.methods.generateTokens(accounts[2], 5000).send(),
+                SNT.methods.generateTokens(accounts[3], 5000).send(),
+                SNT.methods.generateTokens(accounts[4], 5000).send(),
+                SNT.methods.generateTokens(accounts[5], 5000).send(),
+                SNT.methods.generateTokens(accounts[6], 5000).send(),
+                SNT.methods.generateTokens(accounts[7], 5000).send(),
+                SNT.methods.generateTokens(accounts[8], 5000).send(),
+                SNT.methods.generateTokens(accounts[9], 5000).send()
             ])
             .then(() => {
                 console.log("  - Added balances");
@@ -86,55 +51,32 @@ try {
     });
     
     it("Adding friends", async () => {
-        
-       /* let tx = await identities[0].methods.execute(
-            MessageTribute.options.address, 
-            0, 
-            MessageTributeUtils.encode.addFriends([accounts[1], accounts[2]])
-            ).send({from: accounts[0]});
-console.log(tx);
-*/
         await MessageTribute.methods.addFriends([accounts[1], accounts[2]]).send({from: accounts[0]});
         await MessageTribute.methods.addFriends([accounts[3]]).send({from: accounts[1]});
         await MessageTribute.methods.addFriends([accounts[4]]).send({from: accounts[1]});
         await MessageTribute.methods.addFriends([accounts[5]]).send({from: accounts[1]});
 
         assert.equal(
-            await MessageTribute.methods.areFriends(identities[0].options.address, identities[1].options.address).call(),
+            await MessageTribute.methods.areFriends(accounts[0], accounts[1]).call(),
             true,
-            identities[1].options.address + " must be a friend of " + identities[0].options.address);
+            "1. " + accounts[1] + " must be a friend of " + accounts[0]);
 
         assert.equal(
-            await MessageTribute.methods.areFriends(identities[1].options.address, identities[3].options.address).call(),
+            await MessageTribute.methods.areFriends(accounts[1], accounts[3]).call(),
             true,
-            identities[3].options.address + " must be a friend of " + identities[1].options.address);
+            "2. " + accounts[3] + " must be a friend of " + accounts[1]);
 
         assert.equal(
-            await MessageTribute.methods.areFriends(identities[0].options.address, identities[4].options.address).call(),
+            await MessageTribute.methods.areFriends(accounts[0], accounts[4]).call(),
             false,
-            identities[4].options.address + " must not be a friend of " + identities[0].options.address);
+            "3. " + accounts[4] + " must not be a friend of " + accounts[0]);
 
         assert.equal(
-            await MessageTribute.methods.areFriends(identities[1].options.address, identities[2].options.address).call(),
+            await MessageTribute.methods.areFriends(accounts[1], accounts[2]).call(),
             false,
-            identities[2].options.address + " must not be a friend of " + identities[1].options.address);
+            "4. " + accounts[2] + " must not be a friend of " + accounts[1]);
 
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     it("Removing friends", async () => {
         await MessageTribute.methods.removeFriends([accounts[3]]).send({from: accounts[1]});
@@ -142,12 +84,12 @@ console.log(tx);
         await MessageTribute.methods.removeFriends([accounts[4], accounts[5]]).send({from: accounts[1]});
 
         assert.equal(
-            await MessageTribute.methods.isFriend(accounts[3]).call({from: accounts[0]}),
+            await MessageTribute.methods.areFriends(accounts[0], accounts[3]).call(),
             false,
             accounts[3] + " must not be a friend of " + accounts[0]);
         
         assert.equal(
-            await MessageTribute.methods.isFriend(accounts[4]).call({from: accounts[0]}),
+            await MessageTribute.methods.areFriends(accounts[0], accounts[4]).call(),
             false,
             accounts[4] + " must not be a friend of " + accounts[0]);
 
@@ -188,11 +130,6 @@ console.log(tx);
     it("Should be able to withdraw", async() => {
         let amount = 2000;
 
-        assert.equal(
-            await SNT.methods.balanceOf(MessageTribute.address).call(),
-            amount,
-            "Contract SNT balance is incorrect");
-
         let initialBalance = await SNT.methods.balanceOf(accounts[1]).call();
 
         await MessageTribute.methods.withdraw(amount).send({from: accounts[1]});
@@ -220,7 +157,9 @@ console.log(tx);
             0,
             "Deposited balance must be 0"); 
 
-        let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[9]});
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[9], "12345");
+
+        let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[9]});
 
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
 
@@ -240,7 +179,9 @@ console.log(tx);
             "Must return false");
 
         try {
-            let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[9]});
+            let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[9], "12345");
+
+            let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[9]});
             assert.fail('should have reverted before');
         } catch(error) {
             TestUtils.assertJump(error);
@@ -249,7 +190,7 @@ console.log(tx);
 
     it("Requesting an audience as a friend", async() => {
        assert.equal(
-        await MessageTribute.methods.isFriend(accounts[2]).call({from: accounts[0]}),
+        await MessageTribute.methods.areFriends(accounts[0], accounts[2]).call(),
         true,
         "Should be friends"); 
 
@@ -263,7 +204,9 @@ console.log(tx);
             true,
             "Must return true");
 
-        let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[2]});
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[2], "12345");
+
+        let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[2]});
         
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
     });
@@ -285,8 +228,10 @@ console.log(tx);
             false,
             "Must return false");
 
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[2], "12345");
+        
         try {
-            let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[8]});
+            let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[8]});
             assert.fail('should have reverted before');
         } catch(error) {
             TestUtils.assertJump(error);
@@ -305,7 +250,7 @@ console.log(tx);
             true,
             "Must return true");
         
-        let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[8]});
+        let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[8]});
     
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
     });
@@ -322,8 +267,10 @@ console.log(tx);
             200,
             "Deposited balance must be 200"); 
 
-        let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[7]});
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], "12345");
 
+        let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[7]});
+    
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
     
         assert.equal(
@@ -339,21 +286,22 @@ console.log(tx);
             true,
             "Must have a pending audience");
 
-        // TODO update EVM time and mine one block to test this
-
-        // This commented code works. Needs the previous TODO to uncomment it
-        /*let tx = await MessageTribute.methods.cancelAudienceRequest(accounts[0]).send({from: accounts[8]});
+        // Commented because it requires moving the evm timestamp, and current version of testrpc seems to not support it
+        /*
+        let tx = await MessageTribute.methods.cancelAudienceRequest(accounts[0]).send({from: accounts[8]});
 
         assert.notEqual(tx.events.AudienceCancelled, undefined, "AudienceCancelled wasn't triggered");
 
         assert.equal(
             await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[8]}),
             false,
-            "Must not have a pending audience");*/
+            "Must not have a pending audience");
+        */
 
      });
 
      it("Cancelling an audience without having one", async() => {
+        
         assert.equal(
             await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[6]}),
             false,
