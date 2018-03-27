@@ -115,8 +115,8 @@ contract MessageTribute {
         balances[msg.sender] -= f.amount;
     }
 
-    function hasPendingAudience(address _from) public view returns (bool) {
-        return audienceRequested[_from][msg.sender].blockNum > 0;
+    function hasPendingAudience(address _from, address _to) public view returns (bool) {
+        return audienceRequested[_from][_to].blockNum > 0;
     }
 
     function cancelAudienceRequest(address _from) public {
