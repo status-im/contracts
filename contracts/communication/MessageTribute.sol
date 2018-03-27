@@ -65,7 +65,7 @@ contract MessageTribute {
     }
 
     function areFriends(address sourceAccount, address accountToCheck) public view returns(bool) {
-        return friendIndex[keccak256(sourceAccount, accountToCheck)] > 0;
+        return friendIndex[keccak256(accountToCheck, sourceAccount)] > 0;
     }
 
     function setRequiredTribute(address _to, uint _amount, bool _isTribute, bool _isPermanent) public {
@@ -133,7 +133,7 @@ contract MessageTribute {
 
         require(aud.blockNum > 0);
 
-        require(aud.hashedSecret == keccak256(msg.sender, _to, _approve, secret));
+        require(aud.hashedSecret == keccak256(msg.sender, _to, secret));
        
         AudienceGranted(msg.sender, _to, _approve);
 
