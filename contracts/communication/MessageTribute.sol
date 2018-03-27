@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
 
 import "../token/MiniMeToken.sol";
-
+import "../common/Controlled.sol";
 
 /**
  * @title MessageTribute
@@ -12,7 +12,7 @@ import "../token/MiniMeToken.sol";
         SNT is deposited, and transferred from stakeholders to recipients upon receiving 
         a reply from the recipient.
  */
-contract MessageTribute {
+contract MessageTribute is Controlled {
 
     MiniMeToken public SNT;
 
@@ -37,8 +37,8 @@ contract MessageTribute {
 
     mapping(address => mapping(address => Audience)) audienceRequested;
     
-    function MessageTribute(address _SNT) public {
-        SNT = MiniMeToken(_SNT);
+    function MessageTribute(MiniMeToken _SNT) public {
+        SNT = _SNT;
     }
 
     function addFriends(address[] _friends) public {
