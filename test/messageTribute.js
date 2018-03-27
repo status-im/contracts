@@ -5,6 +5,8 @@ describe('MessageTribute', function() {
     let accounts;
     let SNT;
 
+    const secret = "0x0000000000000000000000000000000000000000000000000000000000123456";
+
     this.timeout(0);
 
     before( function(done) {
@@ -157,7 +159,7 @@ describe('MessageTribute', function() {
             0,
             "Deposited balance must be 0"); 
 
-        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[9], "12345");
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[9], secret);
 
         let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[9]});
 
@@ -179,7 +181,7 @@ describe('MessageTribute', function() {
             "Must return false");
 
         try {
-            let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[9], "12345");
+            let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[9], secret);
 
             let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[9]});
             assert.fail('should have reverted before');
@@ -204,7 +206,7 @@ describe('MessageTribute', function() {
             true,
             "Must return true");
 
-        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[2], "12345");
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[2], secret);
 
         let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[2]});
         
@@ -228,7 +230,7 @@ describe('MessageTribute', function() {
             false,
             "Must return false");
 
-        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[2], "12345");
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[2], secret);
         
         try {
             let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[8]});
@@ -267,10 +269,10 @@ describe('MessageTribute', function() {
             200,
             "Deposited balance must be 200"); 
 
-        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], "12345");
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], secret);
 
         let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[7]});
-    
+        
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
     
         assert.equal(
@@ -282,7 +284,7 @@ describe('MessageTribute', function() {
      it("Cancelling an audience", async() => {
         
         assert.equal(
-            await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[8]}),
+            await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[8]).call(),
             true,
             "Must have a pending audience");
 
@@ -303,7 +305,7 @@ describe('MessageTribute', function() {
      it("Cancelling an audience without having one", async() => {
         
         assert.equal(
-            await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[6]}),
+            await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[6]).call(),
             false,
             "Must not have a pending audience");
 
@@ -324,11 +326,13 @@ describe('MessageTribute', function() {
         let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[7]})).fee.toString();
      
         assert.equal(
-            await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[7]}),
+            await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[7]).call(),
             true,
             "Must have a pending audience");
-
-        let tx = await MessageTribute.methods.grantAudience(accounts[7], true).send({from: accounts[0]});
+        
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], secret);
+        
+        let tx = await MessageTribute.methods.grantAudience(accounts[7], true, secret).send({from: accounts[0]});
 
         assert.notEqual(tx.events.AudienceGranted, undefined, "AudienceGranted wasn't triggered");
 
@@ -353,7 +357,7 @@ describe('MessageTribute', function() {
             accounts[0] + "SNT deposit balance must be 0");
 
         assert.equal(
-            await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[7]}),
+            await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[7]).call(),
             false,
             "Must not have a pending audience");
      });
@@ -364,7 +368,9 @@ describe('MessageTribute', function() {
 
         let initial7DepBalance = (await MessageTribute.methods.balance().call({from: accounts[7]})).toString();
 
-        let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[7]});
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], secret);
+
+        let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[7]});
 
         let afterReq7DepBalance = (await MessageTribute.methods.balance().call({from: accounts[7]})).toString();
         
@@ -375,7 +381,7 @@ describe('MessageTribute', function() {
 
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
     
-        let tx2 = await MessageTribute.methods.grantAudience(accounts[7], false).send({from: accounts[0]});
+        let tx2 = await MessageTribute.methods.grantAudience(accounts[7], false, secret).send({from: accounts[0]});
 
         assert.notEqual(tx2.events.AudienceGranted, undefined, "AudienceGranted wasn't triggered");
 
@@ -387,7 +393,7 @@ describe('MessageTribute', function() {
             accounts[7] + "SNT deposit balance error");
 
         assert.equal(
-                await MessageTribute.methods.hasPendingAudience(accounts[0]).call({from: accounts[7]}),
+                await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[7]).call(),
                 false,
                 "Must not have a pending audience");
      });
@@ -399,7 +405,9 @@ describe('MessageTribute', function() {
         await SNT.methods.approve(MessageTribute.address, 200).send({from: accounts[6]});
         await MessageTribute.methods.deposit(200).send({from: accounts[6]});
 
-        let tx = await MessageTribute.methods.requestAudience(accounts[0]).send({from: accounts[6]});
+        let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[6], secret);
+        
+        let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[6]});
     
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
     
@@ -408,7 +416,7 @@ describe('MessageTribute', function() {
             100,
             "Deposited balance must be 100"); 
 
-        let tx2 = await MessageTribute.methods.grantAudience(accounts[6], false).send({from: accounts[0]});
+        let tx2 = await MessageTribute.methods.grantAudience(accounts[6], false, secret).send({from: accounts[0]});
         assert.notEqual(tx2.events.AudienceGranted, undefined, "AudienceGranted wasn't triggered");
 
         let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[6]})).fee.toString();
