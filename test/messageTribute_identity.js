@@ -38,7 +38,7 @@ describe('MessageTribute', function() {
             });
     });
 
-    it("Should use identity", async() => {
+    it("Use identities to request audiences", async() => {
         let tx;
         
         tx = await IdentityFactory.methods.createIdentity().send({from: accounts[0]});
@@ -94,13 +94,19 @@ describe('MessageTribute', function() {
             encodedSetTribute
         ).send({from: accounts[0], gasLimit: 5000000});
 
-
+        // Requesting Audience
         let encodedRequestAudience = web3.eth.abi.encodeFunctionCall({name: 'requestAudience', type: 'function', inputs: [{type: 'address', name: '_from'}, {type: 'bytes32', name: 'hashedSecret'}]}, [idAddress0, "0x0000000000000000000000000000000000000000000000000000000000000000"]);
         tx = await identity1.methods.execute(
             MessageTribute.address, 
             0, 
             encodedRequestAudience
         ).send({from: accounts[1], gasLimit: 5000000});
+
+        assert.equal(
+            await MessageTribute.methods.hasPendingAudience(idAddress0, idAddress1).call(),
+            true,
+            "Must have a pending audience");
+
 
     });
 });
