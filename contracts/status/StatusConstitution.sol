@@ -4,7 +4,6 @@ import "./ConstitutionStorage.sol";
 import "../token/MiniMeToken.sol";
 import "../democracy/TrustNetworkInterface.sol";
 import "../democracy/ProposalManager.sol";
-import "../democracy/ProposalExecutor.sol";
 import "../registry/TokenRegistry.sol";
 
 
@@ -13,9 +12,7 @@ import "../registry/TokenRegistry.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @dev 
  */
-contract StatusConstitution is ConstitutionStorage, ProposalExecutor {
-    
-
+contract StatusConstitution is ConstitutionStorage {
 
     function StatusConstitution(address _statusNetworkToken, address _statusNetworkTrust, address _stakeBank) public {
         token = MiniMeTokenInterface(_statusNetworkToken);

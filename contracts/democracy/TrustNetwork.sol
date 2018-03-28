@@ -1,4 +1,4 @@
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.21;
 
 import "../common/Controlled.sol";
 import "./TrustNetworkInterface.sol";
@@ -16,8 +16,8 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     DelegationProxyFactory delegationFactory;
     
     struct Topic {
-        DelegationProxy voteProxy;
-        DelegationProxy vetoProxy;
+        DelegationProxy voteDelegation;
+        DelegationProxy vetoDelegation;
     }
     
     function TrustNetwork(address _delegationFactory) public {
@@ -27,29 +27,49 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     
     function addTopic(bytes32 topicId, bytes32 parentTopic) public onlyController {
         Topic memory parent = topics[parentTopic];
-        address vote = address(parent.voteProxy);
-        address veto = address(parent.vetoProxy);
+        address vote = address(parent.voteDelegation);
+        address veto = address(parent.vetoDelegation);
         require(vote != 0x0);
         require(veto != 0x0);
 
         Topic storage topic = topics[topicId]; 
-        require(address(topic.voteProxy) == 0x0);
-        require(address(topic.vetoProxy) == 0x0);
-
+        require(address(topic.voteDelegation) == 0x0);
+        require(address(topic.vetoDelegation) == 0x0);
 
         topics[topicId] = newTopic(vote, veto);
     }
     
     function getTopic(bytes32 _topicId) public constant returns (DelegationProxyInterface vote, DelegationProxyInterface veto) {
         Topic memory topic = topics[_topicId];
-        vote = topic.voteProxy;
-        veto = topic.vetoProxy;
+        vote = topic.voteDelegation;
+        veto = topic.vetoDelegation;
     }
 
+    function getVoteDelegation(
+        bytes32 _topicId
+    )
+        public
+        view
+        returns (DelegationProxyInterface voteDelegation) 
+    {
+        return topics[_topicId].voteDelegation;
+    }
+
+    function getVetoDelegation(
+        bytes32 _topicId
+    )
+        public
+        view 
+        returns (DelegationProxyInterface vetoDelegation)
+    {
+        return topics[_topicId].vetoDelegation;
+    }
+
+    
     function newTopic(address _vote, address _veto) internal returns (Topic topic) {
         topic = Topic ({ 
-            voteProxy: delegationFactory.create(_vote),
-            vetoProxy: delegationFactory.create(_veto)
+            voteDelegation: delegationFactory.createDelegationProxy(_vote),
+            vetoDelegation: delegationFactory.createDelegationProxy(_veto)
         });
     }
 

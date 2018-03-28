@@ -1,58 +1,18 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
+import "./ProposalManagerInterface.sol";
 import "./TrustNetworkInterface.sol";
 import "./DelegationProxyInterface.sol";
 import "../token/MiniMeTokenInterface.sol";
 import "../common/Controlled.sol";
-import "./ProposalExecutor.sol";
 
 /**
  * @title ProposalManager
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * Store the proposals, votes and results for other smartcontracts  
  */
-contract ProposalManager is Controlled {
- 
-    TrustNetworkInterface public trustNet;
-    MiniMeTokenInterface public token;
-    uint256 public tabulationBlockDelay = 10000;
-
-    Proposal[]  proposals;
-    
-    struct Proposal {
-        bytes32 topic; 
-
-        bytes32 txHash;
-
-        uint stake;
-        address staker;
-
-        uint blockStart;
-        uint voteBlockEnd;
-        uint vetoBlockEnd;
-
-        mapping(address => Vote) voteMap;
-
-        mapping(address => Tabulations) tabulated;
-        
-        mapping(uint8 => uint256) results;
-        
-        bool approved;
-        bool executed;
-    }
-    
-    struct Tabulations {
-        bool vote;
-        bool veto;
-    }
-
-    enum Vote { 
-        Null,
-        Reject, 
-        Approve,
-        Veto  
-    }
-     
+contract ProposalManager is ProposalManagerInterface, Controlled {
+   
     function ProposalManager(MiniMeTokenInterface _SNT, TrustNetworkInterface _trustNet) public {
         trustNet = _trustNet;
         token = _SNT;
@@ -85,14 +45,6 @@ contract ProposalManager is Controlled {
         return proposals[id].txHash;
     }
 
-    function execute(uint id, address dest, uint value, bytes data) public {
-        Proposal memory p = proposals[id];
-        require(p.approved == true);
-        require(keccak256(dest, value, data) == p.txHash);
-        proposals[id].executed = true;
-        ProposalExecutor(controller).executeProposal(dest, value, data);
-    }
-
     function vote(uint _proposal, Vote _vote) public {
         Proposal storage proposal = proposals[_proposal];
         require(block.number >= proposal.blockStart);
@@ -106,17 +58,14 @@ contract ProposalManager is Controlled {
 
     }
 
-   function tabulateVote(uint _proposal, address _delegator) public {
+    function tabulateVote(uint _proposal, address _delegator) public {
         Proposal storage proposal = proposals[_proposal];
         require(block.number > proposal.voteBlockEnd);
         require(!proposal.tabulated[_delegator].vote);
         proposal.tabulated[_delegator].vote = true;
         Vote _vote = proposal.voteMap[_delegator];
         if(_vote == Vote.Null) {
-            DelegationProxyInterface voteDelegation;
-            DelegationProxyInterface vetoDelegation;
-            (voteDelegation, vetoDelegation) = trustNet.getTopic(proposal.topic);
-            address delegate = voteDelegation.delegationOfAt(_delegator, proposal.vetoBlockEnd);
+            address delegate = trustNet.getVoteDelegation(proposal.topic).delegationOfAt(_delegator, proposal.vetoBlockEnd);
             _vote = proposal.voteMap[delegate];
         }
 
@@ -132,10 +81,7 @@ contract ProposalManager is Controlled {
         proposal.tabulated[_delegator].veto = true;
         Vote _vote = proposal.voteMap[_delegator];
         if (_vote == Vote.Null) {
-            DelegationProxyInterface voteDelegation;
-            DelegationProxyInterface vetoDelegation;
-            (voteDelegation, vetoDelegation) = trustNet.getTopic(proposal.topic);
-            address delegate = vetoDelegation.delegationOfAt(_delegator, proposal.vetoBlockEnd);
+            address delegate = trustNet.getVetoDelegation(proposal.topic).delegationOfAt(_delegator, proposal.vetoBlockEnd);
             _vote = proposal.voteMap[delegate];
         }
 
@@ -158,5 +104,12 @@ contract ProposalManager is Controlled {
         require(approvals >= approvalQuorum);
         proposal.approved = true;
         require(token.transferFrom(address(this), proposal.staker, proposal.stake));
+    }
+
+    function setExecuted(uint id) public onlyController {
+        Proposal memory p = proposals[id];
+        require(p.approved);
+        require(!p.executed);
+        proposals[id].executed = true;
     }
 }
