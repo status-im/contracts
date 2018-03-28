@@ -16,8 +16,10 @@
   },
   "homepage": "https://github.com/status-im/contracts#readme",
   "devDependencies": {
-    "solidity-coverage": "^0.4.4",
-    "elliptic": "^6.4.0"
+    "bootstrap": "^3.3.7",
+    "elliptic": "^6.4.0",
+    "jquery": "^3.3.1",
+    "solidity-coverage": "^0.4.4"
   },
   "dependencies": {
     "elliptic-curve": "^0.1.0",

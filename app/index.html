@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Embark - SimpleStorage Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.js"></script>
+    <script src="js/dapp.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body class="container-fluid">
+    <h3>Identity <small>contracts</small></h3>
+    <ul class="nav nav-tabs" role="tablist" id="myTabs">
+        <li role="presentation" class="active"><a href="#factory" role="tab" data-toggle="tab">Factory</a></li>
+        <li role="presentation"><a href="#identity" role="tab" data-toggle="tab">Identity</a></li>
+        <li role="presentation"><a href="#recovery" role="tab" data-toggle="tab">Recovery</a></li>
+      </ul>
+  
+      <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="factory">
+          
+          <h3>1. Create an Identity</h3>
+          <div class="form-group form-inline">
+            <button class="get btn btn-primary" id="btnCreateIdentity">Create an Identity</button>
+            <div>
+              Identity Address: <span class="identityAddress"></span>
+            </div>
+          </div>
+
+          <h3>2. Set Kernel</h3>
+          <div class="form-group form-inline">
+            <button class="get btn btn-primary" disabled>Create an UpdatedIdentityKernel</button>
+            <div>
+              UpdatedIdentityKernel Address: <span class="identityAddress"></span>
+            </div>
+          </div>
+          <div class="form-group form-inline">
+              <button class="get btn btn-primary" disabled>Register a New Kernel</button>
+              <div>
+                Identity Addresss: <span class="identityAddress"></span>
+              </div>
+            </div>
+      
+  
+          <h3>3. Contract Calls </h3>
+          <p>Javascript calls being made: </p>
+          <div class="logs">
+          </div>
+        </div>
+        
+        <div role="tabpanel" class="tab-pane" id="identity">
+          <div class="error alert alert-danger" role="alert">TODO</div>
+          
+        </div>
+        <div role="tabpanel" class="tab-pane" id="recovery">
+          <div class="error alert alert-danger" role="alert">TODO</div>          
+        </div>
+      </div>
+  
+  </body>
+</html>

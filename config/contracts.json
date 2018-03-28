@@ -2,7 +2,7 @@
   "default": {
     "versions": {
       "web3.js": "1.0.0-beta",
-      "solc": "0.4.17"
+      "solc": "0.4.21"
     },
     "deployment": {
       "host": "localhost",
@@ -29,7 +29,7 @@
       "TestContract": {  "deploy": false },
       "UpdatedIdentityKernel": { "deploy": false },
       "Identity": { "gas": 5000000 },
-      "IdentityFactory": { "deploy": false },
+      "IdentityFactory": { "args": ["0x00"] },
       "IdentityKernel": { "gas": 5000000 }
     }
   }
