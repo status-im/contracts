@@ -4,20 +4,37 @@ import './dapp.css';
 
 import EmbarkJS from 'Embark/EmbarkJS';
 import IdentityFactory from 'Embark/contracts/IdentityFactory';
+import UpdatedIdentityKernel from 'Embark/contracts/UpdatedIdentityKernel'
 
 $(function(){
-    $("#btnCreateIdentity").on('click', function() {
-        console.log(IdentityFactory.options.address);  
-        console.log("Test13");
+    $("#btnCreateIdentity").on('click', function(e) {
+        e.preventDefault();
 
-        IdentityFactory.methods.controller().call().then((x) => console.log(x));
+        console.group("Create an identity");
+        console.log("IdentityFactory.methods.createIdentity().send({from: accounts[0], gasLimit: 7000000})");
 
         web3.eth.getAccounts()
-            .then(accounts => {
-                console.log(accounts[0]);
-                return IdentityFactory.methods.createIdentity().send({from: accounts[0]})
-                
+            .then(accounts => IdentityFactory.methods.createIdentity().send({from: accounts[0], gasLimit: 7000000}))
+            .then((tx) => {
+                console.log(tx);
+                console.log("New Identity created: %c%s", 'font-weight: bold', tx.events.IdentityCreated.returnValues.instance)
             })
-            .then((tx) => console.log(tx.events));
+            .finally(x => console.groupEnd())
+       
       });
+
+    $("#btnCreateUpdatedIdentityKernel").on('click', function(e){
+        e.preventDefault();
+
+
+        web3.eth.getAccounts() 
+            .then(accounts => {
+                console.log(UpdatedIdentityKernel.deploy({from: accounts[0]}, function(e){
+                    console.log(e);
+                }));
+            })
+        
+    })
+
+    
 });
