@@ -9,7 +9,7 @@
     "maxpeers": 0,
     "rpcHost": "localhost",
     "rpcPort": 8545,
-    "rpcCorsDomain": "http://localhost:8000",
+    "rpcCorsDomain": "http://localhost:8000,http://remix.ethereum.org",
     "account": {
       "password": "config/development/password"
     },

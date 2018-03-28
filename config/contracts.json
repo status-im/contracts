@@ -28,9 +28,9 @@
       "FriendsRecovery": { "deploy": false },
       "TestContract": {  "deploy": false },
       "UpdatedIdentityKernel": { "deploy": false },
-      "Identity": { "gas": 3000000, "gasPrice": 1 },
-      "IdentityFactory": { "args": ["0xaaaa"], "gas": 5000000 },
-      "IdentityKernel": { "gas": 7000000 }
+      "Identity": { "deploy": false },
+      "IdentityFactory": { "args": ["0x00"], "gas": 6000000 },
+      "IdentityKernel": { "deploy": false }
     }
   }
 }
