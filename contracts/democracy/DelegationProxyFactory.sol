@@ -1,30 +1,29 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.21;
 
-import "./DelegationProxyModel.sol";
-import "../deploy/RecoverableSystem.sol";
-import "../deploy/KillableModel.sol";
+import "./DelegationProxyInterface.sol";
+import "./DelegationProxyKernel.sol";
+import "../deploy/Factory.sol";
+import "../deploy/Instance.sol";
 
 /**
  * @title DelegationProxyFactory
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @dev Upgradable delegation proxy factory
  */
-contract DelegationProxyFactory {
+contract DelegationProxyFactory is Factory {
 
-    address public systemModel;
-    address public recover;
-    address public watchdog;
+    function DelegationProxyFactory() 
+        Factory(new DelegationProxyKernel()) 
+        public 
+    { }
 
-    function DelegationProxyFactory(address _recover, address _watchdog) public {
-        watchdog = _watchdog;
-        recover = _recover;
-        systemModel = new DelegationProxyModel(watchdog);
-    }
-
-    function create(address _parent) external returns (DelegationProxy) { 
-         DelegationProxyModel instance = DelegationProxyModel(address(new RecoverableSystem(systemModel, recover)));
-         instance.initialize(_parent);
-         return DelegationProxy(address(instance));
+    function createDelegationProxy(address _parent) 
+        external 
+        returns (DelegationProxyInterface)
+    { 
+        DelegationProxyKernel instance = DelegationProxyKernel(address(new Instance(latestKernel)));
+        instance.initializeDelegationProxy(_parent);
+        return DelegationProxyInterface(address(instance));
     }
 
 }

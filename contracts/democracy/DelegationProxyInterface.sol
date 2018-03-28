@@ -1,10 +1,21 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "../token/MiniMeTokenInterface.sol";
 
 
 contract DelegationProxyInterface {
     
+    struct Delegation {
+        uint128 fromBlock; //when this was updated
+        address to; //who recieved this delegaton
+        address[] from; //list of addresses that delegated to this address
+    }
+    
+    //default delegation proxy, being used when user didn't set any delegation at this level.
+    address public parentProxy;
+    //snapshots of changes, allow delegation changes be done at any time without compromising vote results.
+    mapping (address => Delegation[]) public delegations;
+
     event Delegate(address who, address to);
 
     /** 
@@ -16,38 +27,6 @@ contract DelegationProxyInterface {
     function delegate(address _to) external;
 
     /**
-      * @notice Dig into delegate chain to find final delegate, makes delegationOfAt cheaper to call;
-      *         Should be used when you want to track an isolated long delegation chain FinalDelegate
-      * @param _delegator Address to lookup final delegate.
-      * @param _block From what block.
-      * @return True when found final delegate.
-      */
-    function findFinalDelegate(
-        address _delegator,
-        uint256 _block,
-        uint256 loopLimit
-    ) 
-        external
-        returns (bool);
-
-    /**
-     * @notice Explore the chain from `_delegator`, saving FinalDelegate indexes for all delegates, makes delegationOfAt cheaper to call.
-     *         Should be used to track a common FinalDelegates in a small delegation chain, saving gas on repetitive lookups;
-     * @param _delegator Address to lookup final delegate.
-     * @param _block From what block.
-     * @param _stackLimit how much deep explore to build the indexes
-     * @return address of delegate when found, or the last top delegate found if stacklimit reached without getting into FinalDelegate.
-     */ 
-    function buildFinalDelegateChain(
-        address _delegator,
-        uint256 _block,
-        uint256 _stackLimit
-    ) 
-        public
-        returns (address delegate, bool found);
-
-
-    /**
      * @notice Reads `_who` configured delegation in this level, 
      *         or from parent level if `_who` never defined/defined to parent address.
      * @param _who What address to lookup.
@@ -56,7 +35,7 @@ contract DelegationProxyInterface {
     function delegatedTo(address _who)
         public
         constant 
-        returns (address);
+        returns (address directDelegate);
     
     /**
      * @notice Reads the final delegate of `_who` at block number `_block`.
@@ -66,7 +45,7 @@ contract DelegationProxyInterface {
     function delegationOf(address _who)
         public
         constant
-        returns(address);
+        returns(address finalDelegate);
 
     /**
      * @notice Reads the sum of votes a `_who' have at block number `_block`.
@@ -125,7 +104,7 @@ contract DelegationProxyInterface {
     )
         public
         constant
-        returns (address addr);
+        returns (address directDelegate);
     
     /**
      * @notice Reads the final delegate of `_who` at block number `_block`.
@@ -139,7 +118,7 @@ contract DelegationProxyInterface {
     )
         public
         constant
-        returns(address delegate);
+        returns(address finalDelegate);
 
     /**
      * @dev Reads amount delegated influence received from other addresses.
