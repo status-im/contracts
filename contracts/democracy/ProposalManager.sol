@@ -36,9 +36,9 @@ contract ProposalManager is ProposalManagerInterface, Controlled {
         return pos;
     }
 
-    function getProposal(uint id) public constant returns (bytes32 topic, bytes32 txHash, uint stake, address staker, bool approved, bool executed) {
+    function getProposal(uint id) public constant returns (bytes32 topic, bytes32 txHash, bool approved, bool executed) {
         Proposal memory p = proposals[id];
-        return (p.topic, p.txHash, p.stake, p.staker, p.approved, p.executed);
+        return (p.topic, p.txHash, p.approved, p.executed);
     } 
 
     function getProposalTxHash(uint id) public constant returns(bytes32) {
@@ -106,10 +106,11 @@ contract ProposalManager is ProposalManagerInterface, Controlled {
         require(token.transferFrom(address(this), proposal.staker, proposal.stake));
     }
 
-    function setExecuted(uint id) public onlyController {
-        Proposal memory p = proposals[id];
+    function setExecuted(uint _id, bytes32 _txHash) public onlyController returns(bool){
+        Proposal memory p = proposals[_id];
+        require(p.txHash == _txHash);
         require(p.approved);
         require(!p.executed);
-        proposals[id].executed = true;
+        proposals[_id].executed = true;
     }
 }

@@ -49,11 +49,11 @@ contract ProposalManagerInterface {
     }
 
     function addProposal(bytes32 _topic, bytes32 _txHash, uint _stake) public returns (uint);
-    function getProposal(uint id) public constant returns (bytes32 topic, bytes32 txHash, uint stake, address staker, bool approved, bool executed);
-    function getProposalTxHash(uint id) public constant returns(bytes32);
+    function getProposal(uint _id) public constant returns (bytes32 topic, bytes32 txHash, bool approved, bool executed);
+    function getProposalTxHash(uint _id) public constant returns(bytes32);
     function vote(uint _proposal, Vote _vote) public;
     function tabulateVote(uint _proposal, address _delegator) public;
     function tabulateVeto(uint _proposal, address _delegator) public;
     function approve(uint _proposal) public;
-    function setExecuted(uint id) public;
+    function setExecuted(uint _id, bytes32 _txHash) public returns(bool);
 }
