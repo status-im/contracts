@@ -17,7 +17,7 @@ $(function(){
             .then(accounts => IdentityFactory.methods.createIdentity().send({from: accounts[0], gasLimit: 7000000}))
             .then((tx) => {
                 console.log(tx);
-                console.log("New Identity created: %c%s", 'font-weight: bold', tx.events.IdentityCreated.returnValues.instance)
+                console.log("Contract created at: %c%s", 'font-weight: bold', tx.events.IdentityCreated.returnValues.instance)
             })
             .finally(x => console.groupEnd())
        
@@ -25,14 +25,11 @@ $(function(){
 
     $("#btnCreateUpdatedIdentityKernel").on('click', function(e){
         e.preventDefault();
-
-
+        console.group("Create an UpdatedIdentityKernel");
         web3.eth.getAccounts() 
-            .then(accounts => {
-                console.log(UpdatedIdentityKernel.deploy({from: accounts[0]}, function(e){
-                    console.log(e);
-                }));
-            })
+            .then(accounts => UpdatedIdentityKernel.deploy().send({from: accounts[0], gas: 5000000, gasPrice: 1}))
+            .then(tx => console.log("Contract created at: %c%s", 'font-weight: bold', tx.options.address))
+            .finally(x => console.groupEnd())
         
     })
 
