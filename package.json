@@ -25,6 +25,8 @@
     "elliptic-curve": "^0.1.0",
     "embark": "^2.7.0",
     "ethereumjs-util": "^5.1.5",
-    "solidity-coverage": "^0.4.4"
+    "highlight-javascript": "0.0.3",
+    "solidity-coverage": "^0.4.4",
+    "syntax-highlighter": "0.0.3"
   }
 }

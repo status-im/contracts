@@ -9,53 +9,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body class="container-fluid">
-    <h3>Identity <small>contracts</small></h3>
+    <h1>IdentityFactory <small>contract</small></h1>
+    <p>Press F12 to open the dev console</p>
+    <p>Remix: <a href="https://remix.ethereum.org">http://remix.ethereum.org</a></p>
+    
     <ul class="nav nav-tabs" role="tablist" id="myTabs">
-        <li role="presentation" class="active"><a href="#factory" role="tab" data-toggle="tab">Factory</a></li>
-        <li role="presentation"><a href="#identity" role="tab" data-toggle="tab">Identity</a></li>
-        <li role="presentation"><a href="#recovery" role="tab" data-toggle="tab">Recovery</a></li>
-      </ul>
-  
-      <div class="tab-content">
-        <div role="tabpanel" class="tab-pane active" id="factory">
-          
-          <h3>1. Create an Identity</h3>
-          <div class="form-group form-inline">
-            <button class="get btn btn-primary" id="btnCreateIdentity">Create an Identity</button>
-            <div>
-              Identity Address: <span class="identityAddress"></span>
-            </div>
+      <li role="presentation" class="active"><a href="#deploy" role="tab" data-toggle="tab">Instance</a></li>
+      <li role="presentation"><a href="#functions" role="tab" data-toggle="tab">Functions</a></li>
+      <li role="presentation"><a href="#contract" role="tab" data-toggle="tab">Contract</a></li>
+    </ul>
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active" id="deploy">
+        <h2>Deployment / Utils</h2>
+        <h3>Get Accounts</h3>
+        <div class="scenario">
+          <div id="getAccounts" class="code">
+            await web3.eth.getAccounts(); <button>&#9166;</button>
           </div>
+          <p class="note"><tt>accounts</tt> variable is available in the console now</p>
+        </div>
+        <div id="deploymentContainer">
 
-          <h3>2. Set Kernel</h3>
-          <div class="form-group form-inline">
-            <button class="get btn btn-primary" id="btnCreateUpdatedIdentityKernel">Create an UpdatedIdentityKernel</button>
-            <div>
-              UpdatedIdentityKernel Address: <span class="identityAddress"></span>
-            </div>
-          </div>
-          <div class="form-group form-inline">
-              <button class="get btn btn-primary" disabled>Register a New Kernel</button>
-              <div>
-                Identity Addresss: <span class="identityAddress"></span>
-              </div>
-            </div>
-      
-  
-          <h3>3. Contract Calls </h3>
-          <p>Javascript calls being made: </p>
-          <div class="logs">
-          </div>
         </div>
-        
-        <div role="tabpanel" class="tab-pane" id="identity">
-          <div class="error alert alert-danger" role="alert">TODO</div>
-          
-        </div>
-        <div role="tabpanel" class="tab-pane" id="recovery">
-          <div class="error alert alert-danger" role="alert">TODO</div>          
-        </div>
+        <h3>Available instances:</h3>
+        <ul>
+          <li>0x00</li>
+          <li>0x00</li>
+          <li>0x00</li>
+        </ul>    
       </div>
-  
+      <div role="tabpanel" class="tab-pane" id="functions">
+        <h2>Functions</h2>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="contract">
+        <h3 id="filename"></h3>
+        <small id="url"></small>
+        <pre><code id="sourcecode" data-language="js"></code></pre>
+      </div>
+    </div>
   </body>
 </html>
