@@ -4,6 +4,7 @@ import "../deploy/InstanceStorage.sol";
 import "../token/MiniMeTokenInterface.sol";
 import "./TrustNetworkInterface.sol";
 import "./ProposalManagerInterface.sol";
+import "./FeeCollector.sol";
 
 /**
  * @title DemocracyStorage
@@ -17,5 +18,6 @@ contract DemocracyStorage is InstanceStorage {
     MiniMeTokenInterface public token;
     TrustNetworkInterface public trustNet;
     ProposalManagerInterface public proposalManager;
+    FeeCollector public feeCollector; 
     // protected zone end
 }

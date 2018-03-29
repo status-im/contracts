@@ -2,14 +2,14 @@ pragma solidity ^0.4.21;
 
 import "../common/Controlled.sol";
 import "../token/ERC20Token.sol";
-import "../token/MiniMeToken.sol";
-
+import "../token/MiniMeTokenInterface.sol";
+import "./FeeCollector.sol";
 /**
  * @title FeeRecycler
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmBH)
  * @dev Allow user selecting predefined destinations to where this fees will be invested
  */
-contract FeeRecycler is Controlled {
+contract FeeRecycler is Controlled, FeeCollector {
 
     //allowed democratically choosen destinations
     mapping (address => bool) public destinations;
@@ -18,14 +18,35 @@ contract FeeRecycler is Controlled {
     //used for withdrawing lost tokens
     uint256 public totalLocked;
     //base token
-    MiniMeToken public token;
+    MiniMeTokenInterface public token;
 
     /**
      * @notice Constructor defines the unchangable (?) baseToken
      * @param _token base token
      */
-    function FeeRecycler(MiniMeToken _token) public {
+    function FeeRecycler(MiniMeTokenInterface _token) public {
         token = _token;
+    }
+
+    /** 
+     * @notice Collect a fee from yourself in your address
+     * @param _amount to be collected
+     */
+    function collect(uint256 _amount) external {
+        require(token.transferFrom(msg.sender, address(this), _amount));
+        balances[msg.sender] += _amount;
+        totalLocked += _amount;
+    }
+
+    /** 
+     * @notice Collect a fee from someone
+     * @param _from who allowed collection
+     * @param _amount to be collected
+     */
+    function collectFrom(address _from, uint256 _amount) external {
+        require(token.transferFrom(_from, address(this), _amount));
+        balances[_from] += _amount;
+        totalLocked += _amount;
     }
 
     /** 
@@ -33,7 +54,7 @@ contract FeeRecycler is Controlled {
      * @param _from who would be able to recycle this funds
      * @param _amount to be locked
      */
-    function lock(address _from, uint256 _amount) external {
+    function collectFor(address _from, uint256 _amount) external {
         require(token.transferFrom(msg.sender, address(this), _amount));
         balances[_from] += _amount;
         totalLocked += _amount;
@@ -77,7 +98,7 @@ contract FeeRecycler is Controlled {
         if (address(_token) == address(token)) {
             require(_amount <= _token.balanceOf(address(this)) - totalLocked);
         } else if (address(_token) == address(0)) {
-            require(this.balance <= _amount);
+            require(address(this).balance <= _amount);
         } 
         if (address(_token) != address(0)) {
             _token.transfer(_destination, _amount);
