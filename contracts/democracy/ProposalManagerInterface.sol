@@ -1,28 +1,20 @@
 pragma solidity ^0.4.21;
 
+import "../token/MiniMeTokenInterface.sol";
 import "./TrustNetworkInterface.sol";
 import "./DelegationProxyInterface.sol";
-import "../token/MiniMeTokenInterface.sol";
-
+import "./FeeCollector.sol";
 /**
- * @title ProposalManager
+ * @title ProposalManagerInterface
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * Store the proposals, votes and results for other smartcontracts  
  */
 contract ProposalManagerInterface {
- 
-    TrustNetworkInterface public trustNet;
-    MiniMeTokenInterface public token;
-    uint256 public tabulationBlockDelay;
 
-    Proposal[] public proposals;
-    
     struct Proposal {
         bytes32 topic; 
         bytes32 txHash;
 
-        uint stake;
-        address staker;
+        uint visibilityFee;
 
         uint blockStart;
         uint voteBlockEnd;
@@ -32,8 +24,7 @@ contract ProposalManagerInterface {
         mapping(address => Tabulations) tabulated;
         mapping(uint8 => uint256) results;
         
-        bool approved;
-        bool executed;
+        Vote result;
     }
     
     struct Tabulations {
@@ -47,13 +38,21 @@ contract ProposalManagerInterface {
         Approve,
         Veto  
     }
+    
+    TrustNetworkInterface public trustNet;
+    MiniMeTokenInterface public token;
+    FeeCollector public feeCollector;
+    uint256 public tabulationBlockDelay;
+    uint256 public minVisibilityFee = 1000;
+    Proposal[] public proposals;
+    
+    event ProposalSet(bytes32 indexed topic, uint256 _proposalId, bytes32 _txHash, uint256 _visibility);
+    event ProposalResult(uint256 _proposalId, Vote finalResult);
 
-    function addProposal(bytes32 _topic, bytes32 _txHash, uint _stake) public returns (uint);
-    function getProposal(uint _id) public constant returns (bytes32 topic, bytes32 txHash, bool approved, bool executed);
-    function getProposalTxHash(uint _id) public constant returns(bytes32);
-    function vote(uint _proposal, Vote _vote) public;
+    function addProposal(bytes32 _topic, bytes32 _txHash, uint _visibilityFee) public returns (uint);
+    function getProposal(uint _id) public constant returns (bytes32 topic, bytes32 txHash, bool approved);
+    function voteProposal(uint _proposal, Vote _vote) public;
     function tabulateVote(uint _proposal, address _delegator) public;
     function tabulateVeto(uint _proposal, address _delegator) public;
-    function approve(uint _proposal) public;
-    function setExecuted(uint _id, bytes32 _txHash) public returns(bool);
+    function finalResult(uint _proposalId) public;
 }
