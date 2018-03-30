@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.21;
 
 /*
  * Ownable
@@ -97,8 +97,8 @@ contract TokenRegistry is Ownable {
     }
 
     modifier nameDoesNotExist(string _name) {
-      require(tokenByName[_name] == address(0));
-      _;
+        require(tokenByName[_name] == address(0));
+        _;
     }
 
     modifier symbolDoesNotExist(string _symbol) {
@@ -144,7 +144,7 @@ contract TokenRegistry is Ownable {
         tokenAddresses.push(_token);
         tokenBySymbol[_symbol] = _token;
         tokenByName[_name] = _token;
-        LogAddToken(
+        emit LogAddToken(
             _token,
             _name,
             _symbol,
@@ -167,7 +167,7 @@ contract TokenRegistry is Ownable {
         tokenAddresses.length -= 1;
 
         TokenMetadata storage token = tokens[_token];
-        LogRemoveToken(
+        emit LogRemoveToken(
             token.token,
             token.name,
             token.symbol,
@@ -190,7 +190,7 @@ contract TokenRegistry is Ownable {
         nameDoesNotExist(_name)
     {
         TokenMetadata storage token = tokens[_token];
-        LogTokenNameChange(_token, token.name, _name);
+        emit LogTokenNameChange(_token, token.name, _name);
         delete tokenByName[token.name];
         tokenByName[_name] = _token;
         token.name = _name;
@@ -206,7 +206,7 @@ contract TokenRegistry is Ownable {
         symbolDoesNotExist(_symbol)
     {
         TokenMetadata storage token = tokens[_token];
-        LogTokenSymbolChange(_token, token.symbol, _symbol);
+        emit LogTokenSymbolChange(_token, token.symbol, _symbol);
         delete tokenBySymbol[token.symbol];
         tokenBySymbol[_symbol] = _token;
         token.symbol = _symbol;
@@ -221,7 +221,7 @@ contract TokenRegistry is Ownable {
         tokenExists(_token)
     {
         TokenMetadata storage token = tokens[_token];
-        LogTokenIpfsHashChange(_token, token.ipfsHash, _ipfsHash);
+        emit LogTokenIpfsHashChange(_token, token.ipfsHash, _ipfsHash);
         token.ipfsHash = _ipfsHash;
     }
 
@@ -234,7 +234,7 @@ contract TokenRegistry is Ownable {
         tokenExists(_token)
     {
         TokenMetadata storage token = tokens[_token];
-        LogTokenSwarmHashChange(_token, token.swarmHash, _swarmHash);
+        emit LogTokenSwarmHashChange(_token, token.swarmHash, _swarmHash);
         token.swarmHash = _swarmHash;
     }
 
@@ -245,14 +245,14 @@ contract TokenRegistry is Ownable {
     /// @dev Provides a registered token's address when given the token symbol.
     /// @param _symbol Symbol of registered token.
     /// @return Token's address.
-    function getTokenAddressBySymbol(string _symbol) public constant returns (address) {
+    function getTokenAddressBySymbol(string _symbol) public view returns (address) {
         return tokenBySymbol[_symbol];
     }
 
     /// @dev Provides a registered token's address when given the token name.
     /// @param _name Name of registered token.
     /// @return Token's address.
-    function getTokenAddressByName(string _name) public constant returns (address) {
+    function getTokenAddressByName(string _name) public view returns (address) {
         return tokenByName[_name];
     }
 
@@ -261,7 +261,7 @@ contract TokenRegistry is Ownable {
     /// @return Token metadata.
     function getTokenMetaData(address _token)
         public
-        constant
+        view
         returns (
             address,  //tokenAddress
             string,   //name
@@ -287,7 +287,7 @@ contract TokenRegistry is Ownable {
     /// @return Token metadata.
     function getTokenByName(string _name)
         public
-        constant
+        view
         returns (
             address,  //tokenAddress
             string,   //name
@@ -306,7 +306,7 @@ contract TokenRegistry is Ownable {
     /// @return Token metadata.
     function getTokenBySymbol(string _symbol)
         public
-        constant
+        view
         returns (
             address,  //tokenAddress
             string,   //name
@@ -324,7 +324,7 @@ contract TokenRegistry is Ownable {
     /// @return Array of token addresses.
     function getTokenAddresses()
         public
-        constant
+        view
         returns (address[])
     {
         return tokenAddresses;
