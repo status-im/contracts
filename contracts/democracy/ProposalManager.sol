@@ -79,7 +79,7 @@ contract ProposalManager is ProposalManagerInterface, Controlled {
 
     function getProposal(uint _proposalId)
         public
-        constant
+        view
         returns (
             bytes32 topic,
             bytes32 txHash,
@@ -92,7 +92,7 @@ contract ProposalManager is ProposalManagerInterface, Controlled {
 
     function getProposalTxHash(uint _proposalId) 
         public
-        constant
+        view
         returns(bytes32)
     {
         return proposals[_proposalId].txHash;

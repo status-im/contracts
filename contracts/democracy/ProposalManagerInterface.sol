@@ -50,7 +50,7 @@ contract ProposalManagerInterface {
     event ProposalResult(uint256 _proposalId, Vote finalResult);
 
     function addProposal(bytes32 _topic, bytes32 _txHash, uint _visibilityFee) public returns (uint);
-    function getProposal(uint _id) public constant returns (bytes32 topic, bytes32 txHash, bool approved);
+    function getProposal(uint _id) public view returns (bytes32 topic, bytes32 txHash, bool approved);
     function voteProposal(uint _proposal, Vote _vote) public;
     function tabulateVote(uint _proposal, address _delegator) public;
     function tabulateVeto(uint _proposal, address _delegator) public;

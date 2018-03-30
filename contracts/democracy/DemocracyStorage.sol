@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "../deploy/InstanceStorage.sol";
 import "../token/MiniMeTokenInterface.sol";

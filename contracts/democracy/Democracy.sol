@@ -1,7 +1,9 @@
 pragma solidity ^0.4.21;
+
 import "./DemocracyInterface.sol";
 import "./ProposalManager.sol";
 import "./FeeRecycler.sol";
+
 
 contract Democracy is DemocracyInterface {
 
