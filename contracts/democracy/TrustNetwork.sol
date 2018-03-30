@@ -40,7 +40,7 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
         topics[topicId] = newTopic(vote, veto);
     }
     
-    function getTopic(bytes32 _topicId) public constant returns (DelegationProxyInterface vote, DelegationProxyInterface veto) {
+    function getTopic(bytes32 _topicId) public view returns (DelegationProxyInterface vote, DelegationProxyInterface veto) {
         Topic memory topic = topics[_topicId];
         vote = topic.voteDelegation;
         veto = topic.vetoDelegation;

@@ -29,7 +29,7 @@ contract DelegationProxyView is DelegationProxy {
         uint _block
     )
         public
-        constant
+        view
         returns(address finalDelegate)
     {
         bytes32 searchIndex = keccak256(_who, _block);

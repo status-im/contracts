@@ -34,7 +34,7 @@ contract DelegationProxyInterface {
      */ 
     function delegatedTo(address _who)
         public
-        constant 
+        view 
         returns (address directDelegate);
     
     /**
@@ -44,7 +44,7 @@ contract DelegationProxyInterface {
      */
     function delegationOf(address _who)
         public
-        constant
+        view
         returns(address finalDelegate);
 
     /**
@@ -58,7 +58,7 @@ contract DelegationProxyInterface {
         MiniMeTokenInterface _token
     ) 
         public 
-        constant 
+        view 
         returns(uint256 _total);
 
     /**
@@ -72,7 +72,7 @@ contract DelegationProxyInterface {
         address _token
     )
         public 
-        constant 
+        view 
         returns(uint256 _total);
 
     /**
@@ -88,7 +88,7 @@ contract DelegationProxyInterface {
         uint _block
     )
         public 
-        constant 
+        view 
         returns(uint256 _total);
 
     /**
@@ -103,7 +103,7 @@ contract DelegationProxyInterface {
         uint _block
     )
         public
-        constant
+        view
         returns (address directDelegate);
     
     /**
@@ -117,7 +117,7 @@ contract DelegationProxyInterface {
         uint _block
     )
         public
-        constant
+        view
         returns(address finalDelegate);
 
     /**
@@ -135,7 +135,7 @@ contract DelegationProxyInterface {
         address _childProxy
     )
         public
-        constant 
+        view 
         returns(uint256 _total);
 
     /**
@@ -151,7 +151,7 @@ contract DelegationProxyInterface {
         uint _block
     )
         public
-        constant
+        view
         returns(uint256 _total);
 
     
