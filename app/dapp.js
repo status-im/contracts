@@ -4,30 +4,32 @@ import './dapp.css';
 
 import EmbarkJS from 'Embark/EmbarkJS';
 import IdentityFactory from 'Embark/contracts/IdentityFactory';
-import UpdatedIdentityKernel from 'Embark/contracts/UpdatedIdentityKernel'
 
 __embarkContext.execWhenReady(function(){
+    const contractName = 'IdentityFactory';
+    const contractObject = IdentityFactory;
+    const contractSourceCode = 'https://raw.githubusercontent.com/status-im/contracts/contracts-ui-demo/contracts/identity/IdentityFactory.sol'
+
     loadAccounts();
     $('#getAccounts button').on('click', loadAccounts);
 
-    window.IdentityFactory = IdentityFactory;
-    prepareFunctionForm(IdentityFactory, 'IdentityFactory', $('#functions'), $('#constructor'));
-    obtainSourceCode($('#contract'), 'https://raw.githubusercontent.com/status-im/contracts/contracts-ui-demo/contracts/identity/IdentityFactory.sol');
+    window[contractName] = contractObject;
+    document.title = contractName + ' contract';
+    $('.title').text(contractName)
+    prepareFunctionForm(contractObject, contractName, $('#functions'), $('#constructor'));
+    obtainSourceCode($('#contract'), contractSourceCode);
 
      
- 
-    
-
 
     // TODO
-    // 1. Add validations to fields
-    // 2 Show events
-    // 3 Show on screen function result
-    
-    // 4 Show loading gif
-    // 5 Fallback
-    // 6 Use specific contract address
-    // 8 Extract to independent JS
+    // 1 Use specific contract address
+
+    // 1 Show events
+    // 2 Show on screen function result
+    // 3 Show loading gif
+
+    // 4 Fallback
+    // 6 Extract to independent JS
 });
 
 
@@ -70,7 +72,7 @@ const prepareFunctionForm = function(contract, contractName, functionContainer, 
     contract.options.jsonInterface.forEach((elem, i) => {
         if(elem.type != "function" && elem.type != 'constructor') return;
         
-        const isDuplicated = contract.options.jsonInterface.filter(x => x.name == elem.name).length > 0;
+        const isDuplicated = contract.options.jsonInterface.filter(x => x.name == elem.name).length > 1;
         const functionLabel = getFunctionLabel(contractName, elem, isDuplicated);
         const functionElem = $(`<div class="function" id="${contractName}-${i}">
             <h4>${elem.type == 'function' ? elem.name : contractName}</h4>
@@ -78,6 +80,7 @@ const prepareFunctionForm = function(contract, contractName, functionContainer, 
                 <div class="code">
                 await ${functionLabel}(${getFunctionParamFields(elem)}).${getMethodType(elem)}(${getMethodFields(elem)}) <button>&#9166;</button>
                 </div>
+                <p class="error"></p>
                 <p class="note"></p>
             </div>
         </div>`)
@@ -95,13 +98,16 @@ const prepareFunctionForm = function(contract, contractName, functionContainer, 
 
 const setButtonAction = function(contract, button, functionLabel, elem){
     button.on('click', async function(){
-        const parentDiv = button.parent()
+        const parentDiv = button.parent();
+        const errorContainer = $('p.error', parentDiv.parents('div.scenario'));
+
+        errorContainer.text('').hide();
 
         let executionParams = {
             from: $('select.accountList', parentDiv).val(),
             gasLimit: $('input.gasLimit', parentDiv).val()
         }
-
+ 
         if(elem.payable)
             executionParams.value = $('input.value', parentDiv).val();
 
@@ -117,20 +123,40 @@ const setButtonAction = function(contract, button, functionLabel, elem){
 
         console.log(`%cawait ${functionLabel}(${functionParams}).${getMethodType(elem)}(${methodParams})`, 'font-weight: bold');
 
-        const funcArguments = $('input[data-type="inputParam"]', parentDiv).map((i, input) => $(input).val());
+        const funcArguments = getFuncArguments(parentDiv);
 
-        if(elem.type == 'constructor'){
-            let contractInstance = await contract.deploy({arguments: funcArguments}).send(executionParams);
-            console.log("Instance created: " + contractInstance.options.address);
-        } else {
-            const receipt = await contract
-                                .methods[elem.name + '(' + elem.inputs.map(input => input.type).join(',') + ')']
-                                .apply(null, funcArguments)
-                                [getMethodType(elem)](executionParams)
-            
-            console.log(receipt);
+        try {
+            if(elem.type == 'constructor'){
+                let contractInstance = await contract.deploy({arguments: funcArguments}).send(executionParams);
+                console.log("Instance created: " + contractInstance.options.address);
+            } else {
+                const receipt = await contract
+                                    .methods[elem.name + '(' + elem.inputs.map(input => input.type).join(',') + ')']
+                                    .apply(null, funcArguments)
+                                    [getMethodType(elem)](executionParams)
+                
+                console.log(receipt);
+            }
+        } catch (e) {
+            console.error('%s: %s', e.name, e.message);
+            errorContainer.text(e.name + ': ' + e.message).show();
         }
     });
+}
+
+
+const getFuncArguments = function(container){
+    let valueArray = [];
+    $('input[data-type="inputParam"]', container).map((i, input) => {
+        let v;
+        if($(input).data('var-type').indexOf('[') > -1)
+            v = eval($(input).val());
+        else
+            v = $(input).val();
+
+        valueArray.push(v);
+    });
+    return valueArray;
 }
 
 
@@ -148,7 +174,7 @@ const getFunctionLabel = function(contractName, elem, isDuplicated){
 
 const getFunctionParamFields = function(elem){
     return elem.inputs
-            .map((input, i) => `<input type="text" data-type="inputParam" data-name="${input.name}" placeholder="${input.name}" title="${input.type} ${input.name}" size="${input.name.length}"  />`)
+            .map((input, i) => `<input type="text" data-var-type="${input.type}" data-type="inputParam" data-name="${input.name}" placeholder="${input.name}" title="${input.type} ${input.name}" size="${input.name.length}"  />`)
             .join(', ');
 }
 
@@ -196,18 +222,26 @@ const getMethodString = function(elem, account){
 
 
 const loadAccounts = async function(){
-    let accounts = await web3.eth.getAccounts();
-    window.accounts = accounts;
-    let accountSelect = $('.accountList')
-    $('option', accountSelect).remove();
-    
-    accounts.map((account, i) => `<option value="${account}">accounts[${i}]</option>`)
-            .forEach(elem => accountSelect.append($(elem)));
+    const errorContainer = $(this).parents('div').children('p.error');
 
-    accountSelect.prop('disabled', false);
+    errorContainer.hide().text('');
 
-    $(this).parents('div').children('p.note').show();
+    try {
+        let accounts = await web3.eth.getAccounts();
+        window.accounts = accounts;
+        let accountSelect = $('.accountList')
+        $('option', accountSelect).remove();
+        
+        accounts.map((account, i) => `<option value="${account}">accounts[${i}]</option>`)
+                .forEach(elem => accountSelect.append($(elem)));
 
-    console.log("%cawait web3.eth.getAccounts()", 'font-weight: bold');
-    console.log(accounts);
+        accountSelect.prop('disabled', false);
+
+        $(this).parents('div').children('p.note').show();
+
+        console.log("%cawait web3.eth.getAccounts()", 'font-weight: bold');
+        console.log(accounts);
+    } catch(e){
+        errorContainer.text(e.name + ': ' + e.message).show();
+    }
 }
