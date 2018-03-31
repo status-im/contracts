@@ -2,6 +2,7 @@ pragma solidity ^0.4.21;
 
 import "../common/Controlled.sol";
 import "./TrustNetworkInterface.sol";
+import "./DelegationProxyInterface.sol";
 import "./DelegationProxyFactory.sol";
 
 
@@ -16,8 +17,8 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     DelegationProxyFactory delegationFactory;
     
     struct Topic {
-        DelegationProxy voteDelegation;
-        DelegationProxy vetoDelegation;
+        DelegationProxyInterface voteDelegation;
+        DelegationProxyInterface vetoDelegation;
     }
     
     function TrustNetwork(address _delegationFactory) public {
@@ -39,7 +40,7 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
         topics[topicId] = newTopic(vote, veto);
     }
     
-    function getTopic(bytes32 _topicId) public constant returns (DelegationProxyInterface vote, DelegationProxyInterface veto) {
+    function getTopic(bytes32 _topicId) public view returns (DelegationProxyInterface vote, DelegationProxyInterface veto) {
         Topic memory topic = topics[_topicId];
         vote = topic.voteDelegation;
         veto = topic.vetoDelegation;

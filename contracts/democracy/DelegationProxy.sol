@@ -39,7 +39,7 @@ contract DelegationProxy is DelegationProxyInterface {
      */
     function delegatedTo(address _who)
         public
-        constant 
+        view 
         returns (address) 
     {
         return delegatedToAt(_who, block.number);
@@ -52,7 +52,7 @@ contract DelegationProxy is DelegationProxyInterface {
      */
     function delegationOf(address _who)
         public
-        constant
+        view
         returns(address)
     {
         return delegationOfAt(_who, block.number);
@@ -69,7 +69,7 @@ contract DelegationProxy is DelegationProxyInterface {
         MiniMeTokenInterface _token
     ) 
         public 
-        constant 
+        view 
         returns(uint256 _total)
     {
         return influenceOfAt(_who, _token, block.number);
@@ -86,7 +86,7 @@ contract DelegationProxy is DelegationProxyInterface {
         address _token
     )
         public 
-        constant 
+        view 
         returns(uint256 _total) 
     {
         return delegatedInfluenceFromAt(_who, _token, block.number, address(this));
@@ -105,7 +105,7 @@ contract DelegationProxy is DelegationProxyInterface {
         uint _block
     )
         public 
-        constant 
+        view 
         returns(uint256 _total) 
     {
         return delegatedInfluenceFromAt(_who, _token, _block, address(this));
@@ -123,7 +123,7 @@ contract DelegationProxy is DelegationProxyInterface {
         uint _block
     )
         public
-        constant
+        view
         returns (address directDelegate)
     {
         Delegation[] storage checkpoints = delegations[_who];
@@ -155,7 +155,7 @@ contract DelegationProxy is DelegationProxyInterface {
         uint _block
     )
         public
-        constant
+        view
         returns(address finalDelegate)
     {
         finalDelegate = delegatedToAt(_who, _block);
@@ -182,7 +182,7 @@ contract DelegationProxy is DelegationProxyInterface {
         address _childProxy
     )
         public
-        constant 
+        view 
         returns(uint256 _total)
     {
         Delegation[] storage checkpoints = delegations[_who];
@@ -238,7 +238,7 @@ contract DelegationProxy is DelegationProxyInterface {
         uint _block
     )
         public
-        constant
+        view
         returns(uint256 _total)
     {
         if (delegationOfAt(_who, _block) == _who) { //is endpoint of delegation?
@@ -286,7 +286,7 @@ contract DelegationProxy is DelegationProxyInterface {
       * @param _block The block number to retrieve the value at.
       * @return The delegation being queried.
       */
-    function _getMemoryAt(Delegation[] storage checkpoints, uint _block) internal constant returns (Delegation d) {
+    function _getMemoryAt(Delegation[] storage checkpoints, uint _block) internal view returns (Delegation d) {
         // Case last checkpoint is the one;
         if (_block >= checkpoints[checkpoints.length-1].fromBlock) {
             d = checkpoints[checkpoints.length-1];

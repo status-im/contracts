@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "./DelayedUpdatableInstanceStorage.sol";
 import "./DelegatedCall.sol";
@@ -22,8 +22,43 @@ contract DelayedUpdatableInstance is DelayedUpdatableInstanceStorage, DelegatedC
      * @dev delegatecall everything (but declared functions) to `_target()`
      * @notice Verify `kernel()` code to predict behavior
      */
-    function () external delegated {
+    function () 
+        external 
+        delegated 
+    {
         //all goes to kernel
+    }
+
+    function updateRequestUpdatableInstance(
+        address _kernel
+    ) 
+        external
+    {
+        require(msg.sender == address(this));
+        uint activation = block.timestamp + 30 days;
+        update = Update(_kernel, activation);
+        emit UpdateRequested(_kernel, activation);
+    }
+
+    function updateConfirmUpdatableInstance(
+        address _kernel
+    )
+        external
+    {
+        require(msg.sender == address(this));
+        Update memory pending = update;
+        require(pending.kernel == _kernel);
+        require(pending.activation < block.timestamp);
+        kernel = pending.kernel;
+        delete update;
+        emit UpdateConfirmed(kernel, pending.kernel);
+    }
+
+    function updateCancelUpdatableInstance() 
+        external
+    {
+        require(msg.sender == address(this));
+        delete update;
     }
 
     /**
@@ -32,32 +67,11 @@ contract DelayedUpdatableInstance is DelayedUpdatableInstanceStorage, DelegatedC
      */
     function targetDelegatedCall()
         internal
-        constant
+        view
         returns(address)
     {
         return kernel;
     }
     
-    function updateRequestUpdatableInstance(address _kernel) external {
-        require(msg.sender == address(this));
-        uint activation = block.timestamp + 30 days;
-        update = Update(_kernel, activation);
-        UpdateRequested(_kernel, activation);
-    }
-
-    function updateConfirmUpdatableInstance(address _kernel) external {
-        require(msg.sender == address(this));
-        Update memory pending = update;
-        require(pending.kernel == _kernel);
-        require(pending.activation < block.timestamp);
-        kernel = pending.kernel;
-        delete update;
-        UpdateConfirmed(kernel, pending.kernel);
-    }
-
-    function updateCancelUpdatableInstance() external {
-        require(msg.sender == address(this));
-        delete update;
-    }
 
 }

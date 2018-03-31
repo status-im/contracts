@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "./ERC725.sol";
 import "./ERC735.sol";
@@ -263,7 +263,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _purpose
     ) 
         public 
-        constant 
+        view 
         returns(uint256 purpose, uint256 keyType, bytes32 key) 
     {
         Key storage myKey = keys[keccak256(_key, _purpose)];
@@ -272,7 +272,7 @@ contract Identity is ERC725, ERC735 {
     
     function isKeyPurpose(bytes32 _key, uint256 _purpose) 
         public
-        constant 
+        view 
         returns (bool)
     {
         return keys[keccak256(_key, _purpose)].purpose == _purpose;
@@ -280,7 +280,7 @@ contract Identity is ERC725, ERC735 {
 
     function getKeyPurpose(bytes32 _key)
         public 
-        constant 
+        view 
         returns(uint256[] purpose)
     {
         
@@ -317,7 +317,7 @@ contract Identity is ERC725, ERC735 {
     
     function getKeysByPurpose(uint256 _purpose)
         public
-        constant
+        view
         returns(bytes32[])
     {
         return keysByPurpose[_purpose];
@@ -325,7 +325,7 @@ contract Identity is ERC725, ERC735 {
     
     function getClaim(bytes32 _claimId)
         public
-        constant 
+        view 
         returns(
             uint256 claimType,
             uint256 scheme,
@@ -341,7 +341,7 @@ contract Identity is ERC725, ERC735 {
     
     function getClaimIdsByType(uint256 _claimType)
         public
-        constant
+        view
         returns(bytes32[] claimIds)
     {
         return claimsByType[_claimType];

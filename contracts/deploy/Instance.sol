@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "./InstanceStorage.sol";
 import "./DelegatedCall.sol";
@@ -28,7 +28,7 @@ contract Instance is InstanceStorage, DelegatedCall {
      */
     function targetDelegatedCall()
         internal
-        constant
+        view
         returns(address)
     {
         return kernel;
