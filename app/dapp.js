@@ -10,8 +10,6 @@ __embarkContext.execWhenReady(function(){
     const contractObject = IdentityFactory;
     const contractSourceCode = 'https://raw.githubusercontent.com/status-im/contracts/contracts-ui-demo/contracts/identity/IdentityFactory.sol'
 
-    loadAccounts();
-    $('#getAccounts button').on('click', loadAccounts);
 
     window[contractName] = contractObject;
     document.title = contractName + ' contract';
@@ -22,14 +20,11 @@ __embarkContext.execWhenReady(function(){
      
 
     // TODO
-    // 1 Use specific contract address
-
     // 1 Show events
-    // 2 Show on screen function result
-    // 3 Show loading gif
+    // 2 Extract to independent JS
 
-    // 4 Fallback
-    // 6 Extract to independent JS
+    // 1 Use specific contract address
+    // 2 Fallback / Value
 });
 
 
@@ -44,7 +39,7 @@ __embarkContext.execWhenReady(function(){
 
 
 
-
+let instances = [];
 
 
 const obtainSourceCode = function(container, sourceURL){
@@ -68,10 +63,27 @@ const obtainSourceCode = function(container, sourceURL){
 }
 
 
+const populateInstances = function(){
+    $('.constructor p.note').html('');
+    $('.constructor h5').remove();
+    $('.constructor p.note').before('<h5>Available instances</h5>');
+    
+    let instanceHtml = $('<ul></ul>');
+    instances.forEach((elem, i) => {
+        instanceHtml.append($(`<li>${elem}</li>`));
+    });
+
+    $('.constructor p.note').append(instanceHtml);
+}
+
+
 const prepareFunctionForm = function(contract, contractName, functionContainer, constructorContainer){
+    loadAccounts();
+    $('#getAccounts button').on('click', loadAccounts);
+
     contract.options.jsonInterface.forEach((elem, i) => {
         if(elem.type != "function" && elem.type != 'constructor') return;
-        
+
         const isDuplicated = contract.options.jsonInterface.filter(x => x.name == elem.name).length > 1;
         const functionLabel = getFunctionLabel(contractName, elem, isDuplicated);
         const functionElem = $(`<div class="function" id="${contractName}-${i}">
@@ -79,6 +91,7 @@ const prepareFunctionForm = function(contract, contractName, functionContainer, 
             <div class="scenario">
                 <div class="code">
                 await ${functionLabel}(${getFunctionParamFields(elem)}).${getMethodType(elem)}(${getMethodFields(elem)}) <button>&#9166;</button>
+                <img src="images/loading.gif" class="loading" alt="" />
                 </div>
                 <p class="error"></p>
                 <p class="note"></p>
@@ -87,22 +100,37 @@ const prepareFunctionForm = function(contract, contractName, functionContainer, 
 
         setButtonAction(contract, $('button', functionElem), functionLabel, elem);
 
+        $('.loading', functionElem).hide();
+
         if(elem.type == 'function'){
             functionContainer.append(functionElem);
         } else {
             constructorContainer.append(functionElem);
+            constructorContainer.addClass('constructor');
         }
     });
+
+
+    if(contract.options.address != null && contract.options.address != undefined){
+        instances.push(contract.options.address);
+    }
+    
+    populateInstances();
 }
 
 
 const setButtonAction = function(contract, button, functionLabel, elem){
     button.on('click', async function(){
         const parentDiv = button.parent();
+
+        $('.loading', parentDiv).show();
+        $(button).prop('disabled', true);
+
+        const resultContainer = $('p.note', parentDiv.parents('div.scenario'))
         const errorContainer = $('p.error', parentDiv.parents('div.scenario'));
 
         errorContainer.text('').hide();
-
+        
         let executionParams = {
             from: $('select.accountList', parentDiv).val(),
             gasLimit: $('input.gasLimit', parentDiv).val()
@@ -128,18 +156,34 @@ const setButtonAction = function(contract, button, functionLabel, elem){
         try {
             if(elem.type == 'constructor'){
                 let contractInstance = await contract.deploy({arguments: funcArguments}).send(executionParams);
-                console.log("Instance created: " + contractInstance.options.address);
+                instances.push(contractInstance.options.address);
+                populateInstances(); 
+
+                $('.loading', parentDiv).hide();
+                $(button).prop('disabled', false);
             } else {
+                resultContainer.text('');
+
                 const receipt = await contract
                                     .methods[elem.name + '(' + elem.inputs.map(input => input.type).join(',') + ')']
                                     .apply(null, funcArguments)
                                     [getMethodType(elem)](executionParams)
                 
+                if(getMethodType(elem) == 'call'){
+                    resultContainer.text(receipt);
+                }
+                
+                $('.loading', parentDiv).hide();
+                $(button).prop('disabled', false);
+
                 console.log(receipt);
             }
         } catch (e) {
             console.error('%s: %s', e.name, e.message);
             errorContainer.text(e.name + ': ' + e.message).show();
+
+            $('.loading', parentDiv).hide();
+            $(button).prop('disabled', false);
         }
     });
 }
@@ -181,7 +225,7 @@ const getFunctionParamFields = function(elem){
 
 const getFunctionParamString = function(elem, container){
     return elem.inputs
-            .map((input, i) => '"' + $('input[data-name="' + input.name + '"]', container).val() + '"')
+            .map((input, i) => (input.type.indexOf('int') == -1 ? '"' : '') + $('input[data-name="' + input.name + '"]', container).val() + (input.type.indexOf('int') == -1 ? '"' : ''))
             .join(', ');
 }
 

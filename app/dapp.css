@@ -4,11 +4,11 @@ h2 {
 }
 
 .scenario p {
-    font-size: 12px;
+    font-size: 12px; 
 }
 
 .scenario p.note {
-    display: none;
+    font-family: monospace;
 }
 
 .scenario p.error {
