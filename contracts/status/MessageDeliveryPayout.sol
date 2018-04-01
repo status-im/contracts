@@ -30,8 +30,8 @@ contract MessageDeliveryPayout {
         require(ecrecover(getSignedHash(keccak256(address(this), _receiver, _message, address(msg.sender), _deliveryFee)), v,r,s) == address(_sender));
         (v,r,s) = signatureSplit(_receiverSignature);
         require(ecrecover(getSignedHash(keccak256(address(this), _message)), v,r,s) == address(_receiver));
-        SNT.transferFrom(_sender, msg.sender, _deliveryFee);
         delivered[_message] = true;
+        require(SNT.transferFrom(_sender, msg.sender, _deliveryFee));
         Delivered(_sender, _message);
     }
 
