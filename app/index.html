@@ -33,7 +33,19 @@
         </div>   
       </div>
       <div role="tabpanel" class="tab-pane" id="functions">
-        <h2>Functions</h2>
+        <div class="contractSelection">
+          <h5><b>Instance Selected:</b> <span><b style="color:red">none</b></span> 
+            <a href="#" id="changeLnk">Change</a>
+            <a href="#" id="cancelLnk" class="hidden">Cancel</a></h5>
+          <div class="form-group hidden">
+              <select class="form-control" id="contracts" placeholder="Contract Address">
+                  <option value="custom">Specific contract address</option>
+              </select>
+              <input type="text" class="form-control hidden" id="specificAddress" placeholder="0x" />
+              <button class="btn btn-default">Change</button>
+          </div>
+        </div>
+        <h2 class="function">Functions</h2>
       </div>
       <div role="tabpanel" class="tab-pane" id="contract">
         
