@@ -440,6 +440,7 @@ contract Identity is ERC725, ERC735 {
         require(keysByPurpose[MANAGEMENT_KEY].length == 0);
         require(purposeThreshold[MANAGEMENT_KEY] == 0);
         _addKey(bytes32(_manager), MANAGEMENT_KEY, 0);
+        _addKey(bytes32(_manager), ACTION_KEY, 0);
 
         purposeThreshold[MANAGEMENT_KEY] = 1;
         purposeThreshold[ACTION_KEY] = 1;
