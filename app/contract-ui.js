@@ -6,7 +6,7 @@ class ContractUI {
         this.contract = contract;
         this.sourceURL = sourceURL;
 
-        window[name] = name;
+        window[name] = contract;
         document.title = name + ' contract';
         $('.title').text(name)
     }
