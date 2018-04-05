@@ -16,7 +16,7 @@ contract Factory is Controlled {
 
     Version[] versionLog;
     uint256 latestUpdate;
-    address latestKernel;
+    address public latestKernel;
 
     function Factory(address _kernel, bytes _infohash)
         public 
