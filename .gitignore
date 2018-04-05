@@ -30,3 +30,7 @@ coverage.json
 # node
 node_modules/
 npm-debug.log
+
+# other
+.vs/
+bin/
