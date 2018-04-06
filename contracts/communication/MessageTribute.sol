@@ -18,12 +18,12 @@ contract MessageTribute is Controlled {
 
     struct Fee {
         uint256 amount;
-        bool tribute;
         bool permanent;
     }
 
     mapping(address => mapping(address => Fee)) public feeCatalog;
     mapping(address => uint256) public balances;
+    mapping(address => mapping(address => uint)) lastAudienceDeniedTimestamp;
     
     mapping(bytes32 => uint256) private friendIndex;
     address[] private friends; 
@@ -68,17 +68,16 @@ contract MessageTribute is Controlled {
         return friendIndex[keccak256(accountToCheck, sourceAccount)] > 0;
     }
 
-    function setRequiredTribute(address _to, uint _amount, bool _isTribute, bool _isPermanent) public {
+    function setRequiredTribute(address _to, uint _amount, bool _isPermanent) public {
         require(friendIndex[keccak256(msg.sender, _to)] == 0);
-        feeCatalog[msg.sender][_to] = Fee(_amount, _isTribute, _isPermanent);
+        feeCatalog[msg.sender][_to] = Fee(_amount, _isPermanent);
     }
 
     function getRequiredFee(address _from) public view 
-        returns (uint256 fee, bool tribute) 
+        returns (uint256 fee) 
     {
         Fee memory f = getFee(_from);
         fee = f.amount;
-        tribute = f.tribute;
     }
     
     function deposit(uint256 _value) public {
@@ -100,6 +99,7 @@ contract MessageTribute is Controlled {
 
     event AudienceRequested(address indexed from, address indexed to);
     event AudienceCancelled(address indexed from, address indexed to);
+    event AudienceTimeOut(address indexed from, address indexed to);
     event AudienceGranted(address indexed from, address indexed to, bool approve);
 
     function requestAudience(address _from, bytes32 hashedSecret)
@@ -108,7 +108,8 @@ contract MessageTribute is Controlled {
         Fee memory f = getFee(_from);
         require(f.amount <= balances[msg.sender]);
         require(audienceRequested[_from][msg.sender].blockNum == 0);
-        
+        require(lastAudienceDeniedTimestamp[_from][msg.sender] + 3 days <= now);
+
         AudienceRequested(_from, msg.sender);
         audienceRequested[_from][msg.sender] = Audience(block.number, now, f, hashedSecret);
 
@@ -119,6 +120,14 @@ contract MessageTribute is Controlled {
         return audienceRequested[_from][_to].blockNum > 0;
     }
 
+    function timeOut(address _from, address _to) public {
+        require(audienceRequested[_from][_to].blockNum > 0);
+        require(audienceRequested[_from][_to].timestamp + 3 days <= now);
+        AudienceTimeOut(_from, _to);
+        balances[_to] += audienceRequested[_from][_to].fee.amount;
+        delete audienceRequested[_from][_to];
+    }
+
     function cancelAudienceRequest(address _from) public {
         require(audienceRequested[_from][msg.sender].blockNum > 0);
         require(audienceRequested[_from][msg.sender].timestamp + 2 hours <= now);
@@ -127,24 +136,24 @@ contract MessageTribute is Controlled {
         delete audienceRequested[_from][msg.sender];
     }
 
-    function grantAudience(address _to, bool _approve, bytes32 secret) public {
-
+    function grantAudience(address _to, bool _approve, bool _waive, bytes32 secret) public {
         Audience storage aud = audienceRequested[msg.sender][_to];
 
         require(aud.blockNum > 0);
-
         require(aud.hashedSecret == keccak256(msg.sender, _to, secret));
        
         AudienceGranted(msg.sender, _to, _approve);
 
-        bool isTribute = aud.fee.tribute;
+        if(!_approve)
+            lastAudienceDeniedTimestamp[msg.sender][_to] = block.timestamp;
+
         uint256 amount = aud.fee.amount;
 
         delete audienceRequested[msg.sender][_to];
 
         clearFee(msg.sender, _to);
 
-        if (isTribute) {
+        if (!_waive) {
             if (_approve) {
                 require(SNT.transfer(msg.sender, amount));
             } else {
@@ -170,7 +179,7 @@ contract MessageTribute is Controlled {
         Fee memory specificFee = feeCatalog[_from][msg.sender];
 
         if (friendIndex[keccak256(msg.sender, _from)] > 0)
-            return Fee(0, false, false);
+            return Fee(0, false);
 
         return specificFee.amount > 0 ? specificFee : generalFee;
     }
@@ -178,7 +187,6 @@ contract MessageTribute is Controlled {
     function clearFee(address _from, address _to) private {
         if (!feeCatalog[_from][_to].permanent) {
             feeCatalog[_from][_to].amount = 0;
-            feeCatalog[_from][_to].tribute = false;
             feeCatalog[_from][_to].permanent = false;
         }
     }

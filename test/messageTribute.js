@@ -168,7 +168,7 @@ describe('MessageTribute', function() {
     });
 
     it("Requesting audience requiring deposit and no funds deposited", async () => {
-        await MessageTribute.methods.setRequiredTribute(accounts[9], 100, false, true).send({from: accounts[0]});
+        await MessageTribute.methods.setRequiredTribute(accounts[9], 100, true).send({from: accounts[0]});
         
         assert.equal(
             await MessageTribute.methods.balance().call({from: accounts[9]}),
@@ -215,7 +215,7 @@ describe('MessageTribute', function() {
 
 
     it("Request audience requiring deposit, not having funds at the beginning, deposit funds and request audience", async () => {
-        await MessageTribute.methods.setRequiredTribute(accounts[8], 200, false, true).send({from: accounts[0]});
+        await MessageTribute.methods.setRequiredTribute(accounts[8], 200, true).send({from: accounts[0]});
         
         await SNT.methods.approve(MessageTribute.address, 100).send({from: accounts[8]});
         await MessageTribute.methods.deposit(100).send({from: accounts[8]});
@@ -259,7 +259,7 @@ describe('MessageTribute', function() {
 
 
     it("Requesting tribute from specific account", async() => {
-        await MessageTribute.methods.setRequiredTribute(accounts[7], 100, true, true).send({from: accounts[0]});
+        await MessageTribute.methods.setRequiredTribute(accounts[7], 100,  true).send({from: accounts[0]});
         
         await SNT.methods.approve(MessageTribute.address, 200).send({from: accounts[7]});
         await MessageTribute.methods.deposit(200).send({from: accounts[7]});
@@ -323,7 +323,7 @@ describe('MessageTribute', function() {
         let initial0balance = (await SNT.methods.balanceOf(accounts[0]).call()).toString();
         let initialCBalance = (await SNT.methods.balanceOf(MessageTribute.address).call()).toString();
         let initial7DepBalance = (await MessageTribute.methods.balance().call({from: accounts[7]})).toString();
-        let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[7]})).fee.toString();
+        let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[7]})).toString();
      
         assert.equal(
             await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[7]).call(),
@@ -332,7 +332,7 @@ describe('MessageTribute', function() {
         
         let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], secret);
         
-        let tx = await MessageTribute.methods.grantAudience(accounts[7], true, secret).send({from: accounts[0]});
+        let tx = await MessageTribute.methods.grantAudience(accounts[7], true, false, secret).send({from: accounts[0]});
 
         assert.notEqual(tx.events.AudienceGranted, undefined, "AudienceGranted wasn't triggered");
 
@@ -364,16 +364,16 @@ describe('MessageTribute', function() {
 
      it("Denying an audience", async() => {
 
-        let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[7]})).fee.toString();
+        let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[7]})).toString();
 
         let initial7DepBalance = (await MessageTribute.methods.balance().call({from: accounts[7]})).toString();
 
         let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], secret);
+        console.log( await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[7]).call());
 
         let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[7]});
 
         let afterReq7DepBalance = (await MessageTribute.methods.balance().call({from: accounts[7]})).toString();
-        
         assert.equal(
             afterReq7DepBalance,
             web3.utils.toBN(initial7DepBalance).sub(web3.utils.toBN(amount)).toString(),
@@ -381,7 +381,7 @@ describe('MessageTribute', function() {
 
         assert.notEqual(tx.events.AudienceRequested, undefined, "AudienceRequested wasn't triggered");
     
-        let tx2 = await MessageTribute.methods.grantAudience(accounts[7], false, secret).send({from: accounts[0]});
+        let tx2 = await MessageTribute.methods.grantAudience(accounts[7], false, false, secret).send({from: accounts[0]});
 
         assert.notEqual(tx2.events.AudienceGranted, undefined, "AudienceGranted wasn't triggered");
 
@@ -399,8 +399,8 @@ describe('MessageTribute', function() {
      });
      
      it("Requesting a non permanent tribute from specific account", async() => {
-        await MessageTribute.methods.setRequiredTribute(accounts[6], 100, true, false).send({from: accounts[0]});
-        let amount1 = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[6]})).fee.toString();
+        await MessageTribute.methods.setRequiredTribute(accounts[6], 100, false).send({from: accounts[0]});
+        let amount1 = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[6]})).toString();
         
         await SNT.methods.approve(MessageTribute.address, 200).send({from: accounts[6]});
         await MessageTribute.methods.deposit(200).send({from: accounts[6]});
@@ -416,10 +416,10 @@ describe('MessageTribute', function() {
             100,
             "Deposited balance must be 100"); 
 
-        let tx2 = await MessageTribute.methods.grantAudience(accounts[6], false, secret).send({from: accounts[0]});
+        let tx2 = await MessageTribute.methods.grantAudience(accounts[6], true, false, secret).send({from: accounts[0]});
         assert.notEqual(tx2.events.AudienceGranted, undefined, "AudienceGranted wasn't triggered");
 
-        let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[6]})).fee.toString();
+        let amount = (await MessageTribute.methods.getRequiredFee(accounts[0]).call({from: accounts[6]})).toString();
         
         assert.equal(
             amount,
