@@ -369,7 +369,6 @@ describe('MessageTribute', function() {
         let initial7DepBalance = (await MessageTribute.methods.balance().call({from: accounts[7]})).toString();
 
         let hashedSecret = web3.utils.soliditySha3(accounts[0], accounts[7], secret);
-        console.log( await MessageTribute.methods.hasPendingAudience(accounts[0], accounts[7]).call());
 
         let tx = await MessageTribute.methods.requestAudience(accounts[0], hashedSecret).send({from: accounts[7]});
 
