@@ -15,6 +15,3 @@
 | Democracy          | democracy/*               | @3esmit        | research | [#020](https://github.com/status-im/ideas/issues/27)  |
 | Message Tribute    | MessageTribute.sol        | @richard-ramos | research | [#096](https://github.com/status-im/ideas/issues/96)  |
 | Sticker Market     |                           | @3esmit        | insight  |       |
-
-- ENS subdomain username registrar #27 - [Link](https://github.com/status-im/ideas/issues/27)
-- Documentation: [Identity.md](Identity.md)
