@@ -117,7 +117,6 @@ const _managerReset = function(address){
     }, [address]);
 }
 
-
 const _updateUpdatableInstance = function(address){
     if(!/^(0x)?[0-9a-f]{0,40}$/i.test(address))
         throw new Error('Address "'+ address +'" is not a valid Ethereum address.');

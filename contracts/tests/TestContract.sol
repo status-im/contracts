@@ -9,7 +9,6 @@ contract TestContract {
         TestFunctionExecuted();
     }   
 
-
     /*
     Helper function to be used in unit testing due to error in web3
     web3.utils.soliditySha3([1, 2, 3])
@@ -23,7 +22,7 @@ contract TestContract {
         bytes _data,
         bytes32 _newSecret,
         bytes32[] _newFriendsHashes)
-        external
+        public
         pure
         returns(bytes32)
     {
