@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "../token/ERC20Token.sol";
 
@@ -19,20 +19,53 @@ contract MessageDeliveryPayout {
      * @notice `_sender` needs to approve against this contract, check _sender `SNT` token approval before trying to confirm;
      * @param _sender the address of message sender
      * @param _receiver the address of message destination
-     * @param _message the hash of the message
+     * @param _messageHash the hash of the message
      * @param _deliveryFee the amount willing to pay to deliver the message
      * @param _senderSignature signature of contract address, message receiver, message hash, the node that contains the message and the delivery fee by `_sender`
      * @param _receiverSignature signature of contract adress, message hash
      */
-    function confirmDelivery(address _sender, address _receiver, bytes32 _message, uint256 _deliveryFee, bytes _senderSignature, bytes _receiverSignature) public {
-        require(!delivered[_message]);
+    function confirmDelivery(address _sender, address _receiver, bytes32 _me_messageHashssage, uint256 _deliveryFee, bytes _senderSignature, bytes _receiverSignature) public {
+        require(!delivered[_messageHash]);
         var (v,r,s) = signatureSplit(_senderSignature);
-        require(ecrecover(getSignedHash(keccak256(address(this), _receiver, _message, address(msg.sender), _deliveryFee)), v,r,s) == address(_sender));
+        require(ecrecover(getSignedHash(keccak256(address(this), _receiver, _messageHash, address(msg.sender), _deliveryFee)), v,r,s) == address(_sender));
         (v,r,s) = signatureSplit(_receiverSignature);
-        require(ecrecover(getSignedHash(keccak256(address(this), _message)), v,r,s) == address(_receiver));
-        delivered[_message] = true;
+        require(ecrecover(getSignedHash(keccak256(address(this), _messageHash)), v,r,s) == address(_receiver));
+        delivered[_messageHash] = true;
         require(SNT.transferFrom(_sender, msg.sender, _deliveryFee));
-        Delivered(_sender, _message);
+        emit Delivered(_sender, _messageHash);
+    }
+
+
+    /**
+     * @notice confirms delivery of message and payouts to whoever delivered the message
+     * @notice `_sender` needs to approve against this contract, check _sender `SNT` token approval before trying to confirm;
+     * @param _sender the address of message sender
+     * @param _receiver the address of message destination
+     * @param _messageHash the hash of the message
+     * @param _deliveryFee the amount willing to pay to deliver the message
+     * @param _senderSignature signature of contract address, message receiver, message hash, the node that contains the message and the delivery fee by `_sender`
+     * @param _receiverSignature signature of contract adress, message hash
+     */
+    function confirmTransfer(
+        address _sender,
+        address _receiver,
+        bytes32 _messageHash,
+        uint256 _totalBytes,
+        uint256 _pricePerByte,
+        uint256 _receivedBytes,
+        bytes _senderSignature,
+        bytes _receiverSignature
+    ) 
+        public 
+    {
+        require(!delivered[_messageHash]);
+        var (v,r,s) = signatureSplit(_senderSignature);
+        require(ecrecover(getSignedHash(keccak256(address(this), _receiver, _messageHash, address(msg.sender), _pricePerByte, _totalBytes)), v,r,s) == address(_sender));
+        (v,r,s) = signatureSplit(_receiverSignature);
+        require(ecrecover(getSignedHash(keccak256(address(this), _messageHash, _receivedBytes)), v,r,s) == address(_receiver));
+        delivered[_messageHash] = true;
+        require(SNT.transferFrom(_sender, msg.sender, _pricePerByte * _receivedBytes));
+        emit Delivered(_sender, _messageHash);
     }
 
 
