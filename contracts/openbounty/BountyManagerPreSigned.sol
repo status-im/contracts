@@ -205,8 +205,8 @@ contract BountyManagerPreSigned is BountyManager {
 
       /**
      * @notice recover the address which signed an approve
-     * @param signature
-     * @param _data
+     * @param signature Signature
+     * @param _data Data
      * @param _nonce Presigned transaction number.
      */
     function recoverCallPreSigned(
