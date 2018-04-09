@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# embark
+.embark/
+chains.json
+
 # egg-related
 viper.egg-info/
 build/

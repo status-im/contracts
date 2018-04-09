@@ -23,7 +23,7 @@ exports.assertReverts = (contractMethodCall, maxGasAvailable) => {
 }
 
 exports.listenForEvent = event => new Promise((resolve, reject) => {
-    event.watch((error, response) => {
+    event({}, (error, response) => {
         if (!error) {
             resolve(response.args)
         } else {
@@ -31,8 +31,12 @@ exports.listenForEvent = event => new Promise((resolve, reject) => {
         }
         event.stopWatching()
     })
-})
+});
 
+exports.eventValues = (receipt, eventName) => {
+    if(receipt.events[eventName])
+        return receipt.events[eventName].returnValues;
+}
 
 exports.addressToBytes32 = (address) => {
     const stringed = "0000000000000000000000000000000000000000000000000000000000000000" + address.slice(2);
@@ -67,5 +71,27 @@ exports.expectThrow = async promise => {
   
 
 exports.assertJump = (error) => {
-    assert.isAbove(error.message.search('revert'), -1, 'Revert should happen');
+    assert(error.message.search('revert') > -1, 'Revert should happen');
 }
+
+
+var callbackToResolve = function (resolve, reject) {
+    return function (error, value) {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(value);
+            }
+        };
+};
+
+
+
+exports.promisify = (func) =>
+    (...args) => {
+        return new Promise((resolve, reject) => {
+        const callback = (err, data) => err ? reject(err) : resolve(data);
+        func.apply(this, [...args, callback]);
+        });
+    }
+        

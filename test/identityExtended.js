@@ -1,3 +1,6 @@
+/*
+COMMENTED TEMPORARLY WHILE PROJECT IS MIGRATED TO EMBARK - @rramos
+
 const TestUtils = require("../utils/testUtils.js")
 var ethUtils = require('ethereumjs-util')
 
@@ -62,3 +65,4 @@ contract('Identity - Extended Functionality', function(accounts) {
 
 
 });
+*/

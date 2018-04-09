@@ -2,7 +2,8 @@
   "name": "status-contracts",
   "version": "1.0.0",
   "scripts": {
-    "solidity-coverage": "./node_modules/.bin/solidity-coverage"
+    "solidity-coverage": "./node_modules/.bin/solidity-coverage",
+    "test": "embark test"
   },
   "repository": {
     "type": "git",
@@ -20,8 +21,8 @@
   },
   "dependencies": {
     "elliptic-curve": "^0.1.0",
-    "solidity-coverage": "^0.4.4",
+    "embark": "^2.7.0",
     "ethereumjs-util": "^5.1.5",
-    "web3": "^1.0.0-beta.30"
+    "solidity-coverage": "^0.4.4"
   }
 }

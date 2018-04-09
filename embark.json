@@ -1,0 +1,7 @@
+{
+  "contracts": ["contracts/**"],
+  "buildDir": "dist/",
+  "config": "config/",
+  "plugins": {
+  }
+}
