@@ -80,7 +80,7 @@ contract EmojiBoard {
         ERC20Token token = ERC20Token(feeRecycler.token());
         require(token.transferFrom(_from, address(this), _value));
         token.approve(feeRecycler, _value);
-        feeRecycler.lock(_from, _value);
+        feeRecycler.collectFrom(_from, _value);
         
         for (uint i; i < len; i++) {
             emojiRating[keccak256(_to,_emojiUnicode[i])] += _value; //divided by len? safeadd?
