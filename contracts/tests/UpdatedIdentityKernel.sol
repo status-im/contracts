@@ -8,6 +8,6 @@ contract UpdatedIdentityKernel is IdentityKernel {
     event TestFunctionExecuted(uint256 minApprovalsByManagementKeys);
 
     function test() public {
-        TestFunctionExecuted(minimumApprovalsByKeyPurpose[MANAGEMENT_KEY]);
+        TestFunctionExecuted(purposeThreshold[MANAGEMENT_KEY]);
     }   
 }

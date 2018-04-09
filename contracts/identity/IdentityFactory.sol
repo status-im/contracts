@@ -11,7 +11,7 @@ contract IdentityFactory is Factory {
 
     function IdentityFactory(bytes _infohash) 
         public
-        Factory(new IdentityKernel(), _infohash)
+        Factory(new IdentityKernel())
     {
     }
 
