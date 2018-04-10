@@ -1,0 +1,16 @@
+{
+  "name": "gas-relayer",
+  "version": "0.0.1",
+  "description": "Gas relayer to avoid having to hold ether to perform transactions when you already have a token",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "daemonize2": "^0.4.2",
+    "md5": "^2.2.1",
+    "web3": "^1.0.0-beta.33"
+  }
+}

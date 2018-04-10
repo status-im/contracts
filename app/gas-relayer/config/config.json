@@ -1,0 +1,59 @@
+{
+    "blockchain": {
+        "account": "0x9e14016ba37b23498885864053fded5226161a3a",
+        "rpcHost": "localhost",
+        "rpcPort": 8545
+    },
+    
+    "whisper": {
+        "privateKey": "0x1d8ef80c9933e20fa9720bf82f3ad481c6be9e44920932c008bb76655a211add",
+        "protocol": "ws",
+        "host": "localhost",
+        "port": 8546,
+        "ttl": 20,
+        "minPow": 0.8,
+        "powTime": 1000
+    },
+
+    "contracts":{
+        "IdentityGasRelay": {
+            "isIdentity": true,
+            "factoryAddress": "0x24cb6a5b6c81e8ce3edb059ab97984c3d3ea2e3e",
+            "abiFile": "../abi/IdentityGasRelay.json",
+            "allowedFunctions": [
+                { 
+                    "function": "approveAndCallGasRelayed(address,address,uint256,bytes,uint256,uint256,uint256,address,bytes)", 
+                    "to": "_to",
+                    "value": "_value",
+                    "data": "_data",
+                    "isToken": true,
+                    "token": "_baseToken"
+                },
+                {
+                    "function": "callGasRelayed(address,uint256,bytes,uint256,uint256,uint256,address,bytes)",
+                    "to": "_to",
+                    "value": "_value",
+                    "data": "_data",
+                    "isToken": false
+                }
+            ]
+        },
+        "SNTController": {
+            "isIdentity": false,
+            "address": "0x96f0811c6484c59c2674da1f64e725c01d82c1b5",
+            "abiFile": "../abi/SNTController.json",
+            "allowedFunctions": [
+                {
+                    "function":"transferSNT(address,uint256,uint256,uint256,bytes)",
+                    "to": "_to",
+                    "value": "_amount"
+                },
+                {
+                    "function":"executeGasRelayed(address,bytes,uint256,uint256,uint256,bytes)",
+                    "to": "_to",
+                    "value": "_amount"
+                }
+            ]   
+        }
+    }
+}
