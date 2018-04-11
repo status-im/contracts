@@ -16,16 +16,16 @@
     },
 
     "tokens": {
-        "0x0": {
+        "0x0000000000000000000000000000000000000000": {
             "minRelayFactor": 1,
             "name": "Ethereum",
             "symbol": "ETH"
         },
-        "0x0ABEEF": {
+        "0x00000000000000000000000000000000000ABeEF": {
             "minRelayFactor": 1000000000000,
             "name": "RandomToken",
             "symbol": "RDN",
-            "pricePlugin": "plugins/token-utils"
+            "pricePlugin": "../plugins/token-utils.js"
         }
     },
 

@@ -8,6 +8,15 @@ const erc20ABI = require('../abi/ERC20.json');
 console.info("Starting...")
 
 async function start(){
+
+
+for(token in config.tokens){
+  if(config.tokens[token].pricePlugin !== undefined){
+    let PricePlugin = require(config.tokens[token].pricePlugin);
+    config.tokens[token].pricePlugin = new PricePlugin(config.tokens)
+  }
+}
+
 config.topics = [];
 for(let contractName in config.contracts){
   
@@ -25,7 +34,6 @@ for(let contractName in config.contracts){
       let functionSignature = web3.utils.sha3(config.contracts[contractName].allowedFunctions[i].function).slice(0, 10);
       config.contracts[contractName].allowedFunctions[functionSignature] = config.contracts[contractName].allowedFunctions[i];
       delete config.contracts[contractName].allowedFunctions[i];
-      
   }
 
   config.contracts[contractName].functionSignatures = Object.keys(config.contracts[contractName].allowedFunctions);
@@ -139,25 +147,31 @@ const processMessages = async function(error, message, subscription){
     
     const params = web3.eth.abi.decodeParameters(contract.allowedFunctions[functionName].inputs, functionParameters);
     const tokenAddress = contract.allowedFunctions[functionName].isToken ? params[contract.allowedFunctions[functionName].token] : "0x0";
-    
-    // Determine if gas price offered is worth at least the minimum
-    const gasPrice = params[contract.allowedFunctions[functionName].gasPrice];
-    if(gasPrice < config.tokens[tokenAddress].minRelayFactor){
-      return reply("_gasPrice less than minimum", message);
+    if(config.tokens[tokenAddress] == undefined){
+      return reply("Token not allowed", message);
     }
-
+    
+    const gasPrice = params[contract.allowedFunctions[functionName].gasPrice];
+    
     // Obtain factor
     let factor;
     if(contract.allowedFunctions[functionName].isToken){
-      const PricePlugin = require(config.tokens[tokenAddress].pricePlugin);
-      const pricePlg = new PricePlugin(config.tokens)
-      factor = pricePlg.getFactor();
+      factor = config.tokens[tokenAddress].pricePlugin.getFactor();
     } else {
       factor = 1;
     }
 
-    console.log(factor);
-   
+    // Determine if gas price offered is worth at least the minimum
+    /*if(_________ < config.tokens[tokenAddress].minRelayFactor){
+      return reply("_gasPrice less than minimum", message);
+    }
+
+    if(gasPrice / factor < _______ ){
+      return reply("_gasPrice is too low", message);
+    }*/
+
+
+
    /*
     // Determining balances
     let balance;
@@ -181,6 +195,9 @@ const processMessages = async function(error, message, subscription){
     }));*/
     
     // TODO determine if balance is enough
+
+
+
 
     web3.eth.sendTransaction({
         from: config.blockchain.account,
