@@ -88,7 +88,7 @@ web3.shh.addPrivateKey(config.whisper.privateKey)
 
 const reply = async function(text, message){
   try {
-    if(message.sig){
+    if(message.sig !== undefined){
       let shhOptions = { 
         pubKey: message.sig, 
         sig: kId,
@@ -143,7 +143,7 @@ const processMessages = async function(error, message, subscription){
     // Determine if gas price offered is worth at least the minimum
     const gasPrice = params[contract.allowedFunctions[functionName].gasPrice];
     if(gasPrice < config.tokens[tokenAddress].minRelayFactor){
-      return reply("_gasPrice less than minimum: ", config.tokens[tokenAddress.minRelayFactor]);
+      return reply("_gasPrice less than minimum", message);
     }
 
     // Obtain factor
