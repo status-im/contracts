@@ -144,15 +144,39 @@ const processMessages = async function(error, message, subscription){
       return reply('Invalid contract code', message); // TODO Log this
     }
     
-    
     const params = web3.eth.abi.decodeParameters(contract.allowedFunctions[functionName].inputs, functionParameters);
-    const tokenAddress = contract.allowedFunctions[functionName].isToken ? params[contract.allowedFunctions[functionName].token] : "0x0";
-    if(config.tokens[tokenAddress] == undefined){
+    const token = config.tokens[params[contract.allowedFunctions[functionName].gasToken]];
+    if(token == undefined){
       return reply("Token not allowed", message);
     }
     
     const gasPrice = params[contract.allowedFunctions[functionName].gasPrice];
+
+    // Determining balances of gasPrice
+    let balance;
+    if(token.symbol == "ETH")
+      balance = new web3.utils.BN(await web3.eth.getBalance(address));
+    else {
+      const Token = new web3.eth.Contract(erc20ABI);
+      Token.options.address = params[contract.allowedFunctions[functionName].gasToken];
+      balance = new web3.utils.BN(await Token.methods.balanceOf(address).call());  
+    }
     
+    if(balance.lt(web3.utils.toBN(gasPrice))){
+      return reply("Not enough balance", message);
+    }
+
+    // Determine if enough balance for baseToken
+    if(contract.allowedFunctions[functionName].isToken){
+      const Token = new web3.eth.Contract(erc20ABI);
+      Token.options.address = params[contract.allowedFunctions[functionName].token];
+      balance = new web3.utils.BN(await Token.methods.balanceOf(address).call()); 
+      if(balance.lt(web3.utils.BN(params[contract.allowedFunctions[functionName].value]))){
+        return reply("Not enough balance", message);
+      }   
+    }
+
+   
     // Obtain factor
     let factor;
     if(contract.allowedFunctions[functionName].isToken){
@@ -161,42 +185,15 @@ const processMessages = async function(error, message, subscription){
       factor = 1;
     }
 
-    // Determine if gas price offered is worth at least the minimum
+    // TODO Determine cost of running function in ether
+
+    // TODO Determine if gas price offered is worth at least the minimum
     /*if(_________ < config.tokens[tokenAddress].minRelayFactor){
       return reply("_gasPrice less than minimum", message);
     }
-
     if(gasPrice / factor < _______ ){
       return reply("_gasPrice is too low", message);
     }*/
-
-
-
-   /*
-    // Determining balances
-    let balance;
-    if(contract.isIdentity){
-      if(contract.allowedFunctions[functionName].isToken){
-        const Token = new web3.eth.Contract(erc20ABI, params[contract.allowedFunctions[functionName].token]);
-        balance = new web3.utils.BN(await Token.methods.balanceOf(address).call());
-      } else {
-        balance = new web3.utils.BN(await web3.eth.getBalance(address));
-      }
-    } else {
-      // TODO SNT Controller
-    }
-    */
-
-    
-    // Estimating gas
-    /*let estimatedGas = new web3.utils.BN(await web3.eth.estimateGas({
-      to: address,
-      data: params[contract.allowedFunctions[functionName].data]
-    }));*/
-    
-    // TODO determine if balance is enough
-
-
 
 
     web3.eth.sendTransaction({

@@ -21,7 +21,7 @@
             "name": "Ethereum",
             "symbol": "ETH"
         },
-        "0x00000000000000000000000000000000000ABeEF": {
+        "0x1d97fCe424c029Fc504a171918F934C6dBAcB6aE": {
             "minRelayFactor": 1000000000000,
             "name": "RandomToken",
             "symbol": "RDN",
@@ -41,6 +41,7 @@
                     "value": "_value",
                     "data": "_data",
                     "gasPrice": "_gasPrice",
+                    "gasToken": "_gasToken",
                     "isToken": true,
                     "token": "_baseToken"
                 },
@@ -50,6 +51,7 @@
                     "value": "_value",
                     "data": "_data",
                     "gasPrice": "_gasPrice",
+                    "gasToken": "_gasToken",
                     "isToken": false
                 }
             ]
