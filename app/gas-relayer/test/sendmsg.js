@@ -40,6 +40,8 @@ $(function(){
     $('button').on('click', async function(e){
         e.preventDefault();
         
+        $('p.result').text('');
+
         let publicKey = add0x($("#publicKey"));
         let msgTopic = add0x($('#topic'));
         let msgPayload = add0x($('#payload'));
