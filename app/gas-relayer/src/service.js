@@ -136,12 +136,34 @@ const processMessages = async function(error, message, subscription){
       return reply('Invalid contract code', message); // TODO Log this
     }
     
-    // Determining balances
+    
     const params = web3.eth.abi.decodeParameters(contract.allowedFunctions[functionName].inputs, functionParameters);
+    const tokenAddress = contract.allowedFunctions[functionName].isToken ? params[contract.allowedFunctions[functionName].token] : "0x0";
+    
+    // Determine if gas price offered is worth at least the minimum
+    const gasPrice = params[contract.allowedFunctions[functionName].gasPrice];
+    if(gasPrice < config.tokens[tokenAddress].minRelayFactor){
+      return reply("_gasPrice less than minimum: ", config.tokens[tokenAddress.minRelayFactor]);
+    }
+
+    // Obtain factor
+    let factor;
+    if(contract.allowedFunctions[functionName].isToken){
+      const PricePlugin = require(config.tokens[tokenAddress].pricePlugin);
+      const pricePlg = new PricePlugin(config.tokens)
+      factor = pricePlg.getFactor();
+    } else {
+      factor = 1;
+    }
+
+    console.log(factor);
+   
+   /*
+    // Determining balances
     let balance;
     if(contract.isIdentity){
       if(contract.allowedFunctions[functionName].isToken){
-        const Token = new web3.eth.Contract(erc20ABI, params[contracts.allowedFunctions[functionName].token]);
+        const Token = new web3.eth.Contract(erc20ABI, params[contract.allowedFunctions[functionName].token]);
         balance = new web3.utils.BN(await Token.methods.balanceOf(address).call());
       } else {
         balance = new web3.utils.BN(await web3.eth.getBalance(address));
@@ -149,14 +171,15 @@ const processMessages = async function(error, message, subscription){
     } else {
       // TODO SNT Controller
     }
+    */
 
-    // Estimating gas
-    let estimatedGas = new web3.utils.BN(await web3.eth.estimateGas({
-      to: address,
-      data: params[contracts.allowedFunctions[functionName].data]
-    }));
     
-
+    // Estimating gas
+    /*let estimatedGas = new web3.utils.BN(await web3.eth.estimateGas({
+      to: address,
+      data: params[contract.allowedFunctions[functionName].data]
+    }));*/
+    
     // TODO determine if balance is enough
 
     web3.eth.sendTransaction({
