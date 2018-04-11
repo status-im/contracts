@@ -15,10 +15,24 @@
         "powTime": 1000
     },
 
+    "tokens": {
+        "0x0": {
+            "minRelayFactor": 1,
+            "name": "Ethereum",
+            "symbol": "ETH"
+        },
+        "0x0ABEEF": {
+            "minRelayFactor": 1000000000000,
+            "name": "RandomToken",
+            "symbol": "RDN",
+            "pricePlugin": "plugins/token-utils"
+        }
+    },
+
     "contracts":{
         "IdentityGasRelay": {
             "isIdentity": true,
-            "factoryAddress": "0x24cb6a5b6c81e8ce3edb059ab97984c3d3ea2e3e",
+            "factoryAddress": "0x96f0811c6484c59c2674da1f64e725c01d82c1b5",
             "abiFile": "../abi/IdentityGasRelay.json",
             "allowedFunctions": [
                 { 
@@ -26,6 +40,7 @@
                     "to": "_to",
                     "value": "_value",
                     "data": "_data",
+                    "gasPrice": "_gasPrice",
                     "isToken": true,
                     "token": "_baseToken"
                 },
@@ -34,6 +49,7 @@
                     "to": "_to",
                     "value": "_value",
                     "data": "_data",
+                    "gasPrice": "_gasPrice",
                     "isToken": false
                 }
             ]

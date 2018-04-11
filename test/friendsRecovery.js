@@ -92,6 +92,8 @@ describe('FriendsRecovery', function() {
             ethUtils.ecsign(msgHash, ethUtils.toBuffer(friends[3].private, 'hex'))
         ];
 
+        console.log(frienSignatures[0]);
+
         let tx2 = await recovery.methods.approvePreSigned(
             hashedMessageToSign, 
             [
