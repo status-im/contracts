@@ -150,7 +150,9 @@ const processMessages = async function(error, message, subscription){
       return reply("Token not allowed", message);
     }
     
-    const gasPrice = params[contract.allowedFunctions[functionName].gasPrice];
+    const gasPrice = web3.utils.toBN(params[contract.allowedFunctions[functionName].gasPrice]);
+    const gasMinimal = web3.utils.toBN(params[contract.allowedFunctions[functionName].gasMinimal]);
+
 
     // Determining balances of gasPrice
     let balance;
@@ -161,8 +163,8 @@ const processMessages = async function(error, message, subscription){
       Token.options.address = params[contract.allowedFunctions[functionName].gasToken];
       balance = new web3.utils.BN(await Token.methods.balanceOf(address).call());  
     }
-    
-    if(balance.lt(web3.utils.toBN(gasPrice))){
+
+    if(balance.lt(web3.utils.toBN(gasPrice.mul(gasMinimal)))){
       return reply("Not enough balance", message);
     }
 
@@ -176,7 +178,6 @@ const processMessages = async function(error, message, subscription){
       }   
     }
 
-   
     // Obtain factor
     let factor;
     if(contract.allowedFunctions[functionName].isToken){
@@ -186,15 +187,7 @@ const processMessages = async function(error, message, subscription){
     }
 
     // TODO Determine cost of running function in ether
-
     // TODO Determine if gas price offered is worth at least the minimum
-    /*if(_________ < config.tokens[tokenAddress].minRelayFactor){
-      return reply("_gasPrice less than minimum", message);
-    }
-    if(gasPrice / factor < _______ ){
-      return reply("_gasPrice is too low", message);
-    }*/
-
 
     web3.eth.sendTransaction({
         from: config.blockchain.account,

@@ -42,6 +42,7 @@
                     "data": "_data",
                     "gasPrice": "_gasPrice",
                     "gasToken": "_gasToken",
+                    "gasMinimal": "_gasMinimal",
                     "isToken": true,
                     "token": "_baseToken"
                 },
@@ -52,6 +53,7 @@
                     "data": "_data",
                     "gasPrice": "_gasPrice",
                     "gasToken": "_gasToken",
+                    "gasMinimal": "_gasMinimal",
                     "isToken": false
                 }
             ]
