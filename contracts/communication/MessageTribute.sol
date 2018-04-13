@@ -14,19 +14,10 @@ import "../common/Controlled.sol";
  */
 contract MessageTribute is Controlled {
 
-    MiniMeToken public SNT;
-
-    struct Fee {
-        uint256 amount;
-        bool permanent;
-    }
-
-    mapping(address => mapping(address => Fee)) public feeCatalog;
-    mapping(address => uint256) public balances;
-    mapping(address => mapping(address => uint)) lastAudienceDeniedTimestamp;
-    
-    mapping(bytes32 => uint256) private friendIndex;
-    address[] private friends; 
+    event AudienceRequested(address indexed from, address indexed to);
+    event AudienceCancelled(address indexed from, address indexed to);
+    event AudienceTimeOut(address indexed from, address indexed to);
+    event AudienceGranted(address indexed from, address indexed to, bool approve);
 
     struct Audience {
         uint256 blockNum;
@@ -34,8 +25,20 @@ contract MessageTribute is Controlled {
         Fee fee;
         bytes32 hashedSecret;
     }
+    
+    struct Fee {
+        uint256 amount;
+        bool permanent;
+    }
 
     mapping(address => mapping(address => Audience)) audienceRequested;
+    mapping(address => mapping(address => Fee)) public feeCatalog;
+    mapping(address => mapping(address => uint)) lastAudienceDeniedTimestamp;
+    mapping(bytes32 => uint256) private friendIndex;
+    mapping(address => uint256) public balances;
+    address[] private friends; 
+    
+    MiniMeToken public SNT;
     
     function MessageTribute(MiniMeToken _SNT) public {
         SNT = _SNT;
@@ -97,11 +100,6 @@ contract MessageTribute is Controlled {
         require(SNT.transfer(msg.sender, _value)); 
     }
 
-    event AudienceRequested(address indexed from, address indexed to);
-    event AudienceCancelled(address indexed from, address indexed to);
-    event AudienceTimeOut(address indexed from, address indexed to);
-    event AudienceGranted(address indexed from, address indexed to, bool approve);
-
     function requestAudience(address _from, bytes32 hashedSecret)
         public 
     {
@@ -110,7 +108,7 @@ contract MessageTribute is Controlled {
         require(audienceRequested[_from][msg.sender].blockNum == 0);
         require(lastAudienceDeniedTimestamp[_from][msg.sender] + 3 days <= now);
 
-        AudienceRequested(_from, msg.sender);
+        emit AudienceRequested(_from, msg.sender);
         audienceRequested[_from][msg.sender] = Audience(block.number, now, f, hashedSecret);
 
         balances[msg.sender] -= f.amount;
@@ -123,7 +121,7 @@ contract MessageTribute is Controlled {
     function timeOut(address _from, address _to) public {
         require(audienceRequested[_from][_to].blockNum > 0);
         require(audienceRequested[_from][_to].timestamp + 3 days <= now);
-        AudienceTimeOut(_from, _to);
+        emit AudienceTimeOut(_from, _to);
         balances[_to] += audienceRequested[_from][_to].fee.amount;
         delete audienceRequested[_from][_to];
     }
@@ -131,7 +129,7 @@ contract MessageTribute is Controlled {
     function cancelAudienceRequest(address _from) public {
         require(audienceRequested[_from][msg.sender].blockNum > 0);
         require(audienceRequested[_from][msg.sender].timestamp + 2 hours <= now);
-        AudienceCancelled(_from, msg.sender);
+        emit AudienceCancelled(_from, msg.sender);
         balances[msg.sender] += audienceRequested[_from][msg.sender].fee.amount;
         delete audienceRequested[_from][msg.sender];
     }
@@ -142,7 +140,7 @@ contract MessageTribute is Controlled {
         require(aud.blockNum > 0);
         require(aud.hashedSecret == keccak256(msg.sender, _to, secret));
        
-        AudienceGranted(msg.sender, _to, _approve);
+        emit AudienceGranted(msg.sender, _to, _approve);
 
         if(!_approve)
             lastAudienceDeniedTimestamp[msg.sender][_to] = block.timestamp;
@@ -180,7 +178,7 @@ contract MessageTribute is Controlled {
         if (friendIndex[keccak256(msg.sender, _from)] > 0)
             return Fee(0, false);
 
-        Fee memory generalFee  = feeCatalog[_from][address(0)];
+        Fee memory generalFee = feeCatalog[_from][address(0)];
         return specificFee.amount > 0 ? specificFee : generalFee;
     }
 
