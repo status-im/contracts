@@ -2,6 +2,7 @@ import Tab from './tab';
 import AccountList from './account-list';
 import SourceArea from './source-area';
 import InstanceSelector from './instance-selector';
+import FunctionArea from './function-area';
 
 class ContractUI extends React.Component {
     constructor(props) {
@@ -48,11 +49,12 @@ class ContractUI extends React.Component {
                 <Tab id="deploy" name="Deployment / Utils" active={true}>
                     <AccountList accountUpdate={this.handleAccountUpdate} />
                     <h3>Deploy</h3>
-                    <div id="constructor">
-                    </div>   
+                    <FunctionArea accounts={this.state.accounts} contractName={this.props.name} contract={this.props.contract} type="constructor" />
                 </Tab>
                 <Tab id="functions" name="Functions">
                     <InstanceSelector selectedInstance={this.state.selectedInstance} instances={this.state.instances} instanceUpdate={this.handleInstanceSelection} />
+                    <FunctionArea accounts={this.state.accounts} contractName={this.props.name} contract={this.props.contract} type="function" />
+                    <FunctionArea accounts={this.state.accounts} contractName={this.props.name} contract={this.props.contract} type="fallback" />
                 </Tab>
                 <Tab id="contract" name="Contract">
                     <SourceArea sourceURL={this.props.sourceURL} />

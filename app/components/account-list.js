@@ -3,7 +3,8 @@ class AccountList extends React.Component {
         super(props);
         this.state = {
             error: false,
-            errorMessage: ""
+            errorMessage: "",
+            accounts: []
         };
 
         this.handleClick = this.handleClick.bind(this);
@@ -18,6 +19,8 @@ class AccountList extends React.Component {
 
             console.log("%cawait web3.eth.getAccounts()", 'font-weight: bold');
             console.log(accounts);
+
+            this.setState({accounts: accounts});
         
             this.props.accountUpdate(accounts);
         } catch(err) {
@@ -36,7 +39,11 @@ class AccountList extends React.Component {
             <div id="getAccounts" className="code">
                 await web3.eth.getAccounts(); <button onClick={this.handleClick}>&#9166;</button>
             </div>
-            <p className="note"><tt>accounts</tt> variable is available in the console</p>
+            {
+                this.state.accounts.length > 0 ? 
+                    <p className="note"><tt>accounts</tt> variable is available in the console</p>
+                    : ""
+            }
             {this.state.error ? '<p className="error">' + this.state.errorMessage + '</p>' : ''}
             </div>
         </div>;
