@@ -175,12 +175,12 @@ contract MessageTribute is Controlled {
     function getFee(address _from) internal view
         returns (Fee) 
     {
-        Fee memory generalFee  = feeCatalog[_from][address(0)];
         Fee memory specificFee = feeCatalog[_from][msg.sender];
 
         if (friendIndex[keccak256(msg.sender, _from)] > 0)
             return Fee(0, false);
 
+        Fee memory generalFee  = feeCatalog[_from][address(0)];
         return specificFee.amount > 0 ? specificFee : generalFee;
     }
 
