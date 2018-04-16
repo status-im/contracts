@@ -2,9 +2,9 @@
   "contracts": ["contracts/**"],
   "app": {
     "js/dapp.js": ["app/dapp.js"],
-    "js/react-dapp.js": ["app/react-dapp.js"],
+    "contracts-section.js": ["app/react/contracts-section.js"],
     "index.html": "app/index.html",
-    "react-version.html": "app/react-version.html",
+    "contracts-section.html": "app/react/contracts-section.html",
     "images/": ["app/images/**"]
   },
   "buildDir": "dist/",
