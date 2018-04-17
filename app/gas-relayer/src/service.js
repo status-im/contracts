@@ -196,16 +196,17 @@ const processMessages = async function(error, message, subscription){
     }
     
     // Estimate costs
-    const web3Sim = new Web3(ganache.provider({fork: `${config.blockchain.protocol}://${config.blockchain.host}:${config.blockchain.port}`}));
-    const simAccounts = await web3.eth.getAccounts();
-    let simulatedReceipt = await web3.eth.sendTransaction({
+    const web3Sim = new Web3(ganache.provider({fork: `http://localhost:8545`}));
+    const simAccounts = await web3Sim.eth.getAccounts();
+    let simulatedReceipt = await web3Sim.eth.sendTransaction({
       from: simAccounts[0],
       to: address,
       value: 0,
       data: payload
     });
+
     const estimatedGas = web3.utils.toBN(simulatedReceipt.gasUsed);
-    
+    console.log(simulatedReceipt);
     if(gasLimit.lt(estimatedGas)) {
       return reply("Gas limit below estimated gas", message);
     }
