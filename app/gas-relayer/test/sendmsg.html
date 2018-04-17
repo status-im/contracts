@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>Send whisper message</title>
+    <title>Send whisper message to node</title>
     <style type="text/css">
     h4 small {
         color: #c3c3c3;
@@ -25,15 +25,15 @@
                     </ul>
                     <form novalidate>
                     <div class="mb-3">
-                        <label for="publicKey">Public Key</label>
+                        <label for="sKey">Symkey</label>
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text">0x</span>
                             </div>
-                            <input type="text" class="form-control" id="publicKey" placeholder="Public Key" required>
+                            <input type="text" class="form-control" id="sKey" placeholder="Public Key" required value="0xd0d905c1c62b810b787141430417caf2b3f54cffadb395b7bb39fdeb8f17266b">
                         </div>
-                        <div class="invalid-feedback publicKey" style="width: 100%;">
-                            Invalid Public Key
+                        <div class="invalid-feedback sKey" style="width: 100%;">
+                            Invalid Sym Key
                         </div>
                     </div>
                     <div class="row">

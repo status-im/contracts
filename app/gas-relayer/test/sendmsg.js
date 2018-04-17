@@ -42,7 +42,7 @@ $(function(){
         
         $('p.result').text('');
 
-        let publicKey = add0x($("#publicKey"));
+        let sKey = add0x($("#sKey"));
         let msgTopic = add0x($('#topic'));
         let msgPayload = add0x($('#payload'));
         let timeToLive = $('#ttl').val();
@@ -52,9 +52,9 @@ $(function(){
         $('.invalid-feedback').hide();
         $('.is-invalid').removeClass('is-invalid');
 
-        if(!/^0x[0-9a-f]{130}$/i.test(publicKey)){
-            $('#publicKey').addClass('is-invalid');
-            $('.invalid-feedback.publicKey').show();
+        if(!/^0x[0-9a-f]{64}$/i.test(sKey)){
+            $('#sKey').addClass('is-invalid');
+            $('.invalid-feedback.sKey').show();
         }
         
         if(!/^0x[0-9a-f]{8}$/i.test(msgTopic)){
@@ -85,12 +85,16 @@ $(function(){
 
         if($('.is-invalid').length > 0) return;
 
-        console.log(`%c await web3.shh.post({pubKey: "${publicKey}", sig: signature, ttl: ${timeToLive}, powTarget: ${powTarget}, powTime: ${powTime}, topic: "${msgTopic}", payload: "${msgPayload}"})`, 'font-weight: bold');
+        console.log(`%c await web3.shh.post({symKeyID: "${sKey}", sig: signature, ttl: ${timeToLive}, powTarget: ${powTarget}, powTime: ${powTime}, topic: "${msgTopic}", payload: "${msgPayload}"})`, 'font-weight: bold');
 
         let identity;
         
+
+        let _symKeyId = await web3.shh.addSymKey(sKey);
+
            
-        web3.shh.post({ pubKey: publicKey, 
+        web3.shh.post({ 
+                    symKeyID: _symKeyId, 
                     sig: keyPair,
                     ttl: parseInt(timeToLive), 
                     powTarget: parseFloat(powTarget), 

@@ -6,7 +6,7 @@
     },
     
     "whisper": {
-        "privateKey": "0x1d8ef80c9933e20fa9720bf82f3ad481c6be9e44920932c008bb76655a211add",
+        "symKey": "0xd0d905c1c62b810b787141430417caf2b3f54cffadb395b7bb39fdeb8f17266b",
         "protocol": "ws",
         "host": "localhost",
         "port": 8546,
