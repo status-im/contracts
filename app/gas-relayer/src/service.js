@@ -158,10 +158,9 @@ const processMessages = async function(error, message, subscription){
     }
     
     const gasPrice = web3.utils.toBN(params[contract.allowedFunctions[functionName].gasPrice]);
-    const gasMinimal = web3.utils.toBN(params[contract.allowedFunctions[functionName].gasMinimal]);
+    const gasLimit = web3.utils.toBN(params[contract.allowedFunctions[functionName].gasLimit]);
 
-
-    // Determining balances of gasPrice
+    // Determining balances of token used
     let balance;
     if(token.symbol == "ETH")
       balance = new web3.utils.BN(await web3.eth.getBalance(address));
@@ -169,10 +168,6 @@ const processMessages = async function(error, message, subscription){
       const Token = new web3.eth.Contract(erc20ABI);
       Token.options.address = params[contract.allowedFunctions[functionName].gasToken];
       balance = new web3.utils.BN(await Token.methods.balanceOf(address).call());  
-    }
-
-    if(balance.lt(web3.utils.toBN(gasPrice.mul(gasMinimal)))){
-      return reply("Not enough balance", message);
     }
 
     // Determine if enough balance for baseToken
@@ -193,14 +188,18 @@ const processMessages = async function(error, message, subscription){
       factor = 1;
     }
 
-    // TODO Determine cost of running function in ether
-    // TODO Determine if gas price offered is worth at least the minimum
+    const balanceInETH = balance.div(factor);
+    const gasLimitInETH = gasLimit.div(factor);
+    if(balanceInETH.lt(web3.utils.toBN(gasPrice.mul(gasLimit)))){
+      return reply("Not enough balance", message);
+    }
 
     web3.eth.sendTransaction({
         from: config.blockchain.account,
         to: address,
         value: 0,
-        data: payload
+        data: payload,
+        gasLimit: gasLimitInETH
     })
     .then(function(receipt){
       return reply("Transaction mined;" + receipt.transactionHash, message);
