@@ -10,7 +10,7 @@ contract TestIdentityGasRelay {
         bytes _data,
         uint _nonce,
         uint _gasPrice,
-        uint _gasMinimal,
+        uint _gasLimit,
         address _gasToken,
         bytes _messageSignatures
     ) external {
@@ -23,7 +23,7 @@ contract TestIdentityGasRelay {
         bytes _data,
         uint _nonce,
         uint _gasPrice,
-        uint _gasMinimal,
+        uint _gasLimit,
         address _gasToken, 
         bytes _messageSignatures
     ) external { 

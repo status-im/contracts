@@ -1,8 +1,9 @@
 {
     "blockchain": {
         "account": "0x9e14016ba37b23498885864053fded5226161a3a",
-        "rpcHost": "localhost",
-        "rpcPort": 8545
+        "protocol": "ws",
+        "host": "localhost",
+        "port": 8545
     },
     
     "whisper": {
@@ -32,7 +33,7 @@
     "contracts":{
         "IdentityGasRelay": {
             "isIdentity": true,
-            "factoryAddress": "0x96f0811c6484c59c2674da1f64e725c01d82c1b5",
+            "factoryAddress": "0x18f71378f4735b35e01eb71afcc66df090eccea7",
             "abiFile": "../abi/IdentityGasRelay.json",
             "allowedFunctions": [
                 { 
