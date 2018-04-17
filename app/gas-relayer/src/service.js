@@ -2,6 +2,7 @@ const md5 = require('md5');
 const Web3 = require('web3');
 const config = require('../config/config.json');
 const web3 = new Web3(`${config.whisper.protocol}://${config.whisper.host}:${config.whisper.port}`);
+var ganache = require("ganache-cli");
 
 const erc20ABI = require('../abi/ERC20.json');
 
@@ -63,7 +64,6 @@ for(let contractName in config.contracts){
     process.exit();
   }
 }
-
 
 // Setting up Whisper options
 const shhOptions = {
@@ -169,7 +169,7 @@ const processMessages = async function(error, message, subscription){
       Token.options.address = params[contract.allowedFunctions[functionName].gasToken];
       balance = new web3.utils.BN(await Token.methods.balanceOf(address).call());  
     }
-
+    
     // Determine if enough balance for baseToken
     if(contract.allowedFunctions[functionName].isToken){
       const Token = new web3.eth.Contract(erc20ABI);
@@ -179,21 +179,38 @@ const processMessages = async function(error, message, subscription){
         return reply("Not enough balance", message);
       }   
     }
-
+    
     // Obtain factor
     let factor;
     if(contract.allowedFunctions[functionName].isToken){
-      factor = config.tokens[tokenAddress].pricePlugin.getFactor();
+      factor =web3.utils.toBN(config.tokens[tokenAddress].pricePlugin.getFactor());
     } else {
-      factor = 1;
+      factor = web3.utils.toBN(1);
     }
-
+    
     const balanceInETH = balance.div(factor);
     const gasLimitInETH = gasLimit.div(factor);
-    if(balanceInETH.lt(web3.utils.toBN(gasPrice.mul(gasLimit)))){
+
+    if(balanceInETH.lt(web3.utils.toBN(gasPrice.mul(gasLimit)))) {
       return reply("Not enough balance", message);
     }
+    
+    // Estimate costs
+    const web3Sim = new Web3(ganache.provider({fork: `${config.blockchain.protocol}://${config.blockchain.host}:${config.blockchain.port}`}));
+    const simAccounts = await web3.eth.getAccounts();
+    let simulatedReceipt = await web3.eth.sendTransaction({
+      from: simAccounts[0],
+      to: address,
+      value: 0,
+      data: payload
+    });
+    const estimatedGas = web3.utils.toBN(simulatedReceipt.gasUsed);
+    
+    if(gasLimit.lt(estimatedGas)) {
+      return reply("Gas limit below estimated gas", message);
+    }
 
+    
     web3.eth.sendTransaction({
         from: config.blockchain.account,
         to: address,
