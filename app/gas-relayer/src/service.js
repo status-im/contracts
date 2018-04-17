@@ -7,9 +7,10 @@ const erc20ABI = require('../abi/ERC20.json');
 
 console.info("Starting...")
 
+// TODO A node should call an API (probably from a status node) to register itself as a 
+//      token gas relayer.
+
 async function start(){
-
-
 for(token in config.tokens){
   if(config.tokens[token].pricePlugin !== undefined){
     let PricePlugin = require(config.tokens[token].pricePlugin);
@@ -71,25 +72,31 @@ const shhOptions = {
 };
 
 let kId;
-
+let symKId;
 // Listening to whisper
-web3.shh.addPrivateKey(config.whisper.privateKey)
-  .then((keyId) => {
-    shhOptions.privateKeyID = keyId;
+
+web3.shh.addSymKey(config.whisper.symKey)
+  .then(symKeyId => { 
+    symKId = symKeyId;
+    return web3.shh.newKeyPair();
+    })
+  .then(keyId => {
+    shhOptions.symKeyId = symKId;
+    
     kId = keyId;
 
-    web3.shh.getPublicKey(keyId).then(pk => {
-      console.info(`Public Key: ${pk}`);
-      console.info("Topics Available:");
-      config.topics = [];
-      for(let contractName in config.contracts) {
-        console.info("- %s: %s [%s]", config.contracts[contractName].name, contractName,  Object.keys(config.contracts[contractName].allowedFunctions).join(', '));
-      }
-    });
+    console.info(`Sym Key: ${config.whisper.symKey}`);
+    console.info("Topics Available:");
+    
+    config.topics = [];
+    for(let contractName in config.contracts) {
+      console.info("- %s: %s [%s]", config.contracts[contractName].name, contractName,  Object.keys(config.contracts[contractName].allowedFunctions).join(', '));
+      shhOptions.topics = [contractName];
+      web3.shh.subscribe('messages', shhOptions, processMessages);
+    }
 
     console.info("Started.");
     console.info("Listening for messages...")
-    web3.shh.subscribe('messages', shhOptions, processMessages);
   });
   
 
