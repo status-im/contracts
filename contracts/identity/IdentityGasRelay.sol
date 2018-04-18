@@ -40,10 +40,9 @@ contract IdentityGasRelay is Identity {
         external 
     {
         uint startGas = gasleft();
-        require(startGas >= _gasLimit);
         //verify transaction parameters
+        require(startGas >= _gasLimit);
         require(_nonce == nonce);
-        ;
         // calculates signHash
         bytes32 signHash = getSignHash(
             callGasRelayHash(
@@ -113,8 +112,8 @@ contract IdentityGasRelay is Identity {
         external 
     {
         uint startGas = gasleft();
-        require(startGas >= _gasLimit);
         //verify transaction parameters
+        require(startGas >= _gasLimit);
         require(_nonce == nonce);
         require(_baseToken != address(0)); //_baseToken should be something!
         require(_to != address(this)); //no management with approveAndCall
@@ -178,7 +177,7 @@ contract IdentityGasRelay is Identity {
         returns(bool)
     {
         uint _amountSignatures = _messageSignatures.length / 72;
-        require(_amountSignatures == minimumApprovalsByKeyPurpose[_requiredKey]);
+        require(_amountSignatures == purposeThreshold[_requiredKey]);
         bytes32 _lastKey = 0;
         for (uint256 i = 0; i < _amountSignatures; i++) {
             bytes32 _currentKey = recoverKey(
