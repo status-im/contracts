@@ -85,6 +85,6 @@ contract Factory is Controlled {
         versionLog.push(Version({blockNumber: block.number, timestamp: block.timestamp, kernel: _kernel, codeHash: _codeHash}));
         latestUpdate = block.timestamp;
         latestKernel = _kernel;
-        NewKernel(_kernel, _codeHash);
+        emit NewKernel(_kernel, _codeHash);
     }
 }
