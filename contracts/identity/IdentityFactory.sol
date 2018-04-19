@@ -17,16 +17,19 @@ contract IdentityFactory is Factory {
 
     function createIdentity() 
         external 
+        returns (address)
     {
-        createIdentity(msg.sender);
+        return createIdentity(msg.sender);
     }
 
     function createIdentity(address _idOwner) 
         public 
+        returns (address)
     {
         IdentityKernel instance = IdentityKernel(new DelayedUpdatableInstance(address(latestKernel)));
         instance.initIdentity(_idOwner);
-        IdentityCreated(address(instance));
+        emit IdentityCreated(address(instance));
+        return instance;
     }
 
 }
