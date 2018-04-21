@@ -94,6 +94,19 @@ class MessageProcessor {
     }
 
 
+    _estimateGas(input){
+        const web3Sim = new Web3(ganache.provider({fork: `${this.config.node.protocol}://${this.config.node.host}:${this.config.node.port}`}));
+        const simAccounts = await web3Sim.eth.getAccounts();
+        let simulatedReceipt = await web3Sim.eth.sendTransaction({
+            from: simAccounts[0],
+            to: input.address,
+            value: 0,
+            data: input.payload
+        });
+        return web3Sim.utils.toBN(simulatedReceipt.gasUsed);
+    }
+
+
     async process(error, message){
        
         if(error){
@@ -142,25 +155,14 @@ class MessageProcessor {
                 return;
             }
             
-          
-          
-          // Estimate costs
-          const web3Sim = new Web3(ganache.provider({fork: `${config.node.protocol}://${config.node.host}:${config.node.port}`}));
-          const simAccounts = await web3Sim.eth.getAccounts();
-          let simulatedReceipt = await web3Sim.eth.sendTransaction({
-            from: simAccounts[0],
-            to: input.address,
-            value: 0,
-            data: input.payload
-          });
-      
-          const estimatedGas = web3.utils.toBN(simulatedReceipt.gasUsed);
+        
+          const estimatedGas = this._estimateGas(input);
           if(gasLimit.lt(estimatedGas)) {
             return this._reply("Gas limit below estimated gas", message);
           }
       
           this.web3.eth.sendTransaction({
-              from: config.node.blockchain.account,
+              from: this.config.node.blockchain.account,
               to: address,
               value: 0,
               data: input.payload,
