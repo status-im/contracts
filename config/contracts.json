@@ -54,6 +54,7 @@
       "Ownable": {"deploy": false},
       "Owned": {"deploy": false},
       "ProposalManager": {"deploy": false},
+      "SafeMath": {"deploy": false},
       "SGTExchanger": {"deploy": false},
       "SNT": {"deploy": false},
       "SNTPlaceHolder": {"deploy": false},

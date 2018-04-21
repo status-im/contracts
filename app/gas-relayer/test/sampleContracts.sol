@@ -40,8 +40,6 @@ contract TestIdentityFactory {
     function TestIdentityFactory(){
         latestKernel = address(new TestIdentityGasRelay());
     }
-
-    
 }
 
 contract TestSNTController {
