@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>contract</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.js"></script>
+    <script src="js/dapp.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body class="container-fluid">
+    <h1><span class="title"></span> <small>contract</small></h1>
+    <p>Open your browser's console: <code>Tools &gt; Developer Tools</code></p>
+    <p>Remix: <a href="https://remix.ethereum.org">http://remix.ethereum.org</a></p>
+    
+    <ul class="nav nav-tabs" role="tablist" id="myTabs">
+      <li role="presentation" class="active"><a href="#deploy" role="tab" data-toggle="tab">Instance</a></li>
+      <li role="presentation"><a href="#functions" role="tab" data-toggle="tab">Functions</a></li>
+      <li role="presentation"><a href="#contract" role="tab" data-toggle="tab">Contract</a></li>
+    </ul>
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active" id="deploy">
+        <h2>Deployment / Utils</h2>
+        <h3>Get Accounts</h3>
+        <div class="scenario">
+          <div id="getAccounts" class="code">
+            await web3.eth.getAccounts(); <button>&#9166;</button>
+          </div>
+          <p class="note"><tt>accounts</tt> variable is available in the console now</p>
+        </div>
+        <h3>Deploy</h3>
+        <div id="constructor">
+        </div>   
+      </div>
+      <div role="tabpanel" class="tab-pane" id="functions">
+        <div class="contractSelection">
+          <h5><b>Instance Selected:</b> <span><b style="color:red">none</b></span> 
+            <a href="#" id="changeLnk">Change</a>
+            <a href="#" id="cancelLnk" class="hidden">Cancel</a></h5>
+          <div class="form-group hidden">
+              <select class="form-control" id="contracts" placeholder="Contract Address">
+                  <option value="custom">Specific contract address</option>
+              </select>
+              <input type="text" class="form-control hidden" id="specificAddress" placeholder="0x" />
+              <button class="btn btn-default">Change</button>
+          </div>
+        </div>
+        <h2 class="function">Functions</h2>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="contract">
+        
+      </div>
+    </div>
+  </body>
+</html>
