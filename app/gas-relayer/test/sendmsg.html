@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>Send whisper message to node</title>
+    <style type="text/css">
+    h4 small {
+        color: #c3c3c3;
+    }
+    </style>
+  </head>
+  <body>
+    <body class="bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 order-md-1">
+                    <h4 class="mb-3"><br />Send whisper message <small>ws://localhost:8546</small></h4>
+                    <p><code>web3</code> is available in your browser's console: <code>Tools &gt; Developer Tools</code></p>
+                    <b>Keys</b>: 
+                    <ul style="font-size:12px">
+                        <li>Public: <span class="pub"></span></li>
+                        <li>Private <span class="priv"></span></li>
+                    </ul>
+                    <form novalidate>
+                    <div class="mb-3">
+                        <label for="sKey">Symkey</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">0x</span>
+                            </div>
+                            <input type="text" class="form-control" id="sKey" placeholder="Public Key" required value="0xd0d905c1c62b810b787141430417caf2b3f54cffadb395b7bb39fdeb8f17266b">
+                        </div>
+                        <div class="invalid-feedback sKey" style="width: 100%;">
+                            Invalid Sym Key
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="topic">Topic</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">0x</span>
+                                </div>
+                                <input type="text" class="form-control" id="topic" placeholder="" value="" required>
+                            </div>
+                            <div class="invalid-feedback topic" style="width: 100%;">
+                                Invalid Topic
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="ttl">TTL</label>
+                            <input type="text" class="form-control" id="ttl" value="1000" placeholder="" required>
+                            <div class="invalid-feedback ttl" style="width: 100%;">
+                                Invalid TTL
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="powTarget">PoW Target</label>
+                            <input type="text" class="form-control" id="powTarget" value="1" placeholder="" required>
+                            <div class="invalid-feedback powTarget" style="width: 100%;">
+                                Invalid PoW Target
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="powTime">PoW Time</label>
+                            <input type="text" class="form-control" id="powTime" value="20" placeholder="" required>
+                            <div class="invalid-feedback powTime" style="width: 100%;">
+                                Invalid PoW Time
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payload">Payload</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">0x</span>
+                            </div>
+                            <input type="text" class="form-control" id="payload" placeholder="Payload" required>
+                        </div>
+                        <div class="invalid-feedback payload" style="width: 100%;">
+                            Invalid Payload
+                        </div>
+                    </div>
+                    <hr class="mb-4">
+                    <p class="result"></p>
+                    <p id="messageArea"></p>
+                    <button class="btn btn-primary btn-lg btn-block" type="submit">Send Message</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+        <script src="web3.min.js"></script>
+        <script src="sendmsg.js"></script>
+    </body>
+</html>

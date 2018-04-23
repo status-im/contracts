@@ -1,0 +1,78 @@
+{
+    "node": {
+        "protocol": "ws",
+        "host": "localhost",
+        "port": 8546,
+        "blockchain": {
+            "account": "0x9e14016ba37b23498885864053fded5226161a3a"
+        },
+        "whisper": {
+            "symKey": "0xd0d905c1c62b810b787141430417caf2b3f54cffadb395b7bb39fdeb8f17266b",
+            "ttl": 20,
+            "minPow": 0.8,
+            "powTime": 1000
+        }
+    },
+
+    "tokens": {
+        "0x0000000000000000000000000000000000000000": {
+            "minRelayFactor": 1,
+            "name": "Ethereum",
+            "symbol": "ETH"
+        },
+        "0x1d97fCe424c029Fc504a171918F934C6dBAcB6aE": {
+            "minRelayFactor": 1000000000000,
+            "name": "RandomToken",
+            "symbol": "RDN",
+            "pricePlugin": "../plugins/token-utils.js"
+        }
+    },
+
+    "contracts":{
+        "IdentityGasRelay": {
+            "isIdentity": true,
+            "factoryAddress": "0x18f71378f4735b35e01eb71afcc66df090eccea7",
+            "abiFile": "../abi/IdentityGasRelay.json",
+            "allowedFunctions": [
+                { 
+                    "function": "approveAndCallGasRelayed(address,address,uint256,bytes,uint256,uint256,uint256,address,bytes)", 
+                    "to": "_to",
+                    "value": "_value",
+                    "data": "_data",
+                    "gasPrice": "_gasPrice",
+                    "gasToken": "_gasToken",
+                    "gasLimit": "_gasLimit",
+                    "isToken": true,
+                    "token": "_baseToken"
+                },
+                {
+                    "function": "callGasRelayed(address,uint256,bytes,uint256,uint256,uint256,address,bytes)",
+                    "to": "_to",
+                    "value": "_value",
+                    "data": "_data",
+                    "gasPrice": "_gasPrice",
+                    "gasToken": "_gasToken",
+                    "gasLimit": "_gasLimit",
+                    "isToken": false
+                }
+            ]
+        },
+        "SNTController": {
+            "isIdentity": false,
+            "address": "0x96f0811c6484c59c2674da1f64e725c01d82c1b5",
+            "abiFile": "../abi/SNTController.json",
+            "allowedFunctions": [
+                {
+                    "function":"transferSNT(address,uint256,uint256,uint256,bytes)",
+                    "to": "_to",
+                    "value": "_amount"
+                },
+                {
+                    "function":"executeGasRelayed(address,bytes,uint256,uint256,uint256,bytes)",
+                    "to": "_to",
+                    "value": "_amount"
+                }
+            ]   
+        }
+    }
+}

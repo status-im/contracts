@@ -1,0 +1,1 @@
+[{"constant":true,"inputs":[],"name":"latestKernel","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]
