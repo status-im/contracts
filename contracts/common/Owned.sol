@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 /// @dev `Owned` is a base level contract that assigns an `owner` that can be
 ///  later changed
@@ -14,7 +14,7 @@ contract Owned {
     address public owner;
 
     /// @notice The Constructor assigns the message sender to be `owner`
-    function Owned() public {
+    constructor() public {
         owner = msg.sender;
     }
 

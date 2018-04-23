@@ -5,6 +5,6 @@
   "plugins": {
   },
   "versions": {
-    "solc": "0.4.21"
+    "solc": "0.4.23"
   }
 }

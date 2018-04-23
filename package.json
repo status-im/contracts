@@ -9,20 +9,19 @@
     "type": "git",
     "url": "git+https://github.com/status-im/contracts.git"
   },
-  "author": "",
+  "author": "Status Research & Development GMBH",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/status-im/contracts/issues"
   },
   "homepage": "https://github.com/status-im/contracts#readme",
   "devDependencies": {
-    "solidity-coverage": "^0.4.4",
+    "solidity-coverage": "^0.5.0",
     "elliptic": "^6.4.0"
   },
   "dependencies": {
-    "elliptic-curve": "^0.1.0",
     "embark": "^2.7.0",
-    "ethereumjs-util": "^5.1.5",
-    "solidity-coverage": "^0.4.4"
+    "elliptic-curve": "^0.1.0",
+    "ethereumjs-util": "^5.1.5"
   }
 }

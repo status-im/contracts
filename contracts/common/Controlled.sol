@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.23;
 
 contract Controlled {
     /// @notice The address of the controller is the only address that can call
@@ -10,7 +10,7 @@ contract Controlled {
 
     address public controller;
 
-    function Controlled() public { 
+    constructor() public { 
         controller = msg.sender; 
     }
 
