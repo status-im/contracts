@@ -304,7 +304,7 @@ contract IdentityGasRelay is Identity {
         bytes32 r;
         bytes32 s;
         (v,r,s) = signatureSplit(_messageSignature, _pos);
-        return bytes32(
+        return keccak256(
             ecrecover(
                 _signHash,
                 v,
