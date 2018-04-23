@@ -17,7 +17,7 @@ contract Identity is ERC725, ERC735 {
     
     uint256 nonce;
     address recoveryContract;
-    address recoveryManager;
+    bytes32 recoveryManager;
 
     struct Transaction {
         bool valid;
@@ -31,7 +31,7 @@ contract Identity is ERC725, ERC735 {
 
     modifier managerOnly {
         require(
-            isKeyPurpose(bytes32(msg.sender), MANAGEMENT_KEY)
+            isKeyPurpose(keccak256(msg.sender), MANAGEMENT_KEY)
         );
         _;
     }
@@ -40,7 +40,7 @@ contract Identity is ERC725, ERC735 {
         if(msg.sender == address(this)) {
             _;
         } else {
-            require(isKeyPurpose(bytes32(msg.sender), MANAGEMENT_KEY));
+            require(isKeyPurpose(keccak256(msg.sender), MANAGEMENT_KEY));
             if (purposeThreshold[MANAGEMENT_KEY] == 1) {
                 _;
             } else {
@@ -51,7 +51,7 @@ contract Identity is ERC725, ERC735 {
     modifier recoveryOnly {
         require(
             recoveryContract != address(0) && 
-            msg.sender == address(recoveryContract)
+            msg.sender == recoveryContract
         );
         _;
     }
@@ -78,19 +78,21 @@ contract Identity is ERC725, ERC735 {
     ) 
     {
         require(
-            address(_key) == ecrecover(
-                keccak256("\x19Ethereum Signed Message:\n32", _signHash),
-                _v,
-                _r,
-                _s
+            _key == keccak256(
+                ecrecover(
+                    keccak256("\x19Ethereum Signed Message:\n32", _signHash),
+                    _v,
+                    _r,
+                    _s
+                    )
                 )
             );
         require(keys[_key].purpose != 0);
         _;
     }
 
-    function Identity() public {
-        _constructIdentity(msg.sender);
+    constructor() public {
+        _constructIdentity(keccak256(msg.sender));
     }    
 
     function () 
@@ -100,21 +102,21 @@ contract Identity is ERC725, ERC735 {
 
     }
 
-    function managerReset(address _newKey) 
+    function managerReset(bytes32 _newKey) 
         public 
         recoveryOnly
     {
         recoveryManager = _newKey;
-        _addKey(bytes32(recoveryManager), MANAGEMENT_KEY, 0);
+        _addKey(keccak256(recoveryManager), MANAGEMENT_KEY, 0);
         purposeThreshold[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
     }
     
     function processManagerReset(uint256 _limit) 
         public 
     {
-        require(recoveryManager != address(0));
+        require(recoveryManager != 0);
         uint256 limit = _limit;
-        bytes32 newKey = bytes32(recoveryManager);
+        bytes32 newKey = recoveryManager;
         bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
         uint256 totalManagers = managers.length;
         
@@ -132,7 +134,7 @@ contract Identity is ERC725, ERC735 {
         }
 
         if (totalManagers == 1) {
-            recoveryManager = address(0);
+            delete recoveryManager;
         }
     }
 
@@ -188,7 +190,7 @@ contract Identity is ERC725, ERC735 {
         if (purposeThreshold[requiredKey] == 1) {
             executionId = nonce; //(?) useless in this case
             nonce++; //(?) should increment
-            require(isKeyPurpose(bytes32(msg.sender), requiredKey));
+            require(isKeyPurpose(keccak256(msg.sender), requiredKey));
             _to.call.value(_value)(_data); //(?) success not used
             emit Executed(executionId, _to, _value, _data); //no information on success
         } else {
@@ -200,10 +202,9 @@ contract Identity is ERC725, ERC735 {
 
     function approve(uint256 _id, bool _approval) 
         public 
-        managerOrActor(bytes32(msg.sender))
         returns (bool success)
     {   
-        return _approve(bytes32(msg.sender), _id, _approval);
+        return _approve(keccak256(msg.sender), _id, _approval);
     }
 
     function setMinimumApprovalsByKeyType(
@@ -238,8 +239,7 @@ contract Identity is ERC725, ERC735 {
                 _includeClaim(claimHash, _claimType, _scheme, _issuer, _signature, _data, _uri);
             }
         } else {
-            require(_issuer == msg.sender);
-            require(isKeyPurpose(bytes32(msg.sender), CLAIM_SIGNER_KEY));
+            require(isKeyPurpose(keccak256(msg.sender), CLAIM_SIGNER_KEY));
             _execute(address(this), 0, msg.data);
             emit ClaimRequested(
                 claimHash,
@@ -434,13 +434,13 @@ contract Identity is ERC725, ERC735 {
         recoveryContract = _recoveryContract;
     }
     
-    function _constructIdentity(address _manager)
+    function _constructIdentity(bytes32 _managerKey)
         internal 
     {
         require(keysByPurpose[MANAGEMENT_KEY].length == 0);
         require(purposeThreshold[MANAGEMENT_KEY] == 0);
-        _addKey(bytes32(_manager), MANAGEMENT_KEY, 0);
-        _addKey(bytes32(_manager), ACTION_KEY, 0);
+        _addKey(_managerKey, MANAGEMENT_KEY, 0);
+        _addKey(_managerKey, ACTION_KEY, 0);
 
         purposeThreshold[MANAGEMENT_KEY] = 1;
         purposeThreshold[ACTION_KEY] = 1;
