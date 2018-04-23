@@ -1,0 +1,69 @@
+{
+  "default": {
+    "versions": {
+      "web3.js": "1.0.0-beta",
+      "solc": "0.4.21"
+    },
+    "deployment": {
+      "host": "localhost",
+      "port": 8545,
+      "type": "rpc"
+    },
+    "dappConnection": [
+      "$WEB3",
+      "http://localhost:8545"
+    ],
+    "gas": "auto",
+    "contracts": {
+      "Bounty": {"deploy": false},
+      "BountyFactory": {"deploy": false},
+      "BountyKernel": {"deploy": false},
+      "BountyManager": {"deploy": false},
+      "BountyManagerFactory": {"deploy": false},
+      "BountyManagerKernel": {"deploy": false},
+      "BountyManagerPreSigned": {"deploy": false},
+      "Controlled": { "deploy": false },
+      "ContributionWallet": {"deploy": false},
+      "DelayedUpdatableInstance": { "deploy": false },
+      "DelayedUpdatableInstanceStorage": { 	"deploy": false },
+      "DelegatedCall": { "deploy": false },
+      "DelegationProxy": {"deploy": false},
+      "DelegationProxyInterface": {"deploy": false},
+      "DelegationProxyKernel": {"deploy": false},
+      "DelegationProxyFactory": {"deploy": false},
+      "Democracy": {"deploy": false},
+      "DemocracyStorage": {"deploy": false},
+      "DevTokensHolder": {"deploy": false},
+      "DynamicCeiling": {"deploy": false},
+      "EmojiBoard": {"deploy": false},
+      "EmojiTable": {"deploy": false},
+      "ERC725": { "deploy": false },
+      "ERC735": { "deploy": false },
+      "Factory": { "deploy": false },
+      "FeeRecycler": {"deploy": false},
+      "FriendsRecovery": { "deploy": false },
+      "Identity": { "gas": 5000000 },
+      "IdentityFactory": { "deploy": false },
+      "IdentityKernel": { "gas": 5000000 },
+      "Instance": { "deploy": false },
+      "InstanceStorage": { "deploy": false },
+      "MessageDeliveryPayout": {"deploy": false},
+      "MiniMeToken": {"deploy": false},
+      "MiniMeTokenFactory": {"deploy": false},
+      "MultiSig": {"deploy": false},
+      "Ownable": {"deploy": false},
+      "Owned": {"deploy": false},
+      "ProposalManager": {"deploy": false},
+      "SGTExchanger": {"deploy": false},
+      "SNT": {"deploy": false},
+      "SNTPlaceHolder": {"deploy": false},
+      "StandardToken": {"deploy": false},
+      "StatusContribution": {"deploy": false},
+      "TestContract": {  "deploy": false },
+      "TokenRegistry": {"deploy": false},
+      "TrustNetwork": {"deploy": false},
+      "UpdatableInstance": { "deploy": false },
+      "UpdatedIdentityKernel": { "deploy": false }
+    }
+  }
+}

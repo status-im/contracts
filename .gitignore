@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# embark
+.embark/
+chains.json
+
+# egg-related
+viper.egg-info/
+build/
+dist/
+.eggs/
+
+# pyenv
+.python-version
+
+# dotenv
+.env
+
+# virtualenv
+.venv/
+venv/
+ENV/
+
+# Coverage tests
+.coverage
+.cache/
+coverage/
+coverageEnv/
+coverage.json
+
+# node
+node_modules/
+npm-debug.log
+
+# other
+.vs/
+bin/

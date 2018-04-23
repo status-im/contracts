@@ -1,0 +1,10 @@
+{
+  "contracts": ["contracts/**"],
+  "buildDir": "dist/",
+  "config": "config/",
+  "plugins": {
+  },
+  "versions": {
+    "solc": "0.4.21"
+  }
+}
