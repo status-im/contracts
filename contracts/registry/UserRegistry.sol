@@ -1,10 +1,10 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 import "../common/Controlled.sol";
+import "../token/ERC20Token.sol";
 import "../ens/AbstractENS.sol";
 import "../ens/PublicResolverInterface.sol";
-import "../token/ERC20Token.sol";
-import "../democracy/FeeRecycler.sol";
+
 
 contract SubdomainRegistry is Controlled {
     
@@ -17,14 +17,13 @@ contract SubdomainRegistry is Controlled {
     mapping (bytes32 => address) public registry;
     mapping (bytes32 => address) public taken;
     
-    FeeRecycler public feeRecycler;
     ERC20Token public token;
     AbstractENS public ENSroot;
     PublicResolverInterface public resolver;
     
     event Registered(bytes32 indexed _subDomainHash, address _identity);
 
-    function SubdomainRegistry(
+    constructor(
         address _token,
         address _ens,
         address _resolver
@@ -57,9 +56,7 @@ contract SubdomainRegistry is Controlled {
                 domain.price
             )
         );
-        token.approve(feeRecycler, domain.price);
-        feeRecycler.lock(address(msg.sender), domain.price);
-
+        
         subdomainHash = keccak256(_userHash, _domainHash);
         require(taken[subdomainHash] == address(0));
         taken[subdomainHash] = address(msg.sender);
