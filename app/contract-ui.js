@@ -1,8 +1,5 @@
 class ContractUI {
 
-    // TODO
-    // 1 Fallback
-
     constructor(web3, name, contract, sourceURL){
         this.web3 = web3;
         this.instances = [];
