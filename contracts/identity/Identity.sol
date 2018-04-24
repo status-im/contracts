@@ -275,6 +275,7 @@ contract Identity is ERC725, ERC735 {
         indexes[replacer] = claimIdTypePos;
         delete claims[_claimId];
         claimsTypeArr.length--;
+        emit ClaimRemoved(_claimId, c.claimType, c.scheme, c.issuer, c.signature, c.data, c.uri);
         return true;
     }
 
