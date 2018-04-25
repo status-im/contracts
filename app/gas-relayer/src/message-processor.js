@@ -1,5 +1,5 @@
 const md5 = require('md5');
-const erc20ABI = require('../abi/ERC20.json');
+const erc20ABI = require('../abi/ERC20Token.json');
 const ganache = require("ganache-cli");
 
 class MessageProcessor {
@@ -26,7 +26,7 @@ class MessageProcessor {
         }
     }
 
-
+    
     async _validateInput(message, input){
         const contract = this.settings.getContractByTopic(message.topic);
 
@@ -56,6 +56,15 @@ class MessageProcessor {
     }
 
 
+    async _validateInstance(message, input){
+        const contract = this.settings.getContractByTopic(message.topic);
+        const kernelVerifSignature = this.web3.utils.sha3(contract.kernelVerification).slice(0, 10)
+        return await this.web3.eth.call({
+            to: contract.factoryAddress, 
+            data: kernelVerifSignature + "000000000000000000000000" + input.address});
+    }
+
+
     _extractInput(message){
         return {
             address: message.payload.slice(0, 42),
@@ -73,6 +82,7 @@ class MessageProcessor {
         }
     }
 
+    
     _getFactor(input, contract, gasToken){
         if(contract.allowedFunctions[input.functionName].isToken){
             return this.web3.utils.toBN(this.settings.getToken(gasToken).pricePlugin.getFactor());
@@ -87,14 +97,14 @@ class MessageProcessor {
         if(token.symbol == "ETH")
             return new this.web3.utils.BN(await this.web3.eth.getBalance(input.address));
         else {
-            const Token = new this.web3.eth.Contract(erc20ABI);
+            const Token = new this.web3.eth.Contract(erc20ABI.abi);
             Token.options.address = params('gasToken');
             return new this.web3.utils.BN(await Token.methods.balanceOf(input.address).call());  
         }
     }
 
 
-    _estimateGas(input){
+    async _estimateGas(input){
         const web3Sim = new Web3(ganache.provider({fork: `${this.config.node.protocol}://${this.config.node.host}:${this.config.node.port}`}));
         const simAccounts = await web3Sim.eth.getAccounts();
         let simulatedReceipt = await web3Sim.eth.sendTransaction({
@@ -121,6 +131,9 @@ class MessageProcessor {
             
             if(!this._validateInput(message, input)) return; // TODO Log
             
+            if(contract.isIdentity)
+            if(!this._validateInstance(message, input)) return;
+
             const params = this._obtainParametersFunc(contract, input);
             
             const token = this.settings.getToken(params('gasToken'));

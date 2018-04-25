@@ -2,9 +2,10 @@
   "name": "gas-relayer",
   "version": "0.0.1",
   "description": "Gas relayer to avoid having to hold ether to perform transactions when you already have a token",
-  "main": "index.js",
+  "main": "src/service.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/service.js"
   },
   "author": "",
   "license": "ISC",

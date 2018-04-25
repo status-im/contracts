@@ -6,6 +6,6 @@ import "./Identity.sol";
 contract IdentityKernel is DelayedUpdatableInstanceStorage, Identity {
 
     function initIdentity(address _caller) external {
-        _constructIdentity(_caller);
+        _constructIdentity(keccak256(_caller));
     }
 }

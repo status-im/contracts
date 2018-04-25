@@ -50,6 +50,10 @@ contract Factory is Controlled {
         );
     }
 
+    function isKernel(address _addr) public returns (bool){
+        return versionMap[_addr] > 0;
+    }
+
     function getCodeHash(address _addr) 
         public 
         view 

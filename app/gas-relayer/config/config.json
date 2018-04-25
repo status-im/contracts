@@ -30,9 +30,10 @@
 
     "contracts":{
         "IdentityGasRelay": {
+            "abiFile": "../abi/IdentityGasRelay.json",
             "isIdentity": true,
             "factoryAddress": "0x18f71378f4735b35e01eb71afcc66df090eccea7",
-            "abiFile": "../abi/IdentityGasRelay.json",
+            "kernelVerification": "isKernel(address _addr)",
             "allowedFunctions": [
                 { 
                     "function": "approveAndCallGasRelayed(address,address,uint256,bytes,uint256,uint256,uint256,address,bytes)", 
@@ -58,9 +59,9 @@
             ]
         },
         "SNTController": {
+            "abiFile": "../abi/SNTController.json",
             "isIdentity": false,
             "address": "0x96f0811c6484c59c2674da1f64e725c01d82c1b5",
-            "abiFile": "../abi/SNTController.json",
             "allowedFunctions": [
                 {
                     "function":"transferSNT(address,uint256,uint256,uint256,bytes)",

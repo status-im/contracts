@@ -40,7 +40,7 @@ $(function(){
     $('button').on('click', async function(e){
         e.preventDefault();
         
-        $('p.result').text('');
+        $('p.result, #messageArea').text('');
 
         let sKey = add0x($("#sKey"));
         let msgTopic = add0x($('#topic'));

@@ -11,8 +11,6 @@ class ContractSettings {
         this.events = eventEmitter;
 
         this.pendingToLoad = 0;
-
-        this.events.on('setup:bytecode-address', this._obtainContractBytecode.bind(this))
     }
 
     process(){
@@ -41,21 +39,11 @@ class ContractSettings {
         }
     }
 
-    _determineBytecodeAddress(topicName, i){
-        let contractAddress = this.contracts[topicName].address;
-        if(this.contracts[topicName].isIdentity){
-            this.pendingToLoad++;
-            const lastKernelSignature = "0x4ac99424"; // REFACTOR
-            this.web3.eth.call({to: this.contracts[topicName].factoryAddress, data: lastKernelSignature})
-            .then(kernel => {
-                contractAddress = '0x' + kernel.slice(26);
-                this.events.emit('setup:bytecode-address', topicName, contractAddress);
-            })   
-        }
-    }
+    _obtainContractBytecode(topicName){
+        if(this.contracts[topicName].isIdentity) return;
 
-    _obtainContractBytecode(topicName, contractAddress){
-        this.web3.eth.getCode(contractAddress)
+        this.pendingToLoad++;
+        this.web3.eth.getCode(this.contracts[topicName].address)
         .then(code => {
             this.contracts[topicName].code = md5(code);
             this.pendingToLoad--;
@@ -90,7 +78,7 @@ class ContractSettings {
     _processContracts(){
         for(let contractName in this.contracts){
             // Obtaining the abis
-            this.contracts[contractName].abi = require(this.contracts[contractName].abiFile);
+            this.contracts[contractName].abi = require(this.contracts[contractName].abiFile).abi;
             
             const topicName = this.getTopicName(contractName);
 
@@ -100,7 +88,7 @@ class ContractSettings {
             this.contracts[topicName].name = contractName;
             delete this.contracts[contractName];
 
-            this._determineBytecodeAddress(topicName);
+            this._obtainContractBytecode(topicName);
 
             this._extractFunctions(topicName);
         }

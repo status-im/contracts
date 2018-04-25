@@ -15,6 +15,24 @@
     ],
     "gas": "auto",
     "contracts": {
+      "Identity": {"deploy": false},
+      "IdentityFactory": {"deploy": false},
+      "SafeMath": {"deploy": false},
+      "DelayedUpdatableInstance": {"deploy": false},
+      "DelayedUpdatableInstanceStorage": {"deploy": false},
+      "Factory": {"deploy": false},
+      "Instance": {"deploy": false},
+      "InstanceStorage": {"deploy": false},
+      "MiniMeToken": {"deploy": false},
+      "MiniMeTokenFactory": {"deploy": false},
+      "UpdatableInstance": {"deploy": false},
+      "Controlled": {"deploy": false},
+      "Owned": {"deploy": false},
+      "IdentityGasRelay": {"deploy": false},
+      "IdentityKernel": {"deploy": false},
+      "SNTController": {"deploy": false},
+      "UpdatedIdentityKernel": {"deploy": false},
+      "TestContract": {"deploy": false}
     }
   }
 }
