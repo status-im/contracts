@@ -1,6 +1,6 @@
 pragma solidity ^0.4.17;
 
-import "../token/MiniMeToken.sol";
+import "../token/ERC20Token.sol";
 import "../common/Controlled.sol";
 
 
@@ -10,7 +10,7 @@ import "../common/Controlled.sol";
  * @dev Inspired by one of Satoshi Nakamoto’s original suggested use cases for Bitcoin, 
         we will be introducing an economics-based anti-spam filter, in our case for 
         receiving messages and “cold” contact requests from users.
-        SNT is deposited, and transferred from stakeholders to recipients upon receiving 
+        token is deposited, and transferred from stakeholders to recipients upon receiving 
         a reply from the recipient.
  */
 contract MessageTribute is Controlled {
@@ -39,14 +39,14 @@ contract MessageTribute is Controlled {
     mapping(address => uint256) public balances;
     address[] private friends; 
     
-    MiniMeToken public snt;
+    ERC20Token public token;
     
      /**
      * @notice Contructor of MessageTribute
-     * @param _snt Address of Status Network Token (or any ERC20 compatible token)
+     * @param _token Address of Status Network Token (or any ERC20 compatible token)
      **/
-    function MessageTribute(MiniMeToken _snt) public {
-        snt = _snt;
+    function MessageTribute(ERC20Token _token) public {
+        token = _token;
     }
 
     /**
@@ -119,7 +119,7 @@ contract MessageTribute is Controlled {
     function deposit(uint256 _value) public {
         require(_value > 0);
         balances[msg.sender] += _value;
-        require(snt.transferFrom(msg.sender, address(this), _value));
+        require(token.transferFrom(msg.sender, address(this), _value));
     }
 
     /**
@@ -138,7 +138,7 @@ contract MessageTribute is Controlled {
         require(balances[msg.sender] > 0);
         require(_value <= balances[msg.sender]);
         balances[msg.sender] -= _value;
-        require(snt.transfer(msg.sender, _value)); 
+        require(token.transfer(msg.sender, _value)); 
     }
 
     /**
@@ -220,7 +220,7 @@ contract MessageTribute is Controlled {
 
         if (!_waive) {
             if (_approve) {
-                require(snt.transfer(msg.sender, amount));
+                require(token.transfer(msg.sender, amount));
             } else {
                 balances[_to] += amount;
             }
