@@ -499,8 +499,11 @@ contract Identity is ERC725, ERC735 {
             delete txx[_id];
             //(?) success should be included in event?
             success = address(trx.to).call.value(trx.value)(trx.data);
-            emit Executed(_id, trx.to, trx.value, trx.data);
-            
+            if(success){ 
+                emit Executed(_id, trx.to, trx.value, trx.data);
+            } else {
+                emit ExecutionFailed(_id, trx.to, trx.value, trx.data));
+            }
         }
     }
 

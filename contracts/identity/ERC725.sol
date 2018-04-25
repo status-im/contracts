@@ -11,6 +11,7 @@ contract ERC725 {
     event KeyRemoved(bytes32 indexed key, uint256 indexed purpose, uint256 indexed keyType);
     event ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
     event Executed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
+    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
     event Approved(uint256 indexed executionId, bool approved);
 
     struct Key {
