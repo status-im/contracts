@@ -15,6 +15,12 @@
     ],
     "gas": "auto",
     "contracts": {
+      "Controlled": {"deploy": false},
+      "Owned": {"deploy": false},
+      "SafeMath": {"deploy": false},
+      "MessageTribute": {"deploy": false},
+      "MiniMeTokenFactory": {"deploy": false},
+      "MiniMeToken": {"deploy": false}
     }
   }
 }

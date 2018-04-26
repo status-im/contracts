@@ -65,8 +65,9 @@ contract MessageTribute is MessageSigned {
      * @param _requesterSignature signature of Audience requestor
      * @param _grantorSignature signature of Audience grantor
      */
-    function grantAudience(bool _approve, bool _waive, bytes32 _secret, uint256 _timeLimit, bytes _requesterSignature, bytes _grantorSignature) public {
+    function grantAudience(bool _approve, bool _waive, bytes32 _secret, uint256 _timeLimit, bytes _requesterSignature, bytes _grantorSignature) public {  
         require(_timeLimit <= block.timestamp);
+
         address grantor = recoverAddress(
             getSignHash(
                 getGrantAudienceHash(
@@ -78,7 +79,7 @@ contract MessageTribute is MessageSigned {
             ),
             _grantorSignature
         );
-        
+
         bytes32 hashedSecret = keccak256(grantor, _secret);
         require(!granted[hashedSecret]);
         granted[hashedSecret] = true;
@@ -144,19 +145,6 @@ contract MessageTribute is MessageSigned {
             hashedSecret,
             _timeLimit
         );
-    }
-
-    /**
-     * @notice Determine if msg.sender ha enough funds to chat with `_to`
-     * @param _to Account `msg.sender` wishes to talk to
-     * @return Has enough funds or not
-     */
-    function hasEnoughFundsToTalk(address _to)
-        public
-        view 
-        returns(bool)
-    {
-        return getFee(_to, msg.sender).amount <= token.allowance(msg.sender, address(this));
     }
 
     /**
