@@ -16,24 +16,13 @@ import "../common/MessageSigned.sol";
  */
 contract MessageTribute is Controlled, MessageSigned {
 
-    event AudienceRequested(address indexed from, address indexed to);
-    event AudienceCancelled(address indexed from, address indexed to);
-    event AudienceTimeOut(address indexed from, address indexed to);
     event AudienceGranted(address indexed from, address indexed to, bool approve);
 
-    struct Audience {
-        uint256 blockNum;
-        uint256 timestamp;
-        Fee fee;
-        bytes32 hashedSecret;
-    }
-    
     struct Fee {
         uint256 amount;
         bool permanent;
     }
-
-    mapping(address => mapping(address => Audience)) audienceRequested;
+    mapping(bytes32 => bool) private granted;
     mapping(address => mapping(address => Fee)) public feeCatalog;
     mapping(address => mapping(address => uint)) lastAudienceDeniedTimestamp;
     
@@ -64,60 +53,8 @@ contract MessageTribute is Controlled, MessageSigned {
     function getRequiredFee(address _from) public view 
         returns (uint256 fee) 
     {
-        Fee memory f = getFee(_from);
+        Fee memory f = getFee(_from, msg.sender);
         fee = f.amount;
-    }
-    
-    /**
-     * @notice Send a chat request to `_from`, with a captcha that must be solved
-     * @param _from Account to whom `msg.sender` requests a chat
-     * @param _hashedSecret Captcha that `_from` must solve. It's a keccak256 of `_from`, 
-     *                     `msg.sender` and the captcha value shown to `_from`
-     */
-    function requestAudience(address _from, bytes32 _hashedSecret)
-        public 
-    {
-        Fee memory f = getFee(_from);
-        require(f.amount <= token.allowance(msg.sender, address(this)));
-        require(audienceRequested[_from][msg.sender].blockNum == 0);
-        require(lastAudienceDeniedTimestamp[_from][msg.sender] + 3 days <= now);
-        audienceRequested[_from][msg.sender] = Audience(block.number, now, f, _hashedSecret);
-        emit AudienceRequested(_from, msg.sender);
-    }
-
-    /**
-     * @notice Determine if there's a pending chat request between `_from` and `_to`
-     * @param _from Account to whom `_to` had requested a chat
-     * @param _to Account which requested a chat to `_from`
-     */
-    function hasPendingAudience(address _from, address _to) public view returns (bool) {
-        return audienceRequested[_from][_to].blockNum > 0;
-    }
-
-    /**
-     * @notice Can be called after 3 days if no response from `_from` is received
-     * @param _from Account to whom `_to` had requested a chat
-     * @param _to Account which requested a chat to `_from`
-     */
-    function timeOut(address _from, address _to) public {
-        require(audienceRequested[_from][_to].blockNum > 0);
-        require(audienceRequested[_from][_to].timestamp + 3 days <= now);
-        uint256 amount = audienceRequested[_from][_to].fee.amount;
-        delete audienceRequested[_from][_to];
-
-        emit AudienceTimeOut(_from, _to);
-    }
-
-    /**
-     * @notice Cancel chat request
-     * @param _from Account to whom `msg.sender` had requested a chat previously
-     */
-    function cancelAudienceRequest(address _from) public {
-        require(audienceRequested[_from][msg.sender].blockNum > 0);
-        require(audienceRequested[_from][msg.sender].timestamp + 2 hours <= now);
-        uint256 amount = audienceRequested[_from][msg.sender].fee.amount;
-        delete audienceRequested[_from][msg.sender];
-        emit AudienceCancelled(_from, msg.sender);
     }
 
     /**
@@ -125,14 +62,18 @@ contract MessageTribute is Controlled, MessageSigned {
      * @param _approve Approve or deny request
      * @param _waive Refund deposit or not
      * @param _secret Captcha solution
+     * @param _timeLimit time limit of audience request
+     * @param _requesterSignature signature of Audience requestor
+     * @param _grantorSignature signature of Audience grantor
      */
-    function grantAudience(address _to, bool _approve, bool _waive, bytes32 _secret, bytes _grantorSignature) public {
+    function grantAudience(bool _approve, bool _waive, bytes32 _secret, uint256 _timeLimit, bytes _requesterSignature, bytes _grantorSignature) public {
+        require(_timeLimit <= block.timestamp);
         address grantor = recoverAddress(
             getSignHash(
                 keccak256(
                     address(this),
-                    bytes4(keccak256("grantAudience(address,bool,bool,bytes32)")),
-                    _to,
+                    bytes4(keccak256("grantAudience(bytes32,bool,bool,bytes32)")),
+                    keccak256(_requesterSignature),
                     _approve,
                     _waive,
                     _secret
@@ -140,28 +81,35 @@ contract MessageTribute is Controlled, MessageSigned {
             ),
             _grantorSignature
         );
-
-        Audience storage aud = audienceRequested[grantor][_to];
-
-        require(aud.blockNum > 0);
-        require(aud.hashedSecret == keccak256(grantor, _to, _secret));
-       
-        emit AudienceGranted(grantor, _to, _approve);
-
+        
+        bytes32 hashedSecret = keccak256(grantor, _secret);
+        require(!granted[hashedSecret]);
+        granted[hashedSecret] = true;
+        address requester = recoverAddress(
+            getSignHash(
+                keccak256(
+                    address(this),
+                    bytes4(keccak256("requestAudience(address,bytes32,uint256)")),
+                    grantor,
+                    hashedSecret,
+                    _timeLimit
+                )
+            ),
+            _requesterSignature
+        );
+        require(lastAudienceDeniedTimestamp[grantor][requester] + 3 days <= now);
         if(!_approve)
-            lastAudienceDeniedTimestamp[grantor][_to] = block.timestamp;
+            lastAudienceDeniedTimestamp[grantor][requester] = block.timestamp;
 
-        uint256 amount = aud.fee.amount;
-
-        delete audienceRequested[grantor][_to];
-
-        clearFee(grantor, _to);
+        uint256 amount = getFee(grantor, requester).amount;
+        clearFee(grantor, requester);
 
         if (!_waive) {
             if (_approve) {
-                require(token.transferFrom(_to, grantor, amount));
+                require(token.transferFrom(requester, grantor, amount));
             }
         }
+        emit AudienceGranted(grantor, requester, _approve);
     }
 
     /**
@@ -174,7 +122,7 @@ contract MessageTribute is Controlled, MessageSigned {
         view 
         returns(bool)
     {
-        return getFee(_to).amount <= token.allowance(msg.sender, address(this));
+        return getFee(_to, msg.sender).amount <= token.allowance(msg.sender, address(this));
     }
 
     /**
@@ -182,10 +130,10 @@ contract MessageTribute is Controlled, MessageSigned {
      * @param _from Account `msg.sender` wishes to talk to
      * @return Fee
      */
-    function getFee(address _from) internal view
+    function getFee(address _from, address _to) internal view
         returns (Fee) 
     {
-        Fee memory specificFee = feeCatalog[_from][msg.sender];
+        Fee memory specificFee = feeCatalog[_from][_to];
         Fee memory generalFee = feeCatalog[_from][address(0)];
         return specificFee.amount > 0 ? specificFee : generalFee;
     }
