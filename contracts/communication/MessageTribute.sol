@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "../token/ERC20Token.sol";
 import "../common/MessageSigned.sol";
@@ -31,7 +31,7 @@ contract MessageTribute is MessageSigned {
      * @notice Contructor of MessageTribute
      * @param _token Address of Status Network Token (or any ERC20 compatible token)
      **/
-    function MessageTribute(ERC20Token _token) public {
+    constructor(ERC20Token _token) public {
         token = _token;
     }
     
