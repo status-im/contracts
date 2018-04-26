@@ -36,6 +36,7 @@ contract MessageTribute is Controlled {
     mapping(address => mapping(address => Fee)) public feeCatalog;
     mapping(address => mapping(address => uint)) lastAudienceDeniedTimestamp;
     mapping(bytes32 => uint256) private friendIndex;
+    //mapping(address => uint256) public balances;
     address[] private friends; 
     
     ERC20Token public token;
@@ -110,6 +111,35 @@ contract MessageTribute is Controlled {
         Fee memory f = getFee(_from);
         fee = f.amount;
     }
+    
+    // /**
+    //  * @notice Deposit `_value` in the contract to be used to pay tributes
+    //  * @param _value Amount to deposit
+    //  */
+    // function deposit(uint256 _value) public {
+    //     require(_value > 0);
+    //     balances[msg.sender] += _value;
+    //     require(token.transferFrom(msg.sender, address(this), _value));
+    // }
+
+    // /**
+    //  * @notice Return balance of tokens for `msg.sender` available for tributes or withdrawal
+    //  * @return amount of tokens stored in contract
+    //  */
+    // function balance() public view returns (uint256) {
+    //     return balances[msg.sender];
+    // }
+
+    // /**
+    //  * @notice Withdraw `_value` tokens from contract
+    //  * @param _value Amount of tokens to withdraw
+    //  */
+    // function withdraw(uint256 _value) public {
+    //     require(balances[msg.sender] > 0);
+    //     require(_value <= balances[msg.sender]);
+    //     balances[msg.sender] -= _value;
+    //     require(token.transfer(msg.sender, _value)); 
+    // }
 
     /**
      * @notice Send a chat request to `_from`, with a captcha that must be solved
@@ -121,7 +151,7 @@ contract MessageTribute is Controlled {
         public 
     {
         Fee memory f = getFee(_from);
-        require(f.amount <= token.allowance(msg.sender, address(this)));
+        require(f.amount <= token.allowance(msg.sender, address));
         require(audienceRequested[_from][msg.sender].blockNum == 0);
         require(lastAudienceDeniedTimestamp[_from][msg.sender] + 3 days <= now);
         token.transferFrom(msg.sender, address(this), f.amount);
@@ -176,7 +206,7 @@ contract MessageTribute is Controlled {
 
         require(aud.blockNum > 0);
         require(aud.hashedSecret == keccak256(msg.sender, _to, _secret));
-        require(token.allowance(_to, address(this)) >= aud.fee.amount);
+       
         emit AudienceGranted(msg.sender, _to, _approve);
 
         if(!_approve)
@@ -190,8 +220,12 @@ contract MessageTribute is Controlled {
 
         if (!_waive) {
             if (_approve) {
-                require(token.transferFrom(_to, msg.sender, amount));
-            } 
+                require(token.transfer(msg.sender, amount));
+            } else {
+                token.transfer(_to, amount);
+            }
+        } else {
+            token.transfer(_to, amount);
         }
     }
 
