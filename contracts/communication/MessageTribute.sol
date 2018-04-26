@@ -1,7 +1,6 @@
 pragma solidity ^0.4.17;
 
 import "../token/ERC20Token.sol";
-import "../common/Controlled.sol";
 import "../common/MessageSigned.sol";
 
 
@@ -14,7 +13,7 @@ import "../common/MessageSigned.sol";
         token is deposited, and transferred from stakeholders to recipients upon receiving 
         a reply from the recipient.
  */
-contract MessageTribute is Controlled, MessageSigned {
+contract MessageTribute is MessageSigned {
 
     event AudienceGranted(address indexed from, address indexed to, bool approve);
 
