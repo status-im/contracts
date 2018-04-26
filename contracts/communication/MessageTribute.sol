@@ -112,35 +112,6 @@ contract MessageTribute is Controlled {
         fee = f.amount;
     }
     
-    // /**
-    //  * @notice Deposit `_value` in the contract to be used to pay tributes
-    //  * @param _value Amount to deposit
-    //  */
-    // function deposit(uint256 _value) public {
-    //     require(_value > 0);
-    //     balances[msg.sender] += _value;
-    //     require(token.transferFrom(msg.sender, address(this), _value));
-    // }
-
-    // /**
-    //  * @notice Return balance of tokens for `msg.sender` available for tributes or withdrawal
-    //  * @return amount of tokens stored in contract
-    //  */
-    // function balance() public view returns (uint256) {
-    //     return balances[msg.sender];
-    // }
-
-    // /**
-    //  * @notice Withdraw `_value` tokens from contract
-    //  * @param _value Amount of tokens to withdraw
-    //  */
-    // function withdraw(uint256 _value) public {
-    //     require(balances[msg.sender] > 0);
-    //     require(_value <= balances[msg.sender]);
-    //     balances[msg.sender] -= _value;
-    //     require(token.transfer(msg.sender, _value)); 
-    // }
-
     /**
      * @notice Send a chat request to `_from`, with a captcha that must be solved
      * @param _from Account to whom `msg.sender` requests a chat
@@ -151,7 +122,7 @@ contract MessageTribute is Controlled {
         public 
     {
         Fee memory f = getFee(_from);
-        require(f.amount <= token.allowance(msg.sender, address));
+        require(f.amount <= token.allowance(msg.sender, address(this)));
         require(audienceRequested[_from][msg.sender].blockNum == 0);
         require(lastAudienceDeniedTimestamp[_from][msg.sender] + 3 days <= now);
         token.transferFrom(msg.sender, address(this), f.amount);
