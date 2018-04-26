@@ -125,7 +125,6 @@ contract MessageTribute is Controlled {
         require(f.amount <= token.allowance(msg.sender, address(this)));
         require(audienceRequested[_from][msg.sender].blockNum == 0);
         require(lastAudienceDeniedTimestamp[_from][msg.sender] + 3 days <= now);
-        token.transferFrom(msg.sender, address(this), f.amount);
         audienceRequested[_from][msg.sender] = Audience(block.number, now, f, _hashedSecret);
         emit AudienceRequested(_from, msg.sender);
     }
@@ -149,7 +148,7 @@ contract MessageTribute is Controlled {
         require(audienceRequested[_from][_to].timestamp + 3 days <= now);
         uint256 amount = audienceRequested[_from][_to].fee.amount;
         delete audienceRequested[_from][_to];
-        token.transfer(_to, amount);
+
         emit AudienceTimeOut(_from, _to);
     }
 
@@ -162,7 +161,6 @@ contract MessageTribute is Controlled {
         require(audienceRequested[_from][msg.sender].timestamp + 2 hours <= now);
         uint256 amount = audienceRequested[_from][msg.sender].fee.amount;
         delete audienceRequested[_from][msg.sender];
-        token.transfer(msg.sender, amount);
         emit AudienceCancelled(_from, msg.sender);
     }
 
@@ -173,30 +171,46 @@ contract MessageTribute is Controlled {
      * @param _secret Captcha solution
      */
     function grantAudience(address _to, bool _approve, bool _waive, bytes32 _secret) public {
-        Audience storage aud = audienceRequested[msg.sender][_to];
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        address grantor = ecrecover(
+            keccak256(
+                "\x19Ethereum Signed Message:32", 
+                keccak256(
+                    address(this),
+                    bytes4(keccak256("grantAudience(address,bool,bool,bytes32)")),
+                    _to,
+                    _approve,
+                    _waive,
+                    _secret
+                )
+            ),
+            v,
+            r,
+            s
+        );
+
+        Audience storage aud = audienceRequested[grantor][_to];
 
         require(aud.blockNum > 0);
-        require(aud.hashedSecret == keccak256(msg.sender, _to, _secret));
+        require(aud.hashedSecret == keccak256(grantor, _to, _secret));
        
-        emit AudienceGranted(msg.sender, _to, _approve);
+        emit AudienceGranted(grantor, _to, _approve);
 
         if(!_approve)
-            lastAudienceDeniedTimestamp[msg.sender][_to] = block.timestamp;
+            lastAudienceDeniedTimestamp[grantor][_to] = block.timestamp;
 
         uint256 amount = aud.fee.amount;
 
-        delete audienceRequested[msg.sender][_to];
+        delete audienceRequested[grantor][_to];
 
-        clearFee(msg.sender, _to);
+        clearFee(grantor, _to);
 
         if (!_waive) {
             if (_approve) {
-                require(token.transfer(msg.sender, amount));
-            } else {
-                token.transfer(_to, amount);
+                require(token.transferFrom(_to, grantor, amount));
             }
-        } else {
-            token.transfer(_to, amount);
         }
     }
 
