@@ -2,6 +2,7 @@ pragma solidity ^0.4.17;
 
 import "../token/TokenController.sol";
 import "../common/Owned.sol";
+import "../common/MessageSigned.sol";
 import "../token/ERC20Token.sol";
 import "../token/MiniMeToken.sol";
 
@@ -10,7 +11,7 @@ import "../token/MiniMeToken.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @notice enables economic abstraction for SNT
  */
-contract SNTController is TokenController, Owned {
+contract SNTController is TokenController, Owned, MessageSigned {
 
     
     bytes4 public constant TRANSFER_PREFIX = bytes4(keccak256("transferSNT(address,uint256,uint256,uint256)"));
@@ -228,71 +229,6 @@ contract SNTController is TokenController, Owned {
             _nonce,
             _gasPrice
         );
-    }
-
-    /**
-     * @notice recovers address who signed the message
-     * @param _signHash operation ethereum signed message hash
-     * @param _messageSignature message `_signHash` signature
-     */
-    function recoverAddress(
-        bytes32 _signHash, 
-        bytes _messageSignature
-    )
-        pure
-        public
-        returns(address) 
-    {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-        (v,r,s) = signatureSplit(_messageSignature);
-        return ecrecover(
-            _signHash,
-            v,
-            r,
-            s
-        );
-    }
-
-    /**
-     * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s` 
-     */
-    function signatureSplit(bytes _signature)
-        pure
-        public
-        returns (uint8 v, bytes32 r, bytes32 s)
-    {
-        // The signature format is a compact form of:
-        //   {bytes32 r}{bytes32 s}{uint8 v}
-        // Compact means, uint8 is not padded to 32 bytes.
-        assembly {
-            r := mload(add(_signature, 32))
-            s := mload(add(_signature, 64))
-            // Here we are loading the last 32 bytes, including 31 bytes
-            // of 's'. There is no 'mload8' to do this.
-            //
-            // 'byte' is not working due to the Solidity parser, so lets
-            // use the second best option, 'and'
-            v := and(mload(add(_signature, 65)), 0xff)
-        }
-
-        require(v == 27 || v == 28);
-    }
-    
-    /**
-     * @notice Hash a hash with `"\x19Ethereum Signed Message:\n32"`
-     * @param _hash Sign to hash.
-     * @return signHash Hash to be signed.
-     */
-    function getSignHash(
-        bytes32 _hash
-    )
-        pure
-        public
-        returns (bytes32 signHash)
-    {
-        signHash = keccak256("\x19Ethereum Signed Message:\n32", _hash);
     }
     
 }
