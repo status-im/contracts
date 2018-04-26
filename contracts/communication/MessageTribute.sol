@@ -69,9 +69,7 @@ contract MessageTribute is MessageSigned {
         require(_timeLimit <= block.timestamp);
         address grantor = recoverAddress(
             getSignHash(
-                keccak256(
-                    address(this),
-                    bytes4(keccak256("grantAudience(bytes32,bool,bool,bytes32)")),
+                getGrantAudienceHash(
                     keccak256(_requesterSignature),
                     _approve,
                     _waive,
@@ -86,9 +84,7 @@ contract MessageTribute is MessageSigned {
         granted[hashedSecret] = true;
         address requester = recoverAddress(
             getSignHash(
-                keccak256(
-                    address(this),
-                    bytes4(keccak256("requestAudience(address,bytes32,uint256)")),
+                getRequestAudienceHash(
                     grantor,
                     hashedSecret,
                     _timeLimit
@@ -96,6 +92,7 @@ contract MessageTribute is MessageSigned {
             ),
             _requesterSignature
         );
+        
         require(lastAudienceDeniedTimestamp[grantor][requester] + 3 days <= now);
         if(!_approve)
             lastAudienceDeniedTimestamp[grantor][requester] = block.timestamp;
@@ -109,6 +106,44 @@ contract MessageTribute is MessageSigned {
             }
         }
         emit AudienceGranted(grantor, requester, _approve);
+    }
+
+    function getGrantAudienceHash(
+        bytes32 _requesterSignatureHash,
+        bool _approve,
+        bool _waive,
+        bytes32 _secret
+    ) 
+        public
+        view
+        returns(bytes32)
+    {
+        return keccak256(
+            address(this),
+            bytes4(keccak256("grantAudience(bytes32,bool,bool,bytes32)")),
+            _requesterSignatureHash,
+            _approve,
+            _waive,
+            _secret
+        );
+    }
+
+    function getRequestAudienceHash(
+        address grantor,
+        bytes32 hashedSecret,
+        uint _timeLimit
+    )
+        public
+        view
+        returns(bytes32)
+    {
+        return keccak256(
+            address(this),
+            bytes4(keccak256("requestAudience(address,bytes32,uint256)")),
+            grantor,
+            hashedSecret,
+            _timeLimit
+        );
     }
 
     /**
