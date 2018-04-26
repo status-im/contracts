@@ -108,24 +108,3 @@ async function execute(){
 }
 
 execute();
-
-
-
- 
-/*
-
-
-        /*
-
-7. And then, on the requester client, after receiving this whisper message the status app will call `grantAudience` and listen for the `AudienceGranted` method.
-
-Steps 4, 5, 6, 7 which involve whisper messaging and signatures would be done in the background. This is an equivalent of a protocol handshake. 
-*/
-
-
-/*
-    });
-
-
-    
-});*/
