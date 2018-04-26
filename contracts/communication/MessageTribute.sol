@@ -35,9 +35,6 @@ contract MessageTribute is Controlled {
     mapping(address => mapping(address => Audience)) audienceRequested;
     mapping(address => mapping(address => Fee)) public feeCatalog;
     mapping(address => mapping(address => uint)) lastAudienceDeniedTimestamp;
-    mapping(bytes32 => uint256) private friendIndex;
-    //mapping(address => uint256) public balances;
-    address[] private friends; 
     
     ERC20Token public token;
     
@@ -48,47 +45,6 @@ contract MessageTribute is Controlled {
     function MessageTribute(ERC20Token _token) public {
         token = _token;
     }
-
-    /**
-     * @notice Register friends addresses that won't require to pay any tribute
-     * @param _friends Array of addresses to register
-     */
-    function addFriends(address[] _friends) public {
-        uint256 len = _friends.length;
-        for (uint256 i = 0; i < len; i++) {
-            bytes32 frHash = keccak256(_friends[i], msg.sender);
-            if (friendIndex[frHash] == 0)
-                friendIndex[frHash] = friends.push(_friends[i]);
-        }
-    }
-    
-    /**
-     * @notice Remove friends addresses from contract
-     * @param _friends Array of addresses to remove
-     */
-    function removeFriends(address[] _friends) public {
-        uint256 len = _friends.length;
-        for (uint256 i = 0; i < len; i++) {
-            bytes32 frHash = keccak256(_friends[i], msg.sender);
-            require(friendIndex[frHash] > 0);
-            uint index = friendIndex[frHash] - 1;
-            delete friendIndex[frHash];
-            address replacer = friends[friends.length - 1];
-            friends[index] = replacer;
-            friendIndex[keccak256(replacer, msg.sender)] = index;
-            friends.length--;
-        }
-    }
-
-    /**
-     * @notice Determines if `accountToCheck` is registered as a friend of `sourceAccount`
-     * @param _sourceAccount Address that has friends registered in the contract
-     * @param _accountToCheck Address to verify if it is friend of `accountToCheck`
-     * @return accounts are friends or not
-     */
-    function areFriends(address _sourceAccount, address _accountToCheck) public view returns(bool) {
-        return friendIndex[keccak256(_accountToCheck, _sourceAccount)] > 0;
-    }
     
     /**
      * @notice Set tribute for accounts or everyone
@@ -97,7 +53,6 @@ contract MessageTribute is Controlled {
      * @param _isPermanent Tribute applies for all communications on only for the first
      */
     function setRequiredTribute(address _to, uint _amount, bool _isPermanent) public {
-        require(friendIndex[keccak256(msg.sender, _to)] == 0);
         feeCatalog[msg.sender][_to] = Fee(_amount, _isPermanent);
     }
     
@@ -236,10 +191,6 @@ contract MessageTribute is Controlled {
         returns (Fee) 
     {
         Fee memory specificFee = feeCatalog[_from][msg.sender];
-
-        if (friendIndex[keccak256(msg.sender, _from)] > 0)
-            return Fee(0, false);
-
         Fee memory generalFee = feeCatalog[_from][address(0)];
         return specificFee.amount > 0 ? specificFee : generalFee;
     }
