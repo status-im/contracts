@@ -2,6 +2,7 @@ pragma solidity ^0.4.17;
 
 import "../token/ERC20Token.sol";
 import "../common/Controlled.sol";
+import "../common/MessageSigned.sol";
 
 
 /**
@@ -13,7 +14,7 @@ import "../common/Controlled.sol";
         token is deposited, and transferred from stakeholders to recipients upon receiving 
         a reply from the recipient.
  */
-contract MessageTribute is Controlled {
+contract MessageTribute is Controlled, MessageSigned {
 
     event AudienceRequested(address indexed from, address indexed to);
     event AudienceCancelled(address indexed from, address indexed to);
@@ -125,13 +126,9 @@ contract MessageTribute is Controlled {
      * @param _waive Refund deposit or not
      * @param _secret Captcha solution
      */
-    function grantAudience(address _to, bool _approve, bool _waive, bytes32 _secret) public {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-        address grantor = ecrecover(
-            keccak256(
-                "\x19Ethereum Signed Message:32", 
+    function grantAudience(address _to, bool _approve, bool _waive, bytes32 _secret, bytes _grantorSignature) public {
+        address grantor = recoverAddress(
+            getSignHash(
                 keccak256(
                     address(this),
                     bytes4(keccak256("grantAudience(address,bool,bool,bytes32)")),
@@ -141,9 +138,7 @@ contract MessageTribute is Controlled {
                     _secret
                 )
             ),
-            v,
-            r,
-            s
+            _grantorSignature
         );
 
         Audience storage aud = audienceRequested[grantor][_to];
