@@ -1,10 +1,12 @@
 pragma solidity ^0.4.17;
 
+import "../common/MessageSigned.sol";
+
 /**
  * @notice Select privately other accounts that will allow the execution of actions
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  */
-contract FriendsRecovery {
+contract FriendsRecovery is MessageSigned {
     
     address private identity;
     bytes32 private secret;
@@ -208,21 +210,5 @@ contract FriendsRecovery {
             friendAllowed[_newFriendsHashes[i]] = true;
         }
     }
-
-    /**
-     * @notice Hash a hash with `"\x19Ethereum Signed Message:\n32"`
-     * @param _hash Sign to hash.
-     * @return signHash Hash to be signed.
-     */
-    function getSignHash(
-        bytes32 _hash
-    )
-        pure
-        public
-        returns(bytes32 signHash)
-    {
-        signHash = keccak256("\x19Ethereum Signed Message:\n32", _hash);
-    }
-
    
 }
