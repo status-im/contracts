@@ -23,7 +23,7 @@ contract MessageTribute is MessageSigned {
     }
     mapping(bytes32 => bool) private granted;
     mapping(address => mapping(address => Fee)) public feeCatalog;
-    mapping(address => mapping(address => uint)) lastAudienceDeniedTimestamp;
+    mapping(address => mapping(address => uint)) private lastAudienceDeniedTimestamp;
     
     ERC20Token public token;
     
