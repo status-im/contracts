@@ -85,14 +85,13 @@ async function execute(){
             "type": "grant-audience",
             "grantorSignature": await web3.eth.sign(message, accounts[0]),
             "approve": approve,
-            "waive": waive,
-            "secret": secret
+            "waive": waive
         }
 
         // The requestor, account1, would receive the message and invoke grantAudience
         receipt = await MessageTribute.methods.grantAudience(grantPayload.approve, 
                                                     grantPayload.waive, 
-                                                    grantPayload.secret, 
+                                                    requestPayload.secret, 
                                                     requestPayload.timeLimit, 
                                                     requestPayload.requestorSignature, 
                                                     grantPayload.grantorSignature).send({from: accounts[1], gasLimit: 5000000});
