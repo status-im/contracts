@@ -130,8 +130,8 @@ contract MessageTribute is MessageSigned {
     }
 
     function getRequestAudienceHash(
-        address grantor,
-        bytes32 hashedSecret,
+        address _grantor,
+        bytes32 _hashedSecret,
         uint _timeLimit
     )
         public
@@ -141,8 +141,8 @@ contract MessageTribute is MessageSigned {
         return keccak256(
             address(this),
             bytes4(keccak256("requestAudience(address,bytes32,uint256)")),
-            grantor,
-            hashedSecret,
+            _grantor,
+            _hashedSecret,
             _timeLimit
         );
     }
