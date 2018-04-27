@@ -89,3 +89,7 @@ function grantAudience(bool _approve, bool _waive, bytes32 _secret, uint256 _tim
 ```
 
 This function generates an event `AudienceRequested` which depending of the approve/waive indicates that the transfer of tokens was realized successfully.
+
+
+
+`test/messageTribute-signed.js` has an example on how a conversation might happen using this contract.
