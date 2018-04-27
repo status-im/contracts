@@ -16,7 +16,7 @@ Inspired by one of Satoshi Nakamoto’s original suggested use cases for Bitcoin
 
 ## Smart Contracts Overview
 - `MessageSigned`. Helper functions for handling signatures, and recovering addresses
-- `MessageTribute`. Implementation of the idea. This contract inherits from the `MessageSigned` contract, and handles the business logic behind the contract requests and token transfers. 
+- `MessageTribute`. Implementation of the idea. This contract inherits from the `MessageSigned` contract, and handles the business logic behind the chat requests and token transfers. 
 
 ## Tutorials
 
