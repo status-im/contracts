@@ -2,8 +2,8 @@ pragma solidity ^0.4.23;
 
 import "../common/Controlled.sol";
 import "../token/ERC20Token.sol";
-import "../ens/AbstractENS.sol";
-import "../ens/PublicResolverInterface.sol";
+import "../ens/ENS.sol";
+import "../ens/ResolverInterface.sol";
 
 
 contract SubdomainRegistry is Controlled {
@@ -18,8 +18,8 @@ contract SubdomainRegistry is Controlled {
     mapping (bytes32 => address) public taken;
     
     ERC20Token public token;
-    AbstractENS public ENSroot;
-    PublicResolverInterface public resolver;
+    ENS public ens;
+    ResolverInterface public resolver;
     
     event Registered(bytes32 indexed _subDomainHash, address _identity);
 
@@ -32,8 +32,8 @@ contract SubdomainRegistry is Controlled {
     {
         initialize(
             ERC20Token(_token),
-            AbstractENS(_ens),
-            PublicResolverInterface(_resolver),
+            ENS(_ens),
+            ResolverInterface(_resolver),
             address(msg.sender)
         );
     }
@@ -48,6 +48,17 @@ contract SubdomainRegistry is Controlled {
         
         Domain memory domain = domains[_domainHash];
         require(domain.active);
+        
+        subdomainHash = keccak256(_userHash, _domainHash);
+        require(taken[subdomainHash] == address(0));
+        taken[subdomainHash] = address(msg.sender);
+
+        address currentOwner = ens.owner(subdomainHash);
+        require(currentOwner == 0 || currentOwner == msg.sender);
+
+        ens.setSubnodeOwner(_domainHash, _userHash, address(this));
+        ens.setResolver(subdomainHash, resolver);
+        resolver.setAddr(subdomainHash, address(msg.sender));
 
         require(
             token.transferFrom(
@@ -56,14 +67,6 @@ contract SubdomainRegistry is Controlled {
                 domain.price
             )
         );
-        
-        subdomainHash = keccak256(_userHash, _domainHash);
-        require(taken[subdomainHash] == address(0));
-        taken[subdomainHash] = address(msg.sender);
-
-        ENSroot.setSubnodeOwner(_domainHash, _userHash, address(this));
-        ENSroot.setResolver(subdomainHash, resolver);
-        resolver.setAddr(subdomainHash, address(msg.sender));
         
         emit Registered(subdomainHash, address(msg.sender));
     }
@@ -78,8 +81,7 @@ contract SubdomainRegistry is Controlled {
             msg.sender == taken[_subdomainHash] ||
             msg.sender == controller
         );
-        require(PublicResolverInterface(resolver).addr(_subdomainHash) == msg.sender);
-        PublicResolverInterface(resolver).setAddr(_subdomainHash, _newContract);
+        ResolverInterface(resolver).setAddr(_subdomainHash, _newContract);
     }
     
     function addDomain(
@@ -90,7 +92,7 @@ contract SubdomainRegistry is Controlled {
         onlyController
     {
         require(!domains[_domain].active);
-        require(ENSroot.owner(_domain) == address(this));
+        require(ens.owner(_domain) == address(this));
         domains[_domain] = Domain(true, _price);
     }
 
@@ -101,8 +103,8 @@ contract SubdomainRegistry is Controlled {
         external
         onlyController
     {
-        require(ENSroot.owner(_domain) == address(this));
-        ENSroot.setOwner(_domain, _newOwner);
+        require(ens.owner(_domain) == address(this));
+        ens.setOwner(_domain, _newOwner);
         delete domains[_domain];
     }
 
@@ -112,7 +114,7 @@ contract SubdomainRegistry is Controlled {
         external
         onlyController
     {
-        resolver = PublicResolverInterface(_resolver);
+        resolver = ResolverInterface(_resolver);
     }    
 
     function setDomainPrice(
@@ -129,19 +131,19 @@ contract SubdomainRegistry is Controlled {
 
     function initialize(
         ERC20Token _token,
-        AbstractENS _ens,
-        PublicResolverInterface _resolver,
+        ENS _ens,
+        ResolverInterface _resolver,
         address _controller
     ) 
         public
     {
         require(controller == 0x0);
-        require(address(ENSroot) == 0x0);
+        require(address(ens) == 0x0);
         require(address(token) == 0x0);
         require(address(resolver) == 0x0);
         controller = _controller;
         token = _token;
-        ENSroot = _ens;
+        ens = _ens;
         resolver = _resolver;
     }
     
