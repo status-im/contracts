@@ -1,6 +1,7 @@
 pragma solidity ^0.4.21;
 
 import "./Identity.sol";
+import "../common/MessageSigned.sol";
 import "../token/ERC20Token.sol";
 
 /**
@@ -8,7 +9,7 @@ import "../token/ERC20Token.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @notice enables economic abstraction for Identity
  */
-contract IdentityGasRelay is Identity {
+contract IdentityGasRelay is Identity, MessageSigned {
     
     bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelay(address,uint256,bytes32,uint256,uint256,address)"));
     bytes4 public constant APPROVEANDCALL_PREFIX = bytes4(keccak256("approveAndCallGasRelay(address,address,uint256,bytes32,uint256,uint256)"));
@@ -271,22 +272,7 @@ contract IdentityGasRelay is Identity {
     }
 
     /**
-     * @notice Hash a hash with `"\x19Ethereum Signed Message:\n32"`
-     * @param _hash Sign to hash.
-     * @return signHash Hash ethereum wallet signs.
-     */
-    function getSignHash(
-        bytes32 _hash
-    )
-        pure
-        public
-        returns(bytes32 signHash)
-    {
-        signHash = keccak256("\x19Ethereum Signed Message:\n32", _hash);
-    }
-
-    /**
-     * @notice recovers address who signed the message 
+     * @notice recovers key who signed the message 
      * @param _signHash operation ethereum signed message hash
      * @param _messageSignature message `_signHash` signature
      * @param _pos which signature to read
@@ -321,7 +307,7 @@ contract IdentityGasRelay is Identity {
      */
     function signatureSplit(bytes _signatures, uint256 _pos)
         pure
-        public
+        internal
         returns (uint8 v, bytes32 r, bytes32 s)
     {
         uint pos = _pos + 1;
