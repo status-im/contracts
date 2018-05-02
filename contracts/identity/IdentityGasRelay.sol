@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "./Identity.sol";
+import "./IdentityKernel.sol";
 import "../common/MessageSigned.sol";
 import "../token/ERC20Token.sol";
 
@@ -9,7 +9,7 @@ import "../token/ERC20Token.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @notice enables economic abstraction for Identity
  */
-contract IdentityGasRelay is Identity, MessageSigned {
+contract IdentityGasRelay is IdentityKernel, MessageSigned {
     
     bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelay(address,uint256,bytes32,uint256,uint256,address)"));
     bytes4 public constant APPROVEANDCALL_PREFIX = bytes4(keccak256("approveAndCallGasRelay(address,address,uint256,bytes32,uint256,uint256)"));
