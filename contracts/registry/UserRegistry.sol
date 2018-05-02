@@ -3,7 +3,7 @@ pragma solidity ^0.4.23;
 import "../common/Controlled.sol";
 import "../token/ERC20Token.sol";
 import "../ens/ENS.sol";
-import "../ens/ResolverInterface.sol";
+import "../ens/PublicResolver.sol";
 
 
 contract SubdomainRegistry is Controlled {
@@ -15,11 +15,11 @@ contract SubdomainRegistry is Controlled {
 
     mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => address) public registry;
-    mapping (bytes32 => address) public taken;
+    mapping (bytes32 => address) public owner;
     
     ERC20Token public token;
     ENS public ens;
-    ResolverInterface public resolver;
+    PublicResolver public resolver;
     
     event Registered(bytes32 indexed _subDomainHash, address _identity);
 
@@ -33,33 +33,55 @@ contract SubdomainRegistry is Controlled {
         initialize(
             ERC20Token(_token),
             ENS(_ens),
-            ResolverInterface(_resolver),
+            PublicResolver(_resolver),
             address(msg.sender)
         );
     }
 
     function register(
         bytes32 _userHash,
-        bytes32 _domainHash
+        bytes32 _domainHash,
+        address _account,
+        bytes32 _pubkeyA,
+        bytes32 _pubkeyB
     ) 
         external 
         returns(bytes32 subdomainHash) 
     {
-        
+        return _register(_userHash, _domainHash, msg.sender, _account, _pubkeyA, _pubkeyB);
+    }
+    
+    function _register(
+        bytes32 _userHash,
+        bytes32 _domainHash,
+        address _owner,
+        address _account,
+        bytes32 _pubkeyA,
+        bytes32 _pubkeyB
+    ) 
+        internal 
+        returns(bytes32 subdomainHash)
+    {
         Domain memory domain = domains[_domainHash];
         require(domain.active);
         
         subdomainHash = keccak256(_userHash, _domainHash);
-        require(taken[subdomainHash] == address(0));
-        taken[subdomainHash] = address(msg.sender);
+        require(owner[subdomainHash] == address(0));
+        owner[subdomainHash] = _owner;
 
         address currentOwner = ens.owner(subdomainHash);
-        require(currentOwner == 0 || currentOwner == msg.sender);
+        require(currentOwner == 0);
 
         ens.setSubnodeOwner(_domainHash, _userHash, address(this));
         ens.setResolver(subdomainHash, resolver);
-        resolver.setAddr(subdomainHash, address(msg.sender));
 
+        if(_account != address(0)){
+            resolver.setAddr(subdomainHash, _account);
+        }
+        if(_pubkeyA != 0 || _pubkeyB != 0) {
+            resolver.setPubkey(subdomainHash, _pubkeyA, _pubkeyB);
+        }
+        
         require(
             token.transferFrom(
                 address(msg.sender),
@@ -68,9 +90,21 @@ contract SubdomainRegistry is Controlled {
             )
         );
         
-        emit Registered(subdomainHash, address(msg.sender));
+        emit Registered(subdomainHash, _owner);
     }
-    
+
+    function claimSubnodeOwnership(
+        bytes32 _userHash,
+        bytes32 _domainHash
+    ) 
+        external 
+    {
+        bytes32 subdomainHash = keccak256(_userHash, _domainHash);
+        address currentOwner = owner[subdomainHash];
+        require(currentOwner == msg.sender);
+        ens.setSubnodeOwner(_domainHash, _userHash, currentOwner);
+    }
+
     function update(
         bytes32 _subdomainHash,
         address _newContract
@@ -78,10 +112,10 @@ contract SubdomainRegistry is Controlled {
         external
     {
         require(
-            msg.sender == taken[_subdomainHash] ||
-            msg.sender == controller
+            msg.sender == owner[_subdomainHash] &&
+            address(this) == ens.owner(_subdomainHash)
         );
-        ResolverInterface(resolver).setAddr(_subdomainHash, _newContract);
+        PublicResolver(resolver).setAddr(_subdomainHash, _newContract);
     }
     
     function addDomain(
@@ -114,7 +148,7 @@ contract SubdomainRegistry is Controlled {
         external
         onlyController
     {
-        resolver = ResolverInterface(_resolver);
+        resolver = PublicResolver(_resolver);
     }    
 
     function setDomainPrice(
@@ -132,7 +166,7 @@ contract SubdomainRegistry is Controlled {
     function initialize(
         ERC20Token _token,
         ENS _ens,
-        ResolverInterface _resolver,
+        PublicResolver _resolver,
         address _controller
     ) 
         public
