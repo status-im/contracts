@@ -177,7 +177,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
         view
         returns(bool)
     {
-        uint _amountSignatures = _messageSignatures.length / 72;
+        uint _amountSignatures = _messageSignatures.length / 65;
         require(_amountSignatures == purposeThreshold[_requiredKey]);
         bytes32 _lastKey = 0;
         for (uint256 i = 0; i < _amountSignatures; i++) {
