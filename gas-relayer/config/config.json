@@ -4,7 +4,8 @@
         "host": "localhost",
         "port": 8546,
         "blockchain": {
-            "account": "0x9e14016ba37b23498885864053fded5226161a3a"
+            "account": "0xad7ace64197d216d89a1a5c0b730d20b4aa3cbf8",
+            "gasPrice": 100000000000
         },
         "whisper": {
             "symKey": "0xd0d905c1c62b810b787141430417caf2b3f54cffadb395b7bb39fdeb8f17266b",
@@ -20,9 +21,9 @@
             "name": "Ethereum",
             "symbol": "ETH"
         },
-        "0x1d97fCe424c029Fc504a171918F934C6dBAcB6aE": {
-            "minRelayFactor": 1000000000000,
-            "name": "RandomToken",
+        "0x04936bA0aFC438b653E312298D11c7750f4b74cF": {
+            "minRelayFactor": 1000,
+            "name": "Random Test Token",
             "symbol": "RDN",
             "pricePlugin": "../plugins/token-utils.js"
         }
@@ -32,7 +33,7 @@
         "IdentityGasRelay": {
             "abiFile": "../abi/IdentityGasRelay.json",
             "isIdentity": true,
-            "factoryAddress": "0x18f71378f4735b35e01eb71afcc66df090eccea7",
+            "factoryAddress": "0x0e34619748Aa612A11d6c2F31783384eb2b47366",
             "kernelVerification": "isKernel(address _addr)",
             "allowedFunctions": [
                 { 

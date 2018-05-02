@@ -1,5 +1,10 @@
 {
   "contracts": ["contracts/**"],
+  "app": {
+    "js/relayer-test.js": ["app/relayer-test.js"],
+    "relayer-test.html": "app/relayer-test.html",
+    "images/": ["app/images/**"]
+  },
   "buildDir": "dist/",
   "config": "config/",
   "plugins": {

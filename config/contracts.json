@@ -16,23 +16,29 @@
     "gas": "auto",
     "contracts": {
       "Identity": {"deploy": false},
-      "IdentityFactory": {"deploy": false},
       "SafeMath": {"deploy": false},
       "DelayedUpdatableInstance": {"deploy": false},
       "DelayedUpdatableInstanceStorage": {"deploy": false},
       "Factory": {"deploy": false},
       "Instance": {"deploy": false},
       "InstanceStorage": {"deploy": false},
+      "MiniMeTokenFactory": {"args":[]},
       "MiniMeToken": {"deploy": false},
-      "MiniMeTokenFactory": {"deploy": false},
+      "RND": {
+        "instanceOf": "MiniMeToken",
+        "args":["$MiniMeTokenFactory", "0x0", "0x0", "Random Test Token", 18, "RND", true],
+        "gasLimit": 4000000
+      },
       "UpdatableInstance": {"deploy": false},
       "Controlled": {"deploy": false},
       "Owned": {"deploy": false},
-      "IdentityGasRelay": {"deploy": false},
+      "IdentityGasRelay": {"gasLimit": 4000000},
       "IdentityKernel": {"deploy": false},
+      "IdentityFactory": {"args":["0x00"], "gasLimit": 4000000},
       "SNTController": {"deploy": false},
       "UpdatedIdentityKernel": {"deploy": false},
       "TestContract": {"deploy": false}
+    
     }
   }
 }
