@@ -3,7 +3,7 @@ import Web3 from 'web3';
 import React from 'react';
 import { Grid, Row, Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel, Col, InputGroup, Alert } from 'react-bootstrap';
  
-class CallGasRelayed extends React.Component {
+class ApproveAndCallGasRelayed extends React.Component {
 
     constructor(props) {
       super(props);
@@ -58,9 +58,6 @@ class CallGasRelayed extends React.Component {
               this.setState({messages: this.state.messages})
             }
         });
-
-
-
       });
     }
 
@@ -81,13 +78,13 @@ class CallGasRelayed extends React.Component {
       try {
         let jsonAbi = this.props.IdentityGasRelay._jsonInterface.filter(x => x.name == "callGasRelayed")[0]
         let funCall = this.props.web3.eth.abi.encodeFunctionCall(jsonAbi, [this.state.to, 
-                                                                this.state.value, 
-                                                                this.state.data, 
-                                                                this.state.nonce, 
-                                                                this.state.gasPrice, 
-                                                                this.state.gasLimit,
-                                                                this.state.gasToken,
-                                                                this.state.signature]);
+                                                                           this.state.value, 
+                                                                           this.state.data, 
+                                                                           this.state.nonce, 
+                                                                           this.state.gasPrice, 
+                                                                           this.state.gasLimit,
+                                                                           this.state.gasToken,
+                                                                           this.state.signature]);
         let msgObj = { 
           symKeyID: this.state.skid, 
           sig: this.state.kid,
@@ -250,4 +247,4 @@ class CallGasRelayed extends React.Component {
     }
   }
 
-  export default CallGasRelayed;
+  export default ApproveAndCallGasRelayed;
