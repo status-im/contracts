@@ -22,7 +22,7 @@
             "symbol": "ETH"
         },
         "0x04936bA0aFC438b653E312298D11c7750f4b74cF": {
-            "minRelayFactor": 1000,
+            "minRelayFactor": 10000,
             "name": "Random Test Token",
             "symbol": "RDN",
             "pricePlugin": "../plugins/token-utils.js"
