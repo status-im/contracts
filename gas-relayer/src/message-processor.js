@@ -100,14 +100,20 @@ class MessageProcessor {
     }
 
     async _estimateGas(input){
-        const web3Sim = new Web3(ganache.provider({fork: `${this.config.node.protocol}://${this.config.node.host}:${this.config.node.port}`}));
-        const simAccounts = await web3Sim.eth.getAccounts();
+        let web3Sim = new Web3(ganache.provider({
+            fork: `${this.config.node.ganache.protocol}://${this.config.node.ganache.host}:${this.config.node.ganache.port}`,
+            locked: false
+        }));
+        
+        let simAccounts = await web3Sim.eth.getAccounts();
+        
         let simulatedReceipt = await web3Sim.eth.sendTransaction({
             from: simAccounts[0],
             to: input.address,
             value: 0,
             data: input.payload
         });
+
         return web3Sim.utils.toBN(simulatedReceipt.gasUsed);
     }
 
@@ -160,9 +166,14 @@ class MessageProcessor {
             const gasPriceInETH = gasPrice.div(factor);
             const gasLimitInETH = gasLimit.div(factor);
 
-            const estimatedGas = this._estimateGas(input);
-            if(gasLimitInETH.lt(estimatedGas)) {
-                return this._reply("Gas limit below estimated gas", message);
+            try {
+                const estimatedGas = await this._estimateGas(input);
+                if(gasLimitInETH.lt(estimatedGas)) {
+                    return this._reply("Gas limit below estimated gas", message);
+                } 
+            } catch(exc){
+                if(exc.message.indexOf("revert") > -1)
+                    return this._reply("Transaction will revert");
             }
 
             const estimatedGasInToken = estimatedGas.mul(factor);
@@ -184,7 +195,7 @@ class MessageProcessor {
                     return this._reply("Transaction mined;" 
                                         + receipt.transactionHash 
                                         + ';' 
-                                        + JSON.stringify(receipt.events)
+                                        + JSON.stringify(receipt)
                                         , message);
                 }).catch((err) => {
                     this._reply("Couldn't mine transaction: " + err.message, message);
