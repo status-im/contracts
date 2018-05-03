@@ -13,7 +13,8 @@ contract Factory is Controlled {
         bytes32 codeHash;
     }
 
-    mapping (address => uint256) versionMap;
+    mapping(bytes32 => uint256) hashToVersion;
+    mapping(address => uint256) versionMap;
 
     Version[] versionLog;
     uint256 latestUpdate;
@@ -48,6 +49,10 @@ contract Factory is Controlled {
             versionLog[index].kernel, 
             versionLog[index].codeHash
         );
+    }
+
+    function isKernel(bytes32 _codeHash) public returns (bool){
+        return hashToVersion[_codeHash] > 0;
     }
 
     function isKernel(address _addr) public returns (bool){
@@ -86,6 +91,7 @@ contract Factory is Controlled {
         require(_kernel != latestKernel);
         bytes32 _codeHash = getCodeHash(_kernel);
         versionMap[_kernel] = versionLog.length;
+        hashToVersion[_codeHash] = versionLog.length;
         versionLog.push(Version({blockNumber: block.number, timestamp: block.timestamp, kernel: _kernel, codeHash: _codeHash}));
         latestUpdate = block.timestamp;
         latestKernel = _kernel;

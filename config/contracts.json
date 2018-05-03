@@ -34,7 +34,11 @@
       "Owned": {"deploy": false},
       "IdentityGasRelay": {"gasLimit": 4000000},
       "IdentityKernel": {"deploy": false},
-      "IdentityFactory": {"args":["0x00"], "gasLimit": 4000000},
+      "IdentityFactory": {
+        "args":["0x00"], 
+        "gasLimit": 5000000,
+        "onDeploy": ["IdentityFactory.methods.setKernel('$IdentityGasRelay').send({gasLimit: 1000000})"]
+      },
       "SNTController": {"deploy": false},
       "UpdatedIdentityKernel": {"deploy": false},
       "TestContract": {"deploy": false}

@@ -25,7 +25,7 @@
             "name": "Ethereum",
             "symbol": "ETH"
         },
-        "0xf8a85AfA502a0A27aAA3528C62eB059Db97a6007": {
+        "0xD10e6dAe987Dcc0B3ADaA375C9f59690a4C97a27": {
             "minRelayFactor": 10000,
             "name": "Random Test Token",
             "symbol": "RDN",
@@ -37,8 +37,8 @@
         "IdentityGasRelay": {
             "abiFile": "../abi/IdentityGasRelay.json",
             "isIdentity": true,
-            "factoryAddress": "0xdd8b8aCf484875dC6565F6B614B8Dc9C7f074C00",
-            "kernelVerification": "isKernel(address _addr)",
+            "factoryAddress": "0x5F6cDe612C45039AaC867075703Bc118cEA4D531",
+            "kernelVerification": "isKernel(bytes32)",
             "allowedFunctions": [
                 { 
                     "function": "approveAndCallGasRelayed(address,address,uint256,bytes,uint256,uint256,uint256,address,bytes)", 

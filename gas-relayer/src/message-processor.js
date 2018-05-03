@@ -46,7 +46,7 @@ class MessageProcessor {
             
         // Get code from address and compare it against the contract code
         if(!contract.isIdentity){
-            const code = md5(await this.web3.eth.getCode(input.address));
+            const code = this.web3.utils.soliditySha3(await this.web3.eth.getCode(input.address));
             if(code != contract.code){
                 this._reply('Invalid contract code', message);
                 return false;
@@ -57,11 +57,14 @@ class MessageProcessor {
 
     async _validateInstance(message, input){
         const contract = this.settings.getContractByTopic(message.topic);
-        const kernelVerifSignature = this.web3.utils.sha3(contract.kernelVerification).slice(0, 10);
-        
-        return await this.web3.eth.call({
+        const instanceCodeHash = this.web3.utils.soliditySha3(await this.web3.eth.getCode(input.address));
+        const kernelVerifSignature = this.web3.utils.soliditySha3(contract.kernelVerification).slice(0, 10);
+    
+        let verificationResult = await this.web3.eth.call({
             to: contract.factoryAddress, 
-            data: kernelVerifSignature + "000000000000000000000000" + input.address.slice(2)});
+            data: kernelVerifSignature + instanceCodeHash.slice(2)});
+
+        return web3.eth.abi.decodeParameter('bool', verificationResult);;
     }
 
     _extractInput(message){

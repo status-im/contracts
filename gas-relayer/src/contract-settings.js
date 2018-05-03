@@ -1,5 +1,3 @@
-const md5 = require('md5');
-
 class ContractSettings {
 
     constructor(config, web3, eventEmitter){
@@ -45,7 +43,7 @@ class ContractSettings {
         this.pendingToLoad++;
         this.web3.eth.getCode(this.contracts[topicName].address)
         .then(code => {
-            this.contracts[topicName].code = md5(code);
+            this.contracts[topicName].code = this.web3.utils.soliditySha3(code);
             this.pendingToLoad--;
             if(this.pendingToLoad == 0) this.events.emit("setup:complete", this);
             })
