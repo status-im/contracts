@@ -15,6 +15,7 @@ class ApproveAndCallGasRelayed extends React.Component {
         value: 0,
         data: '0x00',
         nonce: 0,
+        baseToken: '0x0000000000000000000000000000000000000000',
         gasPrice: 0,
         gasLimit: 0,
         gasToken: "0x0000000000000000000000000000000000000000",
@@ -76,8 +77,9 @@ class ApproveAndCallGasRelayed extends React.Component {
       });
 
       try {
-        let jsonAbi = this.props.IdentityGasRelay._jsonInterface.filter(x => x.name == "callGasRelayed")[0]
-        let funCall = this.props.web3.eth.abi.encodeFunctionCall(jsonAbi, [this.state.to, 
+        let jsonAbi = this.props.IdentityGasRelay._jsonInterface.filter(x => x.name == "approveAndCallGasRelayed")[0]
+        let funCall = this.props.web3.eth.abi.encodeFunctionCall(jsonAbi, [this.state.baseToken,
+                                                                           this.state.to, 
                                                                            this.state.value, 
                                                                            this.state.data, 
                                                                            this.state.nonce, 
@@ -121,7 +123,8 @@ class ApproveAndCallGasRelayed extends React.Component {
       });
 
       try {
-        let message = await this.props.IdentityGasRelay.methods.callGasRelayHash(
+        let message = await this.props.IdentityGasRelay.methods.approveAndCallGasRelayHash(
+            this.state.baseToken,
             this.state.to,
             this.state.value,
             this.props.web3.utils.soliditySha3({t: 'bytes', v: this.state.data}),
@@ -151,12 +154,23 @@ class ApproveAndCallGasRelayed extends React.Component {
         }
         <Form>
           <Row>
-            <Col md={9}>
+            <Col md={8}>
               <ControlLabel>Identity Address</ControlLabel>
               <InputGroup> 
                 <InputGroup.Addon>0x</InputGroup.Addon>
                 <FormControl type="text" placeholder="Address" defaultValue={this.state.address} onChange={(ev) => this.handleChange(ev, 'address')}  />
               </InputGroup>
+            </Col>
+          </Row>
+          <Row>
+            <Col md={8}>
+              <ControlLabel>Base Token</ControlLabel>
+              <InputGroup> 
+                <InputGroup.Addon>0x</InputGroup.Addon>
+                <FormControl type="text" defaultValue={this.state.baseToken} onChange={(ev) => this.handleChange(ev, 'baseToken')} />
+              </InputGroup>
+              <HelpBlock>RND: {this.props.RND.options.address}</HelpBlock>
+              <HelpBlock>ETH: 0x0000000000000000000000000000000000000000</HelpBlock>
             </Col>
           </Row>
           <Row>
