@@ -70,21 +70,30 @@ contract ENSSubdomainRegistry is Controlled {
     {
         Domain memory domain = domains[_domainHash];
         require(domain.active);
-        
         subdomainHash = keccak256(_userHash, _domainHash);
         require(ens.owner(subdomainHash) == address(0));
         require(accounts[subdomainHash].creationTime == 0);
         accounts[subdomainHash] = Account(domain.price, block.timestamp);
-        ens.setSubnodeOwner(_domainHash, _userHash, address(this));
-        ens.setResolver(subdomainHash, resolver);
-        if(_account != address(0)){
-            resolver.setAddr(subdomainHash, _account);
+        require(token.allowance(msg.sender, address(this)) >= domain.price);
+        
+        bool resolvePubkey = _pubkeyA != 0 || _pubkeyB != 0;
+        bool resolveAccount = _account != address(0);
+        if(resolvePubkey || resolveAccount) {
+            //set to self the ownship to setup initial resolver
+            ens.setSubnodeOwner(_domainHash, _userHash, address(this));
+            ens.setResolver(subdomainHash, resolver); //default resolver
+            if(resolveAccount){
+                resolver.setAddr(subdomainHash, _account);
+            }
+            if(resolvePubkey) {
+                resolver.setPubkey(subdomainHash, _pubkeyA, _pubkeyB);
+            }
         }
-        if(_pubkeyA != 0 || _pubkeyB != 0) {
-            resolver.setPubkey(subdomainHash, _pubkeyA, _pubkeyB);
-        }
+        
+        //transfer ownship of subdone to registrant
         ens.setSubnodeOwner(_domainHash, _userHash, msg.sender);
 
+        //get payment
         require(
             token.transferFrom(
                 address(msg.sender),
