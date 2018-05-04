@@ -64,7 +64,7 @@ class MessageProcessor {
             to: contract.factoryAddress, 
             data: kernelVerifSignature + instanceCodeHash.slice(2)});
 
-        return web3.eth.abi.decodeParameter('bool', verificationResult);;
+        return this.web3.eth.abi.decodeParameter('bool', verificationResult);;
     }
 
     _extractInput(message){
@@ -168,9 +168,9 @@ class MessageProcessor {
             const balanceInETH = balance.div(factor);
             const gasPriceInETH = gasPrice.div(factor);
             const gasLimitInETH = gasLimit.div(factor);
-
+            let estimatedGas = 0;
             try {
-                const estimatedGas = await this._estimateGas(input);
+                 estimatedGas = await this._estimateGas(input);
                 if(gasLimitInETH.lt(estimatedGas)) {
                     return this._reply("Gas limit below estimated gas", message);
                 } 
