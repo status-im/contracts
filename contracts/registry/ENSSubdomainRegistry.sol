@@ -31,6 +31,7 @@ contract ENSSubdomainRegistry is Controlled {
     struct Account {
         uint256 tokenBalance;
         uint256 creationTime;
+        address backupOwner;
     }
 
     /** 
@@ -77,7 +78,7 @@ contract ENSSubdomainRegistry is Controlled {
         subdomainHash = keccak256(_userHash, _domainHash);
         require(ens.owner(subdomainHash) == address(0));
         require(accounts[subdomainHash].creationTime == 0);
-        accounts[subdomainHash] = Account(domain.price, block.timestamp);
+        accounts[subdomainHash] = Account(domain.price, block.timestamp, msg.sender);
         require(token.allowance(msg.sender, address(this)) >= domain.price);
         
         bool resolvePubkey = _pubkeyA != 0 || _pubkeyB != 0;
@@ -120,23 +121,20 @@ contract ENSSubdomainRegistry is Controlled {
     )
         external 
     {
+        bool isDomainController = ens.owner(_domainHash) == address(this);
         bytes32 subdomainHash = keccak256(_userHash, _domainHash);
-        require(msg.sender == ens.owner(subdomainHash));
         Account memory account = accounts[subdomainHash];
         require(account.creationTime > 0);
-        bool isDomainController = ens.owner(_domainHash) == address(this);
-        require(
-            account.creationTime + releaseDelay > block.timestamp ||
-            !isDomainController //user can optout anytime if ens domainHash is unowned
-        );
-        delete accounts[subdomainHash];
-
-        if(isDomainController) {
+        if (isDomainController) {
+            require(msg.sender == ens.owner(subdomainHash));
+            require(account.creationTime + releaseDelay > block.timestamp);
             ens.setSubnodeOwner(_domainHash, _userHash, address(this));
             ens.setResolver(subdomainHash, address(0));
             ens.setSubnodeOwner(_domainHash, _userHash, address(0));
+        } else {
+            require(msg.sender == account.backupOwner);
         }
-
+        delete accounts[subdomainHash];
         require(token.transfer(msg.sender, account.tokenBalance));
         emit Released(subdomainHash);
     }
@@ -197,6 +195,16 @@ contract ENSSubdomainRegistry is Controlled {
     }
 
     /** 
+     * @notice updates backup owner useful in case of opt-out domain move to new registry.
+     * @param _subdomainHash hash of the subdomain regarding this
+     **/
+    function updateBackupOwner(bytes32 _subdomainHash) external {
+        require(accounts[_subdomainHash].creationTime > 0);
+        require(msg.sender == ens.owner(_subdomainHash));
+        accounts[_subdomainHash].backupOwner == msg.sender;
+    }
+
+    /** 
      * @notice updates default public resolver for newly registred subdomains
      * @param _resolver new default resolver  
      */
@@ -229,7 +237,7 @@ contract ENSSubdomainRegistry is Controlled {
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
         token.approve(_newRegistry, account.tokenBalance);
-        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime);
+        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime, account.backupOwner);
     }
     
     /**
@@ -251,18 +259,20 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _domianHash choosen contract owned domain hash
      * @param _tokenBalance amount being transferred
      * @param _creationTime any value coming from parent
+     * @param _backupOwner backupOwner for opt-out/release at domain move
      **/
     function migrateAccount(
         bytes32 _userHash,
         bytes32 _domainHash,
         uint256 _tokenBalance,
-        uint256 _creationTime
+        uint256 _creationTime,
+        address _backupOwner
     )
         external
     {
         require(msg.sender == parentRegistry);
         bytes32 subdomainHash = keccak256(_userHash, _domainHash);
-        accounts[subdomainHash] = Account(_tokenBalance, _creationTime);
+        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _backupOwner);
         require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
     }
    
