@@ -14,7 +14,8 @@ contract ENSSubdomainRegistry is Controlled {
     ERC20Token public token;
     ENS public ens;
     PublicResolver public resolver;
-    
+    address public parentRegistry;
+
     uint256 public releaseDelay = 1 years;
     mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => Account) public accounts;
@@ -37,17 +38,20 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _token fee token base 
      * @param _ens Ethereum Name Service root address 
      * @param _resolver Default resolver to use in initial settings
+     * @param _parentRegistry Address of old registry (if any) for account migration.
      */
     constructor(
         ERC20Token _token,
         ENS _ens,
-        PublicResolver _resolver
+        PublicResolver _resolver,
+        address _parentRegistry
     ) 
         public 
     {
         token = _token;
         ens = _ens;
         resolver = _resolver;
+        parentRegistry = _parentRegistry;
     }
 
     /**
@@ -120,13 +124,19 @@ contract ENSSubdomainRegistry is Controlled {
         require(msg.sender == ens.owner(subdomainHash));
         Account memory account = accounts[subdomainHash];
         require(account.creationTime > 0);
-        require(account.creationTime + releaseDelay > block.timestamp);
+        bool isDomainController = ens.owner(_domainHash) == address(this);
+        require(
+            account.creationTime + releaseDelay > block.timestamp ||
+            !isDomainController //user can optout anytime if ens domainHash is unowned
+        );
         delete accounts[subdomainHash];
 
-        ens.setSubnodeOwner(_domainHash, _userHash, address(this));
-        ens.setResolver(subdomainHash, address(0));
-        ens.setSubnodeOwner(_domainHash, _userHash, address(0));
-        
+        if(isDomainController) {
+            ens.setSubnodeOwner(_domainHash, _userHash, address(this));
+            ens.setResolver(subdomainHash, address(0));
+            ens.setSubnodeOwner(_domainHash, _userHash, address(0));
+        }
+
         require(token.transfer(msg.sender, account.tokenBalance));
         emit Released(subdomainHash);
     }
@@ -195,5 +205,50 @@ contract ENSSubdomainRegistry is Controlled {
     {
         resolver = PublicResolver(_resolver);
     }    
+
+    /**
+     * @notice Migrate account to new registry
+     * @param _newRegistry new registry address
+     * @param _userHash `msg.sender` owned subdomain hash 
+     * @param _domianHash choosen contract owned domain hash
+     **/
+    function migrateTo(
+        ENSSubdomainRegistry _newRegistry,
+        bytes32 _userHash,
+        bytes32 _domainHash
+    ) 
+        external 
+    {
+        require(ens.owner(_domainHash) == address(_newRegistry));
+        require(address(this) == _newRegistry.parentRegistry());
+        bytes32 subdomainHash = keccak256(_userHash, _domainHash);
+        require(msg.sender == ens.owner(subdomainHash));
+        Account memory account = accounts[subdomainHash];
+        delete accounts[subdomainHash];
+        token.approve(_newRegistry, account.tokenBalance);
+        _newRegistry.migrateFromParent(_userHash, _domainHash, account.tokenBalance, account.creationTime);
+    }
+    
+    
+    /**
+     * @dev callable only by parent registry for continue user opt-in migration
+     * @param _userHash any subdomain hash coming from parent
+     * @param _domianHash choosen contract owned domain hash
+     * @param _tokenBalance amount being transferred
+     * @param _creationTime any value coming from parent
+     **/
+    function migrateFromParent(
+        bytes32 _userHash,
+        bytes32 _domainHash,
+        uint256 _tokenBalance,
+        uint256 _creationTime
+    )
+        external
+    {
+        require(msg.sender == parentRegistry);
+        bytes32 subdomainHash = keccak256(_userHash, _domainHash);
+        accounts[subdomainHash] = Account(_tokenBalance, _creationTime);
+        require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
+    }
    
 }
