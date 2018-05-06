@@ -177,20 +177,23 @@ contract ENSSubdomainRegistry is Controlled {
 
 
     /**
-     * @notice removes a domain from available (will not remove current sold subdomains)
-     * @param _domain domain being deactivated
-     * @param _newOwner new address hodling this domain
+     * @notice moves a domain to other Registry (will not move subdomains accounts)
+     * @param _newRegistry new registry hodling this domain
+     * @param _domain domain being moved
      */
-    function removeDomain(
-        bytes32 _domain,
-        address _newOwner
+    function moveDomain(
+        ENSSubdomainRegistry _newRegistry,
+        bytes32 _domain
     ) 
         external
         onlyController
     {
         require(ens.owner(_domain) == address(this));
-        ens.setOwner(_domain, _newOwner);
+        require(domains[_domain].active);
+        uint256 price = domains[_domain].price;
         delete domains[_domain];
+        ens.setOwner(_domain, _newRegistry);
+        _newRegistry.migrateDomain(_domain, price);
     }
 
     /** 
@@ -212,7 +215,7 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _userHash `msg.sender` owned subdomain hash 
      * @param _domianHash choosen contract owned domain hash
      **/
-    function migrateTo(
+    function moveAccount(
         ENSSubdomainRegistry _newRegistry,
         bytes32 _userHash,
         bytes32 _domainHash
@@ -226,10 +229,22 @@ contract ENSSubdomainRegistry is Controlled {
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
         token.approve(_newRegistry, account.tokenBalance);
-        _newRegistry.migrateFromParent(_userHash, _domainHash, account.tokenBalance, account.creationTime);
+        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime);
     }
     
-    
+    /**
+        @dev callabe only by parent registry to continue migration of domain
+     */
+    function migrateDomain(
+        bytes32 _domain,
+        uint256 _price
+    ) 
+        external
+    {
+        require(msg.sender == parentRegistry);
+        require(ens.owner(_domain) == address(this));
+        domains[_domain] = Domain(true, _price);
+    }
     /**
      * @dev callable only by parent registry for continue user opt-in migration
      * @param _userHash any subdomain hash coming from parent
@@ -237,7 +252,7 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _tokenBalance amount being transferred
      * @param _creationTime any value coming from parent
      **/
-    function migrateFromParent(
+    function migrateAccount(
         bytes32 _userHash,
         bytes32 _domainHash,
         uint256 _tokenBalance,
