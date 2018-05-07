@@ -24,7 +24,7 @@ Inspired by one of Satoshi Nakamoto’s original suggested use cases for Bitcoin
 Contract deployment is an activity that will be performed before the 'Tribute to Talk' functionality is included in the Status App. Deployment of this contract requires knowing beforehand the address of the token contract to be used (STT for testnets, SNT for mainnet)
 
 The contract is available in the following chains:
-- Ropsten: 0x000000000000000000000000
+- Ropsten: 0x13e6db69307f408bbdcd2871f9297cca9e78b549
 - Kovan: 0x000000000000000000000000
 - Mainnet: 0x000000000000000000000000
 
