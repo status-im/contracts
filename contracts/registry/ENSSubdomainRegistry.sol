@@ -250,6 +250,7 @@ contract ENSSubdomainRegistry is Controlled {
         external
     {
         require(msg.sender == parentRegistry);
+        require(domains[_domain].state == NodeState.Free);
         require(ens.owner(_domain) == address(this));
         domains[_domain] = Domain(NodeState.Owned, _price);
     }
