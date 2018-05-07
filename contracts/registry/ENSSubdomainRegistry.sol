@@ -22,9 +22,9 @@ contract ENSSubdomainRegistry is Controlled {
     
     event Registered(bytes32 indexed _subDomainHash, address _owner);
     event Released(bytes32 indexed _subDomainHash);
-
+    enum NodeState { Free, Owned, Moved }
     struct Domain {
-        bool active;
+        NodeState state;
         uint256 price;
     }
 
@@ -74,7 +74,7 @@ contract ENSSubdomainRegistry is Controlled {
         returns(bytes32 subdomainHash) 
     {
         Domain memory domain = domains[_domainHash];
-        require(domain.active);
+        require(domain.state == NodeState.Owned);
         subdomainHash = keccak256(_userHash, _domainHash);
         require(ens.owner(subdomainHash) == address(0));
         require(accounts[subdomainHash].creationTime == 0);
@@ -151,9 +151,9 @@ contract ENSSubdomainRegistry is Controlled {
         external
         onlyController
     {
-        require(!domains[_domain].active);
+        require(domains[_domain].state == NodeState.Free);
         require(ens.owner(_domain) == address(this));
-        domains[_domain] = Domain(true, _price);
+        domains[_domain] = Domain(NodeState.Owned, _price);
     }
 
     /**
@@ -169,7 +169,7 @@ contract ENSSubdomainRegistry is Controlled {
         onlyController
     {
         Domain storage domain = domains[_domain];
-        require(domain.active);
+        require(domain.state == NodeState.Owned);
         domain.price = _price;
     }
 
@@ -187,9 +187,9 @@ contract ENSSubdomainRegistry is Controlled {
         onlyController
     {
         require(ens.owner(_domain) == address(this));
-        require(domains[_domain].active);
+        require(domains[_domain].state == NodeState.Owned);
         uint256 price = domains[_domain].price;
-        delete domains[_domain];
+        domains[_domain].state = NodeState.Moved;
         ens.setOwner(_domain, _newRegistry);
         _newRegistry.migrateDomain(_domain, price);
     }
@@ -251,7 +251,7 @@ contract ENSSubdomainRegistry is Controlled {
     {
         require(msg.sender == parentRegistry);
         require(ens.owner(_domain) == address(this));
-        domains[_domain] = Domain(true, _price);
+        domains[_domain] = Domain(NodeState.Owned, _price);
     }
     /**
      * @dev callable only by parent registry for continue user opt-in migration
