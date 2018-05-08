@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "elliptic-curve": "^0.1.0",
-    "embark": "^2.7.0",
+    "embark": "^3.0.0",
     "ethereumjs-util": "^5.1.5",
     "react": "^16.3.2",
     "react-bootstrap": "^0.32.1",
