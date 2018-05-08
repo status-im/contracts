@@ -29,13 +29,6 @@ contract Identity is ERC725, ERC735 {
         mapping(bytes32 => bool) approvals;
     }
 
-    modifier managerOnly {
-        require(
-            isKeyPurpose(keccak256(msg.sender), MANAGEMENT_KEY)
-        );
-        _;
-    }
-
     modifier managementOnly {
         if(msg.sender == address(this)) {
             _;
@@ -53,11 +46,6 @@ contract Identity is ERC725, ERC735 {
             recoveryContract != address(0) && 
             msg.sender == recoveryContract
         );
-        _;
-    }
-
-    modifier keyPurposeOnly(bytes32 _key, uint256 _purpose) {
-        require(isKeyPurpose(_key, _purpose));
         _;
     }
     
