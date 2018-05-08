@@ -1,5 +1,5 @@
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.23;
 
 contract ApproveAndCallFallBack {
-    function receiveApproval(address from, uint256 _amount, address _token, bytes _data) public ;
+    function receiveApproval(address from, uint256 _amount, address _token, bytes _data) public;
 }
