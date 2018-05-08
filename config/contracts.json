@@ -15,6 +15,27 @@
     ],
     "gas": "auto",
     "contracts": {
+      "TestToken": {
+        "args": [
+          "10000000000000000000"
+        ]
+      },
+      "ENSRegistry": {
+        "args": []
+      },
+      "PublicResolver": {
+        "args": [
+          "$ENSRegistry"
+        ]
+      },
+      "ENSSubdomainRegistry": {
+        "args": [
+          "$TestToken", 
+          "$ENSRegistry",
+          "$PublicResolver",
+          "0x0"
+        ]
+      }
     }
   }
 }
