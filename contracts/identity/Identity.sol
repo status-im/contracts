@@ -29,18 +29,19 @@ contract Identity is ERC725, ERC735 {
         mapping(bytes32 => bool) approvals;
     }
 
-    modifier managementOnly {
+    modifier requiredKey(uint256 keyPurpose) {
         if(msg.sender == address(this)) {
             _;
         } else {
-            require(isKeyPurpose(keccak256(msg.sender), MANAGEMENT_KEY));
-            if (purposeThreshold[MANAGEMENT_KEY] == 1) {
+            require(isKeyPurpose(keccak256(msg.sender), keyPurpose));
+            if (purposeThreshold[keyPurpose] == 1) {
                 _;
             } else {
                 execute(address(this), 0, msg.data);
             }
         }
     }
+
     modifier recoveryOnly {
         require(
             recoveryContract != address(0) && 
@@ -132,7 +133,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _type
     )
         public
-        managementOnly
+        requiredKey(MANAGEMENT_KEY)
         returns (bool success)
     {   
         _addKey(_key, _purpose, _type);
@@ -145,7 +146,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _newType
     )
         public
-        managementOnly
+        requiredKey(MANAGEMENT_KEY)
         returns (bool success)
     {
         uint256 purpose = keys[_oldKey].purpose;
@@ -159,7 +160,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _purpose
     )
         public
-        managementOnly
+        requiredKey(MANAGEMENT_KEY)
         returns (bool success)
     {
         _removeKey(_key, _purpose);
@@ -200,7 +201,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _minimumApprovals
     ) 
         public 
-        managementOnly
+        requiredKey(MANAGEMENT_KEY)
     {
         require(_minimumApprovals > 0);
         require(_minimumApprovals <= keysByPurpose[_purpose].length);
@@ -417,7 +418,7 @@ contract Identity is ERC725, ERC735 {
 
     function setupRecovery(address _recoveryContract) 
         public
-        managementOnly
+        requiredKey(MANAGEMENT_KEY)
     {
         require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
