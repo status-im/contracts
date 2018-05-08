@@ -58,7 +58,7 @@ contract ENSSubdomainRegistry is Controlled {
     /**
      * @notice Registers `_userHash` subdomain to `_domainHash` setting msg.sender as owner.
      * @param _userHash choosen unowned subdomain hash 
-     * @param _domianHash choosen contract owned domain hash
+     * @param _domainHash choosen contract owned domain hash
      * @param _account optional address to set at public resolver
      * @param _pubkeyA optional pubkey part A to set at public resolver
      * @param _pubkeyB optional pubkey part B to set at public resolver
@@ -113,7 +113,7 @@ contract ENSSubdomainRegistry is Controlled {
     /** 
      * @notice release subdomain and retrieve locked fee, needs to be called after `releasePeriod` from creation time.
      * @param _userHash `msg.sender` owned subdomain hash 
-     * @param _domianHash choosen contract owned domain hash
+     * @param _domainHash choosen contract owned domain hash
      */
     function release(
         bytes32 _userHash,
@@ -201,7 +201,7 @@ contract ENSSubdomainRegistry is Controlled {
     function updateBackupOwner(bytes32 _subdomainHash) external {
         require(accounts[_subdomainHash].creationTime > 0);
         require(msg.sender == ens.owner(_subdomainHash));
-        accounts[_subdomainHash].backupOwner == msg.sender;
+        accounts[_subdomainHash].backupOwner = msg.sender;
     }
 
     /** 
@@ -221,7 +221,7 @@ contract ENSSubdomainRegistry is Controlled {
      * @notice Migrate account to new registry
      * @param _newRegistry new registry address
      * @param _userHash `msg.sender` owned subdomain hash 
-     * @param _domianHash choosen contract owned domain hash
+     * @param _domainHash choosen contract owned domain hash
      **/
     function moveAccount(
         ENSSubdomainRegistry _newRegistry,
@@ -257,7 +257,7 @@ contract ENSSubdomainRegistry is Controlled {
     /**
      * @dev callable only by parent registry for continue user opt-in migration
      * @param _userHash any subdomain hash coming from parent
-     * @param _domianHash choosen contract owned domain hash
+     * @param _domainHash choosen contract owned domain hash
      * @param _tokenBalance amount being transferred
      * @param _creationTime any value coming from parent
      * @param _backupOwner backupOwner for opt-out/release at domain move
