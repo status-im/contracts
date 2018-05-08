@@ -2,9 +2,9 @@ pragma solidity ^0.4.21;
 
 import "./ERC725.sol";
 import "./ERC735.sol";
+import "../common/MessageSigned.sol";
 
-
-contract Identity is ERC725, ERC735 {
+contract Identity is ERC725, ERC735, MessageSigned {
 
     mapping (bytes32 => Key) keys;
     mapping (uint256 => bytes32[]) keysByPurpose;
@@ -60,19 +60,14 @@ contract Identity is ERC725, ERC735 {
     
     modifier validECDSAKey (
         bytes32 _key, 
-        bytes32 _signHash, 
-        uint8 _v, 
-        bytes32 _r,
-        bytes32 _s
-    ) 
-    {
+        bytes32 _messageHash, 
+        bytes _signature
+    ) {
         require(
             _key == keccak256(
-                ecrecover(
-                    keccak256("\x19Ethereum Signed Message:\n32", _signHash),
-                    _v,
-                    _r,
-                    _s
+                recoverAddress(
+                    getSignHash(_messageHash),
+                    _signature
                     )
                 )
             );
@@ -361,9 +356,7 @@ contract Identity is ERC725, ERC735 {
         uint256 _id,
         bool _approval,
         bytes32 _key, 
-        uint8 _v, 
-        bytes32 _r, 
-        bytes32 _s
+        bytes _signature
     ) 
         public 
         validECDSAKey(
@@ -374,11 +367,8 @@ contract Identity is ERC725, ERC735 {
                 _id,
                 _approval
                 ),
-            _v,
-            _r,
-            _s
+            _signature
         )
-        managerOrActor(_key)
         returns (bool success)
     {   
         return _approve(_key, _id, _approval);
@@ -390,9 +380,7 @@ contract Identity is ERC725, ERC735 {
         bytes _data,
         uint256 _nonce,
         bytes32 _key, 
-        uint8 _v, 
-        bytes32 _r, 
-        bytes32 _s
+        bytes _signature
     ) 
         public 
         validECDSAKey(
@@ -405,11 +393,9 @@ contract Identity is ERC725, ERC735 {
                 _data,
                 _nonce
             ),
-            _v,
-            _r,
-            _s
+            _signature
         )
-        managerOrActor(_key)
+        requiredKey(_to == address(this) ? MANAGEMENT_KEY : ACTION_KEY)
         returns (uint256 executionId)
     {
         executionId = _execute(_to, _value, _data);
