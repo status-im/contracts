@@ -51,11 +51,11 @@ contract Factory is Controlled {
         );
     }
 
-    function isKernel(bytes32 _codeHash) public returns (bool){
+    function isKernel(bytes32 _codeHash) public view returns (bool){
         return hashToVersion[_codeHash] > 0;
     }
 
-    function isKernel(address _addr) public returns (bool){
+    function isKernel(address _addr) public view returns (bool){
         return versionMap[_addr] > 0;
     }
 

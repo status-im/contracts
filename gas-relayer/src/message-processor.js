@@ -59,7 +59,8 @@ class MessageProcessor {
         const contract = this.settings.getContractByTopic(message.topic);
         const instanceCodeHash = this.web3.utils.soliditySha3(await this.web3.eth.getCode(input.address));
         const kernelVerifSignature = this.web3.utils.soliditySha3(contract.kernelVerification).slice(0, 10);
-    
+        if(instanceCodeHash == null) return false;
+
         let verificationResult = await this.web3.eth.call({
             to: contract.factoryAddress, 
             data: kernelVerifSignature + instanceCodeHash.slice(2)});
@@ -133,9 +134,14 @@ class MessageProcessor {
 
             if(!await this._validateInput(message, input)) return; // TODO Log
 
-            if(contract.isIdentity && !this._validateInstance(message, input))
-                return this._reply("Invalid identity instance", message);
 
+            if(contract.isIdentity){
+                let validInstance = await this._validateInstance(message, input);
+                if(!validInstance){
+                    return this._reply("Invalid identity instance", message);
+                }
+            }
+                
             const params = this._obtainParametersFunc(contract, input);
 
             const token = this.settings.getToken(params('gasToken'));
@@ -176,7 +182,7 @@ class MessageProcessor {
                 } 
             } catch(exc){
                 if(exc.message.indexOf("revert") > -1)
-                    return this._reply("Transaction will revert");
+                    return this._reply("Transaction will revert", message);
             }
 
             const estimatedGasInToken = estimatedGas.mul(factor);
