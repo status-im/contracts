@@ -11,19 +11,27 @@
     ],
     "gas": "auto",
     "contracts": {
-      "ERC20Receiver": {
-        "deploy": false
+      "TestToken": {
+        "args": [
+          "10000000000000000000"
+        ]
       },
-      "TestToken": {
-        "deploy": false
+      "ENSRegistry": {
+        "args": []
+      },
+      "PublicResolver": {
+        "args": [
+          "$ENSRegistry"
+        ]
+      },
+      "ENSSubdomainRegistry": {
+        "args": [
+          "$TestToken", 
+          "$ENSRegistry",
+          "$PublicResolver",
+          "0x0"
+        ]
       }
-    }
-  },
-  "development": {
-    "contracts": {
-      "TestToken": {
-        "deploy": true
-      }  
     }
   }
 }
