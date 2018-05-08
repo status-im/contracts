@@ -12,9 +12,11 @@ import "../token/ERC20Token.sol";
 contract IdentityGasRelay is Identity, MessageSigned {
     
     bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelay(address,uint256,bytes32,uint256,uint256,address)"));
+    bytes4 public constant DEPLOY_PREFIX = bytes4(keccak256("deployGasRelay(uint256,bytes32,uint256,uint256,address)"));
     bytes4 public constant APPROVEANDCALL_PREFIX = bytes4(keccak256("approveAndCallGasRelay(address,address,uint256,bytes32,uint256,uint256)"));
 
     event ExecutedGasRelayed(bytes32 signHash, bool success);
+    event ContractDeployed(address deployedAddress);
 
     /**
      * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
@@ -83,6 +85,72 @@ contract IdentityGasRelay is Identity, MessageSigned {
             }
         }        
     }
+
+
+    /**
+     * @notice deploys contract in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
+     *         allows identity of being controlled without requiring ether in key balace
+     * @param _value call value (ether) to be sent to newly created contract
+     * @param _data contract code data
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasLimit minimal gasLimit required to execute this call
+     * @param _gasToken token being used for paying `msg.sender`
+     * @param _messageSignatures rsv concatenated ethereum signed message signatures required
+     */
+    function deployGasRelayed(
+        uint256 _value, 
+        bytes _data,
+        uint _nonce,
+        uint _gasPrice,
+        uint _gasLimit,
+        address _gasToken, 
+        bytes _messageSignatures
+    ) 
+        external 
+        returns(address deployedAddress)
+    {
+        uint startGas = gasleft();
+        //verify transaction parameters
+        require(startGas >= _gasLimit);
+        require(_nonce == nonce);
+        // calculates signHash
+        bytes32 signHash = getSignHash(
+            deployGasRelayHash(
+                _value,
+                keccak256(_data),
+                _nonce,
+                _gasPrice,
+                _gasLimit,
+                _gasToken                
+            )
+        );
+        
+        //verify if signatures are valid and came from correct actors;
+        verifySignatures(
+            ACTION_KEY,
+            signHash, 
+            _messageSignatures
+        );
+        
+        //executes transaction
+        nonce++;
+        deployedAddress = doCreate(_value, _data);
+        emit ContractDeployed(deployedAddress);
+
+        //refund gas used using contract held ERC20 tokens or ETH
+        if (_gasPrice > 0) {
+            uint256 _amount = 21000 + (startGas - gasleft());
+            _amount = _amount * _gasPrice;
+            if (_gasToken == address(0)) {
+                address(msg.sender).transfer(_amount);
+            } else {
+                ERC20Token(_gasToken).transfer(msg.sender, _amount);
+            }
+        }  
+        
+    }
+
 
     /**
      * @notice include ethereum signed approve ERC20 and call hash 
@@ -231,6 +299,40 @@ contract IdentityGasRelay is Identity, MessageSigned {
         );
     }
 
+/**
+     * @notice get callHash
+     * @param _value call value (ether)
+     * @param _dataHash call data hash
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasLimit minimal gasLimit required to execute this call
+     * @param _gasToken token being used for paying `msg.sender` 
+     * @return callGasRelayHash the hash to be signed by wallet
+     */
+    function deployGasRelayHash(
+        uint256 _value,
+        bytes32 _dataHash,
+        uint256 _nonce,
+        uint256 _gasPrice,
+        uint256 _gasLimit,
+        address _gasToken
+    )
+        public 
+        view 
+        returns (bytes32 _callGasRelayHash) 
+    {
+        _callGasRelayHash = keccak256(
+            address(this), 
+            DEPLOY_PREFIX,
+            _value,
+            _dataHash,
+            _nonce,
+            _gasPrice,
+            _gasLimit,
+            _gasToken
+        );
+    }
+
     
     /**
      * @notice get callHash
@@ -345,6 +447,26 @@ contract IdentityGasRelay is Identity, MessageSigned {
             _to.call(_data)
         );
         
+    }
+
+    /**
+     * @notice creates new contract based on input `_code` and transfer `_value` ETH to this instance
+     * @param _value amount ether in wei to sent to deployed address at its initialization
+     * @param _data contract code
+     */
+    function doCreate(
+        uint _value,
+        bytes _code
+    ) 
+        internal 
+        returns (address createdContract) 
+    {
+        bool failed;
+        assembly {
+            createdContract := create(_value, add(_code, 0x20), mload(_code))
+            failed := iszero(extcodesize(createdContract))
+        }
+        require(!failed);
     }
 
 }
