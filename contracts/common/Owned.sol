@@ -14,7 +14,7 @@ contract Owned {
     address public owner;
 
     /// @notice The Constructor assigns the message sender to be `owner`
-    constructor() public {
+    constructor() internal {
         owner = msg.sender;
     }
 
