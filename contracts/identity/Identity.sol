@@ -29,7 +29,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         mapping(bytes32 => bool) approvals;
     }
     
-    modifier msgSenderKey(uint256 keyPurpose) {
+    modifier selfOrSenderKey(uint256 keyPurpose) {
         if(msg.sender == address(this)) {
             _;
         } else {
@@ -162,7 +162,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _type
     )
         public
-        msgSenderKey(MANAGEMENT_KEY)
+        selfOrSenderKey(MANAGEMENT_KEY)
         returns (bool success)
     {   
         _addKey(_key, _purpose, _type);
@@ -175,7 +175,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _newType
     )
         public
-        msgSenderKey(MANAGEMENT_KEY)
+        selfOrSenderKey(MANAGEMENT_KEY)
         returns (bool success)
     {
         uint256 purpose = keys[_oldKey].purpose;
@@ -189,7 +189,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _purpose
     )
         public
-        msgSenderKey(MANAGEMENT_KEY)
+        selfOrSenderKey(MANAGEMENT_KEY)
         returns (bool success)
     {
         _removeKey(_key, _purpose);
@@ -201,7 +201,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _minimumApprovals
     ) 
         public 
-        msgSenderKey(MANAGEMENT_KEY)
+        selfOrSenderKey(MANAGEMENT_KEY)
     {
         require(_minimumApprovals > 0);
         require(_minimumApprovals <= keysByPurpose[_purpose].length);
@@ -210,7 +210,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     
     function setupRecovery(address _recoveryContract) 
         public
-        msgSenderKey(MANAGEMENT_KEY)
+        selfOrSenderKey(MANAGEMENT_KEY)
     {
         require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
