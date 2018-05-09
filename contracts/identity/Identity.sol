@@ -12,9 +12,10 @@ contract Identity is ERC725, ERC735, MessageSigned {
     mapping (uint256 => bytes32[]) claimsByType;
 
     mapping (bytes32 => uint256) indexes;
-    mapping (uint256 => Transaction) txx;
+    mapping (uint256 => Transaction) multisigTx;
     mapping (uint256 => uint256) purposeThreshold;
     
+    uint256 txCount;
     uint256 nonce;
     address recoveryContract;
     bytes32 recoveryManager;
@@ -24,12 +25,11 @@ contract Identity is ERC725, ERC735, MessageSigned {
         address to;
         uint256 value;
         bytes data;
-        uint256 nonce;
         uint256 approverCount;
         mapping(bytes32 => bool) approvals;
     }
-
-    modifier requiredKey(uint256 keyPurpose) {
+    
+    modifier msgSenderKey(uint256 keyPurpose) {
         if(msg.sender == address(this)) {
             _;
         } else {
@@ -58,7 +58,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         _;
     }
     
-    modifier validECDSAKey (
+    modifier keyMessageSigned (
         bytes32 _key, 
         bytes32 _messageHash, 
         bytes _signature
@@ -128,7 +128,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _type
     )
         public
-        requiredKey(MANAGEMENT_KEY)
+        msgSenderKey(MANAGEMENT_KEY)
         returns (bool success)
     {   
         _addKey(_key, _purpose, _type);
@@ -141,7 +141,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _newType
     )
         public
-        requiredKey(MANAGEMENT_KEY)
+        msgSenderKey(MANAGEMENT_KEY)
         returns (bool success)
     {
         uint256 purpose = keys[_oldKey].purpose;
@@ -155,7 +155,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _purpose
     )
         public
-        requiredKey(MANAGEMENT_KEY)
+        msgSenderKey(MANAGEMENT_KEY)
         returns (bool success)
     {
         _removeKey(_key, _purpose);
@@ -168,27 +168,16 @@ contract Identity is ERC725, ERC735, MessageSigned {
         bytes _data
     ) 
         public 
-        returns (uint256 executionId)
+        returns (uint256 txId)
     {
-        uint256 requiredKey = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
-        if (purposeThreshold[requiredKey] == 1) {
-            executionId = nonce; //(?) useless in this case
-            nonce++; //(?) should increment
-            require(isKeyPurpose(keccak256(msg.sender), requiredKey));
-            _to.call.value(_value)(_data); //(?) success not used
-            emit Executed(executionId, _to, _value, _data); //no information on success
-        } else {
-            executionId = _execute(_to, _value, _data);
-            approve(executionId, true);
-        }
-        
+        txId = _execute(keccak256(msg.sender), _to, _value, _data);   
     }
 
     function approve(uint256 _id, bool _approval) 
         public 
         returns (bool success)
     {   
-        return _approve(keccak256(msg.sender), _id, _approval);
+        return _approveRequest(keccak256(msg.sender), _id, _approval);
     }
 
     function setMinimumApprovalsByKeyType(
@@ -196,13 +185,12 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _minimumApprovals
     ) 
         public 
-        requiredKey(MANAGEMENT_KEY)
+        msgSenderKey(MANAGEMENT_KEY)
     {
         require(_minimumApprovals > 0);
         require(_minimumApprovals <= keysByPurpose[_purpose].length);
         purposeThreshold[_purpose] = _minimumApprovals;
     }
-    
     
     function addClaim(
         uint256 _claimType,
@@ -224,7 +212,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
             }
         } else {
             require(isKeyPurpose(keccak256(msg.sender), CLAIM_SIGNER_KEY));
-            _execute(address(this), 0, msg.data);
+            _requestApproval(address(this), 0, msg.data);
             emit ClaimRequested(
                 claimHash,
                 _claimType,
@@ -236,7 +224,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
             );
         }
     }
-    
+
     function removeClaim(bytes32 _claimId) 
         public 
         returns (bool success) 
@@ -352,14 +340,14 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return claimsByType[_claimType];
     }
 
-    function approveECDSA(
+    function approveMessageSigned(
         uint256 _id,
         bool _approval,
         bytes32 _key, 
         bytes _signature
     ) 
         public 
-        validECDSAKey(
+        keyMessageSigned(
             _key,
             keccak256(
                 address(this),
@@ -371,10 +359,10 @@ contract Identity is ERC725, ERC735, MessageSigned {
         )
         returns (bool success)
     {   
-        return _approve(_key, _id, _approval);
+        return _approveRequest(_key, _id, _approval);
     }
     
-    function executeECDSA(
+    function executeMessageSigned(
         address _to,
         uint256 _value,
         bytes _data,
@@ -383,7 +371,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         bytes _signature
     ) 
         public 
-        validECDSAKey(
+        keyMessageSigned(
             _key,
             keccak256(
                 address(this), 
@@ -395,16 +383,14 @@ contract Identity is ERC725, ERC735, MessageSigned {
             ),
             _signature
         )
-        requiredKey(_to == address(this) ? MANAGEMENT_KEY : ACTION_KEY)
-        returns (uint256 executionId)
+        returns (uint256 txId)
     {
-        executionId = _execute(_to, _value, _data);
-        _approve(_key, executionId, true);
+        txId = _execute(_key, _to, _value, _data);
     }
 
     function setupRecovery(address _recoveryContract) 
         public
-        requiredKey(MANAGEMENT_KEY)
+        msgSenderKey(MANAGEMENT_KEY)
     {
         require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
@@ -423,27 +409,45 @@ contract Identity is ERC725, ERC735, MessageSigned {
     }
 
     function _execute(
+        bytes32 _key,
         address _to,
         uint256 _value,
         bytes _data
     ) 
-        private
-        returns (uint256 executionId)
+        internal 
+        returns (uint256 txId)
     {
-        executionId = nonce;
-        nonce++;
-        txx[executionId] = Transaction({
+        uint256 requiredPurpose = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
+        require(isKeyPurpose(_key, requiredPurpose));
+        if (purposeThreshold[requiredPurpose] == 1) {
+            txId = txCount++;
+            _commitCall(txId, _to, _value, _data);
+        } else {
+            txId = _requestApproval(_to, _value, _data);
+            _approveRequest(_key, txId, true);
+        } 
+    }
+
+    function _requestApproval(
+        address _to,
+        uint256 _value,
+        bytes _data
+    )
+        internal 
+        returns (uint256 txId)
+    {
+        txId = txCount++;
+        multisigTx[txCount] = Transaction({
             valid: true,
             to: _to,
             value: _value,
             data: _data,
-            nonce: nonce,
             approverCount: 0
-        });            
-        emit ExecutionRequested(executionId, _to, _value, _data);
+        });
+        emit ExecutionRequested(txId, _to, _value, _data);
     }
-    
-    function _approve(
+
+    function _approveRequest(
         bytes32 _key,
         uint256 _id,
         bool _approval
@@ -452,33 +456,43 @@ contract Identity is ERC725, ERC735, MessageSigned {
         returns(bool success) //(?) should return approved instead of success?
     {
         
-        Transaction memory trx = txx[_id];
-        require(trx.valid);
-        uint256 requiredKeyPurpose = trx.to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
+        Transaction memory approvedTx = multisigTx[_id];
+        require(approvedTx.valid);
+        uint256 requiredKeyPurpose = approvedTx.to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
         require(isKeyPurpose(_key, requiredKeyPurpose));
-        bytes32 keyHash = keccak256(_key, requiredKeyPurpose);
-        require(txx[_id].approvals[keyHash] != _approval);
+        require(multisigTx[_id].approvals[_key] != _approval);
+        
+        emit Approved(_id, _approval);
         
         if (_approval) {
-            trx.approverCount++;
+            if (approvedTx.approverCount + 1 == purposeThreshold[requiredKeyPurpose]) {
+                delete multisigTx[_id];
+                return _commitCall(_id, approvedTx.to, approvedTx.value, approvedTx.data);
+            } else {
+                multisigTx[_id].approverCount++;
+            }
         } else {
-            trx.approverCount--;
+            multisigTx[_id].approverCount--;
         }
     
-        emit Approved(_id, _approval);
+        multisigTx[_id].approvals[_key] = _approval;
+    }
 
-        if (trx.approverCount < purposeThreshold[requiredKeyPurpose]) {
-            txx[_id].approvals[keyHash] = _approval;
-            txx[_id] = trx;
+    function _commitCall(
+        uint256 _txId,
+        address _to,
+        uint256 _value,
+        bytes _data
+    ) 
+        internal 
+        returns(bool success)
+    {
+        nonce++;
+        success = _to.call.value(_value)(_data);
+        if (success) {
+            emit Executed(_txId, _to, _value, _data); 
         } else {
-            delete txx[_id];
-            //(?) success should be included in event?
-            success = address(trx.to).call.value(trx.value)(trx.data);
-            if(success){ 
-                emit Executed(_id, trx.to, trx.value, trx.data);
-            } else {
-                emit ExecutionFailed(_id, trx.to, trx.value, trx.data));
-            }
+            emit ExecutionFailed(_txId, _to, _value, _data);
         }
     }
 
@@ -493,9 +507,9 @@ contract Identity is ERC725, ERC735, MessageSigned {
         
         require(keys[keyHash].purpose == 0);
         require(
-            _purpose == MANAGEMENT_KEY ||
-            _purpose == ACTION_KEY ||
-            _purpose == CLAIM_SIGNER_KEY ||
+            _purpose == MANAGEMENT_KEY || 
+            _purpose == ACTION_KEY || 
+            _purpose == CLAIM_SIGNER_KEY || 
             _purpose == ENCRYPTION_KEY
         );
         keys[keyHash] = Key(_purpose, _type, _key);
@@ -594,6 +608,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
         );
     }
 
-
+    
 }
 
