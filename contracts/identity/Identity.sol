@@ -224,11 +224,13 @@ contract Identity is ERC725, ERC735, MessageSigned {
 
     /**
      * @notice Replaces one `_oldKey` with other `_newKey`
+     * @param _purpose what purpose being replaced
      * @param _oldKey key to remove
      * @param _newKey key to add
      * @param _newType inform type of `_newKey`
      */
     function replaceKey(
+        uint256 _purpose,
         bytes32 _oldKey,
         bytes32 _newKey,
         uint256 _newType
@@ -237,9 +239,8 @@ contract Identity is ERC725, ERC735, MessageSigned {
         managementOnly
         returns (bool success)
     {
-        uint256 purpose = keys[_oldKey].purpose;
-        _addKey(_newKey, purpose, _newType);
-        _removeKey(_oldKey, purpose);
+        _addKey(_newKey, _purpose, _newType);
+        _removeKey(_oldKey, _purpose);
         return true;
     } 
 
