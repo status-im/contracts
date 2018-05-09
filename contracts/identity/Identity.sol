@@ -26,11 +26,10 @@ contract Identity is ERC725, ERC735, MessageSigned {
     bytes32 recoveryManager;
 
     struct Transaction {
-        bool valid;
+        uint256 approverCount;
         address to;
         uint256 value;
         bytes data;
-        uint256 approverCount;
         mapping(bytes32 => bool) approvals;
     }
     
@@ -177,7 +176,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
      * @param _signature signature of key
      */
     function approveMessageSigned(
-        uint256 _id,
+        uint256 _txId,
         bool _approval,
         bytes32 _key, 
         bytes _signature
@@ -188,14 +187,14 @@ contract Identity is ERC725, ERC735, MessageSigned {
             keccak256(
                 address(this),
                 bytes4(keccak256("approve(uint256,bool)")),
-                _id,
+                _txId,
                 _approval
                 ),
             _signature
         )
         returns (bool success)
     {   
-        return _approveRequest(_key, _id, _approval);
+        return _approveRequest(_key, _txId, _approval);
     }
     
     
@@ -314,7 +313,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
             }
         } else {
             require(hasKeyPurpose(keccak256(msg.sender), CLAIM_SIGNER_KEY));
-            _requestApproval(address(this), 0, msg.data);
+            _requestApproval(0, address(this), 0, msg.data);
             emit ClaimRequested(
                 claimHash,
                 _claimType,
@@ -493,8 +492,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
             txId = txCount++;
             _commitCall(txId, _to, _value, _data);
         } else {
-            txId = _requestApproval(_to, _value, _data);
-            _approveRequest(_key, txId, true);
+            txId = _requestApproval(_key, _to, _value, _data);
         } 
     }
 
@@ -517,6 +515,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     }
 
     function _requestApproval(
+        bytes32 _key,
         address _to,
         uint256 _value,
         bytes _data
@@ -525,13 +524,18 @@ contract Identity is ERC725, ERC735, MessageSigned {
         returns (uint256 txId)
     {
         txId = txCount++;
+        
         multisigTx[txCount] = Transaction({
-            valid: true,
+            approverCount: _key == 0 ? 0 : 1,
             to: _to,
             value: _value,
-            data: _data,
-            approverCount: 0
+            data: _data
         });
+        
+        if (_key != 0) {
+            multisigTx[txId].approvals[_key] = true;
+        }
+
         emit ExecutionRequested(txId, _to, _value, _data);
     }
 
@@ -541,33 +545,37 @@ contract Identity is ERC725, ERC735, MessageSigned {
 
     function _approveRequest(
         bytes32 _key,
-        uint256 _id,
+        uint256 _txId,
         bool _approval
     ) 
         private 
         returns(bool success) //(?) should return approved instead of success?
     {
         
-        Transaction memory approvedTx = multisigTx[_id];
-        require(approvedTx.valid);
+        Transaction memory approvedTx = multisigTx[_txId];
+        require(approvedTx.approverCount > 0);
         uint256 requiredKeyPurpose = approvedTx.to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
         require(hasKeyPurpose(_key, requiredKeyPurpose));
-        require(multisigTx[_id].approvals[_key] != _approval);
-        
-        emit Approved(_id, _approval);
+        require(multisigTx[_txId].approvals[_key] != _approval);
         
         if (_approval) {
             if (approvedTx.approverCount + 1 == purposeThreshold[requiredKeyPurpose]) {
-                delete multisigTx[_id];
-                return _commitCall(_id, approvedTx.to, approvedTx.value, approvedTx.data);
+                delete multisigTx[_txId];
+                emit Approved(_txId, _approval);
+                return _commitCall(_txId, approvedTx.to, approvedTx.value, approvedTx.data);
             } else {
-                multisigTx[_id].approverCount++;
+                multisigTx[_txId].approvals[_key] = true;
+                multisigTx[_txId].approverCount++;
             }
         } else {
-            multisigTx[_id].approverCount--;
+            delete multisigTx[_txId].approvals[_key];
+            if (multisigTx[_txId].approverCount == 1) {
+                delete multisigTx[_txId];
+                emit Approved(_txId, _approval);
+            } else {
+                multisigTx[_txId].approverCount--;
+            }
         }
-    
-        multisigTx[_id].approvals[_key] = _approval;
     }
 
     function _addKey(
