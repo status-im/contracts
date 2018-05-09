@@ -283,16 +283,18 @@ contract Identity is ERC725, ERC735, MessageSigned {
     // Recovery methods
     ////////////////
 
-    function managerReset(bytes32 _newKey) 
+    function recoveryReset(bytes32 _newKey) 
         public 
         recoveryOnly
     {
         recoveryManager = _newKey;
-        _addKey(keccak256(recoveryManager), MANAGEMENT_KEY, 0);
+        _addKey(_newKey, ACTION_KEY, 0);
+        purposeThreshold[ACTION_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
+        _addKey(_newKey, MANAGEMENT_KEY, 0);
         purposeThreshold[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
     }
     
-    function processManagerReset(uint256 _limit) 
+    function processRecoveryReset(uint256 _limit) 
         public 
     {
         require(recoveryManager != 0);
