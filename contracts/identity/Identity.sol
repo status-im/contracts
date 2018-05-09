@@ -503,15 +503,9 @@ contract Identity is ERC725, ERC735, MessageSigned {
     ) 
         private
     {
+        require(_purpose > 0);
         bytes32 keyHash = keccak256(_key, _purpose);
-        
         require(keys[keyHash].purpose == 0);
-        require(
-            _purpose == MANAGEMENT_KEY || 
-            _purpose == ACTION_KEY || 
-            _purpose == CLAIM_SIGNER_KEY || 
-            _purpose == ENCRYPTION_KEY
-        );
         keys[keyHash] = Key(_purpose, _type, _key);
         indexes[keyHash] = keysByPurpose[_purpose].push(_key) - 1;
         emit KeyAdded(_key, _purpose, _type);
