@@ -4,6 +4,10 @@ import "./ERC725.sol";
 import "./ERC735.sol";
 import "../common/MessageSigned.sol";
 
+/**
+ * @title Self sovereign Identity
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
+ */
 contract Identity is ERC725, ERC735, MessageSigned {
 
     mapping (bytes32 => Key) keys;
@@ -29,6 +33,9 @@ contract Identity is ERC725, ERC735, MessageSigned {
         mapping(bytes32 => bool) approvals;
     }
     
+    /**
+     * @notice requires called by identity itself, otherwise forward to execute process
+     */
     modifier managementOnly {
         if(msg.sender == address(this)) {
             _;
@@ -37,6 +44,9 @@ contract Identity is ERC725, ERC735, MessageSigned {
         }
     }
 
+    /**
+     * @notices requires called by recovery address
+     */
     modifier recoveryOnly {
         require(
             recoveryContract != address(0) && 
@@ -45,6 +55,12 @@ contract Identity is ERC725, ERC735, MessageSigned {
         _;
     }
     
+    /**
+     * @notice requires `_signature` from a `_key` with `_messageHash`
+     * @param _key key expected out from `_signature` of `_messageHash`
+     * @param _messageHash message signed in `_signature` by `_key`
+     * @param _signature `_messageHash` signed by `_key`
+     */
     modifier keyMessageSigned (
         bytes32 _key, 
         bytes32 _messageHash, 
@@ -62,10 +78,16 @@ contract Identity is ERC725, ERC735, MessageSigned {
         _;
     }
 
-    constructor() public {
+    /**
+     * @notice constructor builds identity with first key as `msg.sender`
+     */
+    constructor(bytes32 _key) public {
         _constructIdentity(keccak256(msg.sender));
     }    
 
+    /**
+     * @notice default function allows deposit of ETH
+     */
     function () 
         public 
         payable 
@@ -77,6 +99,12 @@ contract Identity is ERC725, ERC735, MessageSigned {
     // Execute calls and multisig approval
     ////////////////
 
+    /**
+     * @notice execute (or request) call
+     * @param _to destination of call
+     * @param _value amount of ETH in call
+     * @param _data data
+     */
     function execute(
         address _to,
         uint256 _value,
@@ -88,22 +116,36 @@ contract Identity is ERC725, ERC735, MessageSigned {
         txId = _execute(keccak256(msg.sender), _to, _value, _data);   
     }
 
-    function approve(uint256 _id, bool _approval) 
+    /**
+     * @notice approve a multisigned execution
+     * @param _txId unique id multisig transaction
+     * @param _approval approve (true) or reject (false)
+     */
+    function approve(uint256 _txId, bool _approval) 
         public 
         returns (bool success)
     {   
-        return _approveRequest(keccak256(msg.sender), _id, _approval);
+        return _approveRequest(keccak256(msg.sender), _txId, _approval);
     }
 
     ////////////////
     // Message Signed functions
     ////////////////
     
+    /**
+     * @notice execute (or request) call using ethereum signed message as authorization
+     * @param _to destination of call
+     * @param _value amount of ETH in call
+     * @param _data data
+     * @param _txCount current txCount
+     * @param _key key authorizing the call
+     * @param _signature signature of key
+     */
     function executeMessageSigned(
         address _to,
         uint256 _value,
         bytes _data,
-        uint256 _nonce,
+        uint256 _txCount,
         bytes32 _key, 
         bytes _signature
     ) 
@@ -116,15 +158,24 @@ contract Identity is ERC725, ERC735, MessageSigned {
                 _to,
                 _value,
                 _data,
-                _nonce
+                _txCount
             ),
             _signature
         )
         returns (uint256 txId)
     {
+        require(_txCount == txCount);
         txId = _execute(_key, _to, _value, _data);
+        
     }
 
+    /**
+     * @notice approve a multisigned execution using ethereum signed message as authorization
+     * @param _txId unique id multisig transaction
+     * @param _approval approve (true) or reject (false)
+     * @param _key key authorizing the call
+     * @param _signature signature of key
+     */
     function approveMessageSigned(
         uint256 _id,
         bool _approval,
@@ -147,10 +198,17 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return _approveRequest(_key, _id, _approval);
     }
     
+    
     ////////////////
     // Management functions 
     ////////////////
 
+    /**
+     * @notice Adds a _key to the identity. The `_purpose`  
+     * @param _key key hash being added
+     * @param _purpose specifies the purpose of key.
+     * @param _type inform type of key 
+     */
     function addKey(
         bytes32 _key,
         uint256 _purpose,
@@ -164,6 +222,12 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return true;
     }
 
+    /**
+     * @notice Replaces one `_oldKey` with other `_newKey`
+     * @param _oldKey key to remove
+     * @param _newKey key to add
+     * @param _newType inform type of `_newKey`
+     */
     function replaceKey(
         bytes32 _oldKey,
         bytes32 _newKey,
@@ -179,6 +243,11 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return true;
     } 
 
+    /**
+     * @notice Removes `_purpose` of `_key`
+     * @param _key key to remove
+     * @param _purpose purpose to remove
+     */
     function removeKey(
         bytes32 _key,
         uint256 _purpose
@@ -191,6 +260,11 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return true;
     }
 
+    /**
+     * @notice Defines minimum approval required by key type
+     * @param _purpose select purpose
+     * @param _minimumApprovals select how much signatures needed
+     */
     function setMinimumApprovalsByKeyType(
         uint256 _purpose,
         uint256 _minimumApprovals
@@ -203,6 +277,10 @@ contract Identity is ERC725, ERC735, MessageSigned {
         purposeThreshold[_purpose] = _minimumApprovals;
     }
     
+    /**
+     * @notice Defines recovery address. This is one time only action.
+     * @param _recoveryContract address of recovery contract
+     */
     function setupRecovery(address _recoveryContract) 
         public
         managementOnly
@@ -289,6 +367,9 @@ contract Identity is ERC725, ERC735, MessageSigned {
         purposeThreshold[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
     }
     
+    /**
+     * @notice 
+     */
     function processRecoveryReset(uint256 _limit) 
         public 
     {
