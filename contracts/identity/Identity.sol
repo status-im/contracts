@@ -29,16 +29,11 @@ contract Identity is ERC725, ERC735, MessageSigned {
         mapping(bytes32 => bool) approvals;
     }
     
-    modifier selfOrSenderKey(uint256 keyPurpose) {
+    modifier managementOnly {
         if(msg.sender == address(this)) {
             _;
         } else {
-            require(isKeyPurpose(keccak256(msg.sender), keyPurpose));
-            if (purposeThreshold[keyPurpose] == 1) {
-                _;
-            } else {
-                execute(address(this), 0, msg.data);
-            }
+            _execute(keccak256(msg.sender), address(this), 0, msg.data);
         }
     }
 
@@ -162,7 +157,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _type
     )
         public
-        selfOrSenderKey(MANAGEMENT_KEY)
+        managementOnly
         returns (bool success)
     {   
         _addKey(_key, _purpose, _type);
@@ -175,7 +170,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _newType
     )
         public
-        selfOrSenderKey(MANAGEMENT_KEY)
+        managementOnly
         returns (bool success)
     {
         uint256 purpose = keys[_oldKey].purpose;
@@ -189,7 +184,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _purpose
     )
         public
-        selfOrSenderKey(MANAGEMENT_KEY)
+        managementOnly
         returns (bool success)
     {
         _removeKey(_key, _purpose);
@@ -201,7 +196,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 _minimumApprovals
     ) 
         public 
-        selfOrSenderKey(MANAGEMENT_KEY)
+        managementOnly
     {
         require(_minimumApprovals > 0);
         require(_minimumApprovals <= keysByPurpose[_purpose].length);
@@ -210,7 +205,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     
     function setupRecovery(address _recoveryContract) 
         public
-        selfOrSenderKey(MANAGEMENT_KEY)
+        managementOnly
     {
         require(recoveryContract == address(0));
         recoveryContract = _recoveryContract;
