@@ -50,14 +50,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
         _;
     }
     
-    modifier managerOrActor(bytes32 _key) {
-        require(
-            isKeyPurpose(_key, MANAGEMENT_KEY) || 
-            isKeyPurpose(_key, ACTION_KEY)
-        );
-        _;
-    }
-    
     modifier keyMessageSigned (
         bytes32 _key, 
         bytes32 _messageHash, 
@@ -86,41 +78,83 @@ contract Identity is ERC725, ERC735, MessageSigned {
 
     }
 
-    function managerReset(bytes32 _newKey) 
+    ////////////////
+    // Execute calls and multisig approval
+    ////////////////
+
+    function execute(
+        address _to,
+        uint256 _value,
+        bytes _data
+    ) 
         public 
-        recoveryOnly
+        returns (uint256 txId)
     {
-        recoveryManager = _newKey;
-        _addKey(keccak256(recoveryManager), MANAGEMENT_KEY, 0);
-        purposeThreshold[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
+        txId = _execute(keccak256(msg.sender), _to, _value, _data);   
+    }
+
+    function approve(uint256 _id, bool _approval) 
+        public 
+        returns (bool success)
+    {   
+        return _approveRequest(keccak256(msg.sender), _id, _approval);
+    }
+
+    ////////////////
+    // Message Signed functions
+    ////////////////
+    
+    function executeMessageSigned(
+        address _to,
+        uint256 _value,
+        bytes _data,
+        uint256 _nonce,
+        bytes32 _key, 
+        bytes _signature
+    ) 
+        public 
+        keyMessageSigned(
+            _key,
+            keccak256(
+                address(this), 
+                bytes4(keccak256("execute(address,uint256,bytes)")), 
+                _to,
+                _value,
+                _data,
+                _nonce
+            ),
+            _signature
+        )
+        returns (uint256 txId)
+    {
+        txId = _execute(_key, _to, _value, _data);
+    }
+
+    function approveMessageSigned(
+        uint256 _id,
+        bool _approval,
+        bytes32 _key, 
+        bytes _signature
+    ) 
+        public 
+        keyMessageSigned(
+            _key,
+            keccak256(
+                address(this),
+                bytes4(keccak256("approve(uint256,bool)")),
+                _id,
+                _approval
+                ),
+            _signature
+        )
+        returns (bool success)
+    {   
+        return _approveRequest(_key, _id, _approval);
     }
     
-    function processManagerReset(uint256 _limit) 
-        public 
-    {
-        require(recoveryManager != 0);
-        uint256 limit = _limit;
-        bytes32 newKey = recoveryManager;
-        bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
-        uint256 totalManagers = managers.length;
-        
-        if (limit == 0) {
-            limit = totalManagers;
-        }
-
-        purposeThreshold[MANAGEMENT_KEY] = totalManagers - limit + 1;
-        for (uint256 i = 0; i < limit; i++) {
-            bytes32 manager = managers[i];
-            if (manager != newKey) {
-                _removeKey(manager, MANAGEMENT_KEY);
-                totalManagers--;
-            }
-        }
-
-        if (totalManagers == 1) {
-            delete recoveryManager;
-        }
-    }
+    ////////////////
+    // Management functions 
+    ////////////////
 
     function addKey(
         bytes32 _key,
@@ -162,24 +196,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return true;
     }
 
-    function execute(
-        address _to,
-        uint256 _value,
-        bytes _data
-    ) 
-        public 
-        returns (uint256 txId)
-    {
-        txId = _execute(keccak256(msg.sender), _to, _value, _data);   
-    }
-
-    function approve(uint256 _id, bool _approval) 
-        public 
-        returns (bool success)
-    {   
-        return _approveRequest(keccak256(msg.sender), _id, _approval);
-    }
-
     function setMinimumApprovalsByKeyType(
         uint256 _purpose,
         uint256 _minimumApprovals
@@ -192,6 +208,18 @@ contract Identity is ERC725, ERC735, MessageSigned {
         purposeThreshold[_purpose] = _minimumApprovals;
     }
     
+    function setupRecovery(address _recoveryContract) 
+        public
+        msgSenderKey(MANAGEMENT_KEY)
+    {
+        require(recoveryContract == address(0));
+        recoveryContract = _recoveryContract;
+    }
+    
+    ////////////////
+    // Claim related
+    ////////////////
+
     function addClaim(
         uint256 _claimType,
         uint256 _scheme,
@@ -250,6 +278,50 @@ contract Identity is ERC725, ERC735, MessageSigned {
         emit ClaimRemoved(_claimId, c.claimType, c.scheme, c.issuer, c.signature, c.data, c.uri);
         return true;
     }
+
+    ////////////////
+    // Recovery methods
+    ////////////////
+
+    function managerReset(bytes32 _newKey) 
+        public 
+        recoveryOnly
+    {
+        recoveryManager = _newKey;
+        _addKey(keccak256(recoveryManager), MANAGEMENT_KEY, 0);
+        purposeThreshold[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
+    }
+    
+    function processManagerReset(uint256 _limit) 
+        public 
+    {
+        require(recoveryManager != 0);
+        uint256 limit = _limit;
+        bytes32 newKey = recoveryManager;
+        bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
+        uint256 totalManagers = managers.length;
+        
+        if (limit == 0) {
+            limit = totalManagers;
+        }
+
+        purposeThreshold[MANAGEMENT_KEY] = totalManagers - limit + 1;
+        for (uint256 i = 0; i < limit; i++) {
+            bytes32 manager = managers[i];
+            if (manager != newKey) {
+                _removeKey(manager, MANAGEMENT_KEY);
+                totalManagers--;
+            }
+        }
+
+        if (totalManagers == 1) {
+            delete recoveryManager;
+        }
+    }
+
+    ////////////////
+    // Public Views
+    ////////////////
 
     function getKey(
         bytes32 _key,
@@ -340,62 +412,10 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return claimsByType[_claimType];
     }
 
-    function approveMessageSigned(
-        uint256 _id,
-        bool _approval,
-        bytes32 _key, 
-        bytes _signature
-    ) 
-        public 
-        keyMessageSigned(
-            _key,
-            keccak256(
-                address(this),
-                bytes4(keccak256("approve(uint256,bool)")),
-                _id,
-                _approval
-                ),
-            _signature
-        )
-        returns (bool success)
-    {   
-        return _approveRequest(_key, _id, _approval);
-    }
-    
-    function executeMessageSigned(
-        address _to,
-        uint256 _value,
-        bytes _data,
-        uint256 _nonce,
-        bytes32 _key, 
-        bytes _signature
-    ) 
-        public 
-        keyMessageSigned(
-            _key,
-            keccak256(
-                address(this), 
-                bytes4(keccak256("execute(address,uint256,bytes)")), 
-                _to,
-                _value,
-                _data,
-                _nonce
-            ),
-            _signature
-        )
-        returns (uint256 txId)
-    {
-        txId = _execute(_key, _to, _value, _data);
-    }
+    ////////////////
+    // Internal methods
+    ////////////////
 
-    function setupRecovery(address _recoveryContract) 
-        public
-        msgSenderKey(MANAGEMENT_KEY)
-    {
-        require(recoveryContract == address(0));
-        recoveryContract = _recoveryContract;
-    }
-    
     function _constructIdentity(bytes32 _managerKey)
         internal 
     {
@@ -428,6 +448,24 @@ contract Identity is ERC725, ERC735, MessageSigned {
         } 
     }
 
+    function _commitCall(
+        uint256 _txId,
+        address _to,
+        uint256 _value,
+        bytes _data
+    ) 
+        internal 
+        returns(bool success)
+    {
+        nonce++;
+        success = _to.call.value(_value)(_data);
+        if (success) {
+            emit Executed(_txId, _to, _value, _data); 
+        } else {
+            emit ExecutionFailed(_txId, _to, _value, _data);
+        }
+    }
+
     function _requestApproval(
         address _to,
         uint256 _value,
@@ -446,6 +484,10 @@ contract Identity is ERC725, ERC735, MessageSigned {
         });
         emit ExecutionRequested(txId, _to, _value, _data);
     }
+
+    ////////////////
+    // Private methods
+    ////////////////
 
     function _approveRequest(
         bytes32 _key,
@@ -476,24 +518,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
         }
     
         multisigTx[_id].approvals[_key] = _approval;
-    }
-
-    function _commitCall(
-        uint256 _txId,
-        address _to,
-        uint256 _value,
-        bytes _data
-    ) 
-        internal 
-        returns(bool success)
-    {
-        nonce++;
-        success = _to.call.value(_value)(_data);
-        if (success) {
-            emit Executed(_txId, _to, _value, _data); 
-        } else {
-            emit ExecutionFailed(_txId, _to, _value, _data);
-        }
     }
 
     function _addKey(
@@ -569,7 +593,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
             _uri
         );
     }
-
 
     function _modifyClaim(
         bytes32 _claimHash,
