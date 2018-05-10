@@ -12,7 +12,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
 
     uint256 public nonce;
     address public recoveryContract;
-    bytes32 recoveryManager;
+    bytes32 recoveryNewKey;
 
     mapping (bytes32 => uint256) indexes;
 
@@ -361,7 +361,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         public 
         recoveryOnly
     {
-        recoveryManager = _newKey;
+        recoveryNewKey = _newKey;
         _addKey(_newKey, ACTION_KEY, 0);
         purposeThreshold[ACTION_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
         _addKey(_newKey, MANAGEMENT_KEY, 0);
@@ -374,9 +374,9 @@ contract Identity is ERC725, ERC735, MessageSigned {
     function processRecoveryReset(uint256 _limit) 
         public 
     {
-        require(recoveryManager != 0);
+        require(recoveryNewKey != 0);
         uint256 limit = _limit;
-        bytes32 newKey = recoveryManager;
+        bytes32 newKey = recoveryNewKey;
         bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
         uint256 totalManagers = managers.length;
         
@@ -394,7 +394,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         }
 
         if (totalManagers == 1) {
-            delete recoveryManager;
+            delete recoveryNewKey;
         }
     }
 
