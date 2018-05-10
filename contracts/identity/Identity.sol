@@ -223,23 +223,23 @@ contract Identity is ERC725, ERC735, MessageSigned {
     }
 
     /**
-     * @notice Replaces one `_oldKey` with other `_newKey`
+     * @notice Replaces one `_oldKey` with other `_recoveryNewKey`
      * @param _purpose what purpose being replaced
      * @param _oldKey key to remove
-     * @param _newKey key to add
-     * @param _newType inform type of `_newKey`
+     * @param _recoveryNewKey key to add
+     * @param _newType inform type of `_recoveryNewKey`
      */
     function replaceKey(
         uint256 _purpose,
         bytes32 _oldKey,
-        bytes32 _newKey,
+        bytes32 _recoveryNewKey,
         uint256 _newType
     )
         public
         managementOnly
         returns (bool success)
     {
-        _addKey(_newKey, _purpose, _newType);
+        _addKey(_recoveryNewKey, _purpose, _newType);
         _removeKey(_oldKey, _purpose);
         return true;
     } 
@@ -357,43 +357,51 @@ contract Identity is ERC725, ERC735, MessageSigned {
     // Recovery methods
     ////////////////
 
-    function recoveryReset(bytes32 _newKey) 
+    /** 
+     * @notice Add `_recoveryNewKey` as ACTION_KEY and MANAGEMENT_KEY and change 
+     *         purposeThreshold of ACTION_KEY and _MANAGEMENT_KEY to all keys in their purpose.
+     *         enables `processRecoveryReset(uint256)` to wipe all keys but `_recoveryNewKey`.
+     * @param _recoveryNewKey new key being defined
+     */
+    function recoveryReset(bytes32 _recoveryNewKey) 
         public 
         recoveryOnly
     {
-        recoveryNewKey = _newKey;
-        _addKey(_newKey, ACTION_KEY, 0);
-        purposeThreshold[ACTION_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
-        _addKey(_newKey, MANAGEMENT_KEY, 0);
-        purposeThreshold[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length;
+        recoveryNewKey = _recoveryNewKey;
+        _addKey(_recoveryNewKey, MANAGEMENT_KEY, 0); //add _newRecoveryKey in last position
+        _removeKey(keysByPurpose[MANAGEMENT_KEY][0], MANAGEMENT_KEY);//replace first element with last
+        purposeThreshold[MANAGEMENT_KEY] = keysByPurpose[MANAGEMENT_KEY].length; //"lock" management
+        purposeThreshold[ACTION_KEY] = keysByPurpose[ACTION_KEY].length; //"lock" action
     }
     
     /**
-     * @notice 
+     * @notice Removes all management keys, except recoveryNewKey defined by `recoveryReset(bytes32)`
+     * @param _limit how much management keys to remove in this interaction, 0 = all.
      */
     function processRecoveryReset(uint256 _limit) 
         public 
     {
-        require(recoveryNewKey != 0);
+        bytes32 _recoveryNewKey = recoveryNewKey;
+        require(_recoveryNewKey != 0);
         uint256 limit = _limit;
-        bytes32 newKey = recoveryNewKey;
         bytes32[] memory managers = keysByPurpose[MANAGEMENT_KEY];
         uint256 totalManagers = managers.length;
-        
         if (limit == 0) {
             limit = totalManagers;
         }
-
-        purposeThreshold[MANAGEMENT_KEY] = totalManagers - limit + 1;
-        for (uint256 i = 0; i < limit; i++) {
-            bytes32 manager = managers[i];
-            if (manager != newKey) {
-                _removeKey(manager, MANAGEMENT_KEY);
+        keysByPurpose[MANAGEMENT_KEY].length -= limit-1; //trim off purposes being deleted
+        for (uint256 i = limit; i > 0; i--) { //go backwards to avoid indexes replacement
+            bytes32 _key = managers[i - 1];
+            if (_key != _recoveryNewKey) {
+                bytes32 keyPurposeHash = keccak256(_key, MANAGEMENT_KEY);
+                delete isKeyPurpose[keyPurposeHash];
+                delete indexes[keyPurposeHash];
+                delete keys[_key];
                 totalManagers--;
             }
         }
-
         if (totalManagers == 1) {
+            purposeThreshold[MANAGEMENT_KEY] = 1; // "unlock" management
             delete recoveryNewKey;
         }
     }
@@ -602,7 +610,8 @@ contract Identity is ERC725, ERC735, MessageSigned {
         
         emit KeyAdded(_key, _purpose, _type);
     }
-
+    
+    
     function _removeKey(
         bytes32 _key,
         uint256 _purpose
@@ -633,8 +642,9 @@ contract Identity is ERC725, ERC735, MessageSigned {
         //remove key purposes array element
         Key storage myKey = keys[_key];
         uint256 _type = myKey.keyType;
-        replacerIndex = myKey.purposes.length - 1;
-        if (replacerIndex > 0) {
+        replacerIndex = myKey.purposes.length;
+        if (replacerIndex > 1) {
+            replacerIndex--;
             bytes32 keyPurposeHashHash = keccak256(keyPurposeHash);
             removedIndex = indexes[keyPurposeHashHash];
             delete indexes[keyPurposeHashHash];
