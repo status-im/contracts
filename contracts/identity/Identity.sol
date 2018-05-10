@@ -10,20 +10,22 @@ import "../common/MessageSigned.sol";
  */
 contract Identity is ERC725, ERC735, MessageSigned {
 
+    uint256 public nonce;
+    address public recoveryContract;
+    bytes32 recoveryManager;
+
+    mapping (bytes32 => uint256) indexes;
+
     mapping (bytes32 => Key) keys;
     mapping (bytes32 => bool) isKeyPurpose;
     mapping (uint256 => bytes32[]) keysByPurpose;
-    mapping (bytes32 => Claim) claims;
-    mapping (uint256 => bytes32[]) claimsByType;
 
-    mapping (bytes32 => uint256) indexes;
     mapping (uint256 => Transaction) pendingTx;
     mapping (uint256 => uint256) purposeThreshold;
-    
-    uint256 public nonce;
-    address recoveryContract;
-    bytes32 recoveryManager;
 
+    mapping (bytes32 => Claim) claims;
+    mapping (uint256 => bytes32[]) claimsByType;
+    
     struct Transaction {
         uint256 approverCount;
         address to;
