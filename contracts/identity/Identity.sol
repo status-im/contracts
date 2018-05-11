@@ -224,25 +224,22 @@ contract Identity is ERC725, ERC735, MessageSigned {
     }
 
     /**
-     * @notice Replaces one `_oldKey` with other `_recoveryNewKey`
+     * @notice Replaces one `_oldKey` with other `_newKey`
      * @param _purpose what purpose being replaced
      * @param _oldKey key to remove
-     * @param _recoveryNewKey key to add
-     * @param _newType inform type of `_recoveryNewKey`
+     * @param _newKey key to add
+     * @param _newType inform type of `_newKey`
      */
     function replaceKey(
-        uint256 _purpose,
         bytes32 _oldKey,
-        bytes32 _recoveryNewKey,
+        bytes32 _newKey,
         uint256 _newType
     )
         public
         managementOnly
         returns (bool success)
-    {
-        _addKey(_recoveryNewKey, _purpose, _newType, salt);
-        _removeKey(_oldKey, _purpose, salt);
-        return true;
+    {   
+        return _replaceKey(_oldKey, _newKey, _newType, salt);
     } 
 
     /**
@@ -582,7 +579,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
         emit KeyAdded(_key, _purpose, _type);
     }
     
-    
     function _removeKey(
         bytes32 _key,
         uint256 _purpose,
@@ -634,6 +630,55 @@ contract Identity is ERC725, ERC735, MessageSigned {
         
         emit KeyRemoved(_key, _purpose, _type);
     }
+
+    
+    /**
+     * @notice Replaces one `_oldKey` with other `_newKey`
+     * @param _oldKey key to remove
+     * @param _newKey key to add
+     * @param _newType inform type of `_newKey`
+     * @param _salt current salt
+     */
+    function _replaceKey(
+        bytes32 _oldKey,
+        bytes32 _newKey,
+        uint256 _newType,
+        uint256 _salt
+    )
+        private
+        returns (bool success)
+    {   
+        bytes32 newKeySaltedHash = keccak256(_newKey, _salt); // key storage pointer     
+        if (_oldKey == _newKey) { //not replacing key, just keyType
+            keys[newKeySaltedHash].keyType == _newType; 
+            return true;
+        }
+        bytes32 oldKeySaltedHash = keccak256(_oldKey, _salt); // key storage pointer     
+        Key memory oldKey = keys[oldKeySaltedHash];
+        delete keys[oldKeySaltedHash];
+        uint256 len = oldKey.purposes.length;
+        for (uint i = 0; i < len; i++) {
+            uint256 _purpose = oldKey.purposes[i];
+            bytes32 purposeSaltedHash = keccak256(_purpose, _salt); // salted accounts by purpose array index pointer   
+            bytes32 saltedOldKeyPurposeHash = keccak256(oldKeySaltedHash, _purpose); // accounts by purpose hash element index pointer
+            bytes32 saltedNewKeyPurposeHash = keccak256(newKeySaltedHash, _purpose); // accounts by purpose hash element index pointer
+            bytes32 oldKeyPurposeSaltedHash = keccak256(_oldKey, _purpose, _salt); //account purpose array element index
+            bytes32 newKeyPurposeSaltedHash = keccak256(_newKey, _purpose, _salt); //account purpose array element index
+
+            delete isKeyPurpose[saltedOldKeyPurposeHash]; //clear oldKey auth
+            isKeyPurpose[saltedNewKeyPurposeHash] = true; //set newKey auth
+            
+            uint256 replacedKeyElementIndex = indexes[saltedOldKeyPurposeHash];
+            delete indexes[saltedOldKeyPurposeHash];
+            keysByPurpose[purposeSaltedHash][replacedKeyElementIndex] = _newKey; //replace key at list by purpose
+            indexes[saltedNewKeyPurposeHash] = replacedKeyElementIndex; // save index
+            
+            indexes[newKeyPurposeSaltedHash] = indexes[oldKeyPurposeSaltedHash]; //transfer key purposes list index
+            delete indexes[oldKeyPurposeSaltedHash];
+        }
+        keys[newKeySaltedHash] = Key(oldKey.purposes, _newType, _newKey); //add new key
+        return true;
+    } 
 
     function _includeClaim(
         bytes32 _claimHash,
