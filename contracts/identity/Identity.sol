@@ -80,10 +80,49 @@ contract Identity is ERC725, ERC735, MessageSigned {
     }
 
     /**
-     * @notice constructor builds identity with first key as `msg.sender`
+     * @notice constructor builds identity with provided `_keys` 
+     *         or uses `msg.sender` as first MANAGEMENT + ACTION key
+     * @param _keys Keys to add
+     * @param _purposes `_keys` corresponding purposes
+     * @param _types `_keys` corresponding types
+     * @param _managerThreshold how much keys needs to sign management calls
+     * @param _actorThreshold how much keys need to sign action management calls
+     * @param _recoveryContract Option to initialize with recovery defined
      */
-    constructor(bytes32 _key) public {
-        _constructIdentity(_key);
+    constructor(   
+        bytes32[] _keys,
+        uint256[] _purposes,
+        uint256[] _types,
+        uint256 _managerThreshold,
+        uint256 _actorThreshold,
+        address _recoveryContract
+    ) public {
+        bytes32[] memory initKeys = _keys;
+        uint256[] memory initPurposes = _purposes;
+        uint256[] memory initTypes = _types;
+        uint256 managerThreshold = _managerThreshold;
+        
+        if (_keys.length == 0) {
+            initKeys = new bytes32[](2);
+            initPurposes = new uint256[](2);
+            initTypes = new uint256[](2);
+            initKeys[0] = keccak256(msg.sender);
+            initKeys[1] = initKeys[0];
+            initPurposes[0] = MANAGEMENT_KEY;
+            initPurposes[1] = ACTION_KEY;
+            initTypes[0] = 0;
+            initTypes[1] = 0;
+            managerThreshold = 1;
+        }
+        
+        _constructIdentity(
+            initKeys,
+            initPurposes,
+            initTypes,
+            managerThreshold,
+            _actorThreshold,
+            _recoveryContract
+        );
     }    
 
     /**
@@ -342,7 +381,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 claimIdTopicPos = indexes[_claimId];
         delete indexes[_claimId];
         bytes32[] storage claimsTopicArr = claimsByType[c.topic];
-        bytes32 replacer = claimsTopicArr[claimsTopicArr.length-1];
+        bytes32 replacer = claimsTopicArr[claimsTopicArr.length - 1];
         claimsTopicArr[claimIdTopicPos] = replacer;
         indexes[replacer] = claimIdTopicPos;
         delete claims[_claimId];
@@ -388,7 +427,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     function hasKeyPurpose(bytes32 _key, uint256 _purpose) 
         public
         view 
-        returns (bool)
+        returns (bool) 
     {
         return isKeyPurpose[keccak256(_key, _purpose)];
     }
@@ -437,17 +476,33 @@ contract Identity is ERC725, ERC735, MessageSigned {
     // Internal methods
     ////////////////
 
-    function _constructIdentity(bytes32 _managerKey)
+    function _constructIdentity(
+        bytes32[] _keys,
+        uint256[] _purposes,
+        uint256[] _types,
+        uint256 _managerThreshold,
+        uint256 _actorThreshold,
+        address _recoveryContract
+    )
         internal 
     {
         uint256 _salt = salt;
-        require(keysByPurpose[keccak256(MANAGEMENT_KEY, _salt)].length == 0);
         require(purposeThreshold[MANAGEMENT_KEY] == 0);
-        _addKey(_managerKey, MANAGEMENT_KEY, 0, _salt);
-        _addKey(_managerKey, ACTION_KEY, 0, _salt);
-
-        purposeThreshold[MANAGEMENT_KEY] = 1;
-        purposeThreshold[ACTION_KEY] = 1;
+        require(keysByPurpose[keccak256(MANAGEMENT_KEY, _salt)].length == 0);
+        require(len == _purposes.length);
+        uint len = _keys.length;
+        uint managersAdded = 0;
+        for(uint i = 0; i < len; i++) {
+            uint256 _purpose = _purposes[i];
+            _addKey(_keys[i], _purpose, _types[i], _salt);
+            if(_purpose == MANAGEMENT_KEY) {
+                managersAdded++;
+            }
+        }
+        require(_managerThreshold <= managersAdded);
+        purposeThreshold[MANAGEMENT_KEY] = _managerThreshold;
+        purposeThreshold[ACTION_KEY] = _actorThreshold;
+        recoveryContract = _recoveryContract;
     }
 
     function _execute(
@@ -558,7 +613,8 @@ contract Identity is ERC725, ERC735, MessageSigned {
     ) 
         private
     {
-        require(_purpose > 0);
+        require(_key != 0);
+        require(_purpose != 0);
         
         bytes32 keySaltedHash = keccak256(_key, _salt); //key storage pointer
         bytes32 saltedKeyPurposeHash = keccak256(keySaltedHash, _purpose); // accounts by purpose hash element index pointer
@@ -568,7 +624,8 @@ contract Identity is ERC725, ERC735, MessageSigned {
         uint256 keyElementIndex = keysByPurpose[saltedKeyPurposeHash].push(_key) - 1; //add key to list by purpose 
         indexes[saltedKeyPurposeHash] = keyElementIndex; //save index of key in list by purpose
         if (keys[keySaltedHash].key == 0) { //is a new key
-            uint256[] memory purposes = new uint256[](_purpose);  //create new array with first purpose
+            uint256[] memory purposes = new uint256[](1);  //create new array with first purpose
+            purposes[0] = _purpose;
             keys[keySaltedHash] = Key(purposes,_type,_key); //add new key
         } else {
             uint256 addedPurposeElementIndex = keys[keySaltedHash].purposes.push(_purpose) - 1; //add purpose to key
