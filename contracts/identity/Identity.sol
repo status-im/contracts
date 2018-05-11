@@ -293,7 +293,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     ////////////////
 
     function addClaim(
-        uint256 _claimType,
+        uint256 _topic,
         uint256 _scheme,
         address _issuer,
         bytes _signature,
@@ -303,19 +303,19 @@ contract Identity is ERC725, ERC735, MessageSigned {
         public 
         returns (bytes32 claimHash)
     {
-        claimHash = keccak256(_issuer, _claimType);
+        claimHash = keccak256(_issuer, _topic);
         if (msg.sender == address(this)) {
-            if (claims[claimHash].claimType > 0) {
-                _modifyClaim(claimHash, _claimType, _scheme, _issuer, _signature, _data, _uri);
+            if (claims[claimHash].topic > 0) {
+                _modifyClaim(claimHash, _topic, _scheme, _issuer, _signature, _data, _uri);
             } else {
-                _includeClaim(claimHash, _claimType, _scheme, _issuer, _signature, _data, _uri);
+                _includeClaim(claimHash, _topic, _scheme, _issuer, _signature, _data, _uri);
             }
         } else {
             require(hasKeyPurpose(keccak256(msg.sender), CLAIM_SIGNER_KEY));
             _requestApproval(0, address(this), 0, msg.data);
             emit ClaimRequested(
                 claimHash,
-                _claimType,
+                _topic,
                 _scheme,
                 _issuer,
                 _signature,
@@ -339,15 +339,15 @@ contract Identity is ERC725, ERC735, MessageSigned {
         // MUST only be done by the issuer of the claim, or KEYS OF PURPOSE 1, or the identity itself.
         // TODO If its the identity itself, the approval process will determine its approval.
         
-        uint256 claimIdTypePos = indexes[_claimId];
+        uint256 claimIdTopicPos = indexes[_claimId];
         delete indexes[_claimId];
-        bytes32[] storage claimsTypeArr = claimsByType[c.claimType];
-        bytes32 replacer = claimsTypeArr[claimsTypeArr.length-1];
-        claimsTypeArr[claimIdTypePos] = replacer;
-        indexes[replacer] = claimIdTypePos;
+        bytes32[] storage claimsTopicArr = claimsByType[c.topic];
+        bytes32 replacer = claimsTopicArr[claimsTopicArr.length-1];
+        claimsTopicArr[claimIdTopicPos] = replacer;
+        indexes[replacer] = claimIdTopicPos;
         delete claims[_claimId];
-        claimsTypeArr.length--;
-        emit ClaimRemoved(_claimId, c.claimType, c.scheme, c.issuer, c.signature, c.data, c.uri);
+        claimsTopicArr.length--;
+        emit ClaimRemoved(_claimId, c.topic, c.scheme, c.issuer, c.signature, c.data, c.uri);
         return true;
     }
 
@@ -413,7 +413,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         public
         view 
         returns(
-            uint256 claimType,
+            uint256 topic,
             uint256 scheme,
             address issuer,
             bytes signature,
@@ -422,15 +422,15 @@ contract Identity is ERC725, ERC735, MessageSigned {
             ) 
     {
         Claim memory _claim = claims[_claimId];
-        return (_claim.claimType, _claim.scheme, _claim.issuer, _claim.signature, _claim.data, _claim.uri);
+        return (_claim.topic, _claim.scheme, _claim.issuer, _claim.signature, _claim.data, _claim.uri);
     }
     
-    function getClaimIdsByType(uint256 _claimType)
+    function getClaimIdsByTopic(uint256 _topic)
         public
         view
         returns(bytes32[] claimIds)
     {
-        return claimsByType[_claimType];
+        return claimsByType[_topic];
     }
 
     ////////////////
@@ -682,7 +682,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
 
     function _includeClaim(
         bytes32 _claimHash,
-        uint256 _claimType,
+        uint256 _topic,
         uint256 _scheme,
         address _issuer,
         bytes _signature,
@@ -693,7 +693,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     {
         claims[_claimHash] = Claim(
             {
-            claimType: _claimType,
+            topic: _topic,
             scheme: _scheme,
             issuer: _issuer,
             signature: _signature,
@@ -701,11 +701,11 @@ contract Identity is ERC725, ERC735, MessageSigned {
             uri: _uri
             }
         );
-        indexes[_claimHash] = claimsByType[_claimType].length;
-        claimsByType[_claimType].push(_claimHash);
+        indexes[_claimHash] = claimsByType[_topic].length;
+        claimsByType[_topic].push(_claimHash);
         emit ClaimAdded(
             _claimHash,
-            _claimType,
+            _topic,
             _scheme,
             _issuer,
             _signature,
@@ -716,7 +716,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
 
     function _modifyClaim(
         bytes32 _claimHash,
-        uint256 _claimType,
+        uint256 _topic,
         uint256 _scheme,
         address _issuer,
         bytes _signature,
@@ -727,7 +727,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     {
         require(msg.sender == _issuer);
         claims[_claimHash] = Claim({
-            claimType: _claimType,
+            topic: _topic,
             scheme: _scheme,
             issuer: _issuer,
             signature: _signature,
@@ -736,7 +736,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         });
         emit ClaimChanged(
             _claimHash,
-            _claimType,
+            _topic,
             _scheme,
             _issuer,
             _signature,
