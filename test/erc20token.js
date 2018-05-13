@@ -5,14 +5,14 @@ describe("ERC20Token", async function() {
   before(function(done) {
     this.timeout(0);
     var contractsConfig = {
-      "TestToken": {
-      }
+      "TestToken": { },
+      "ERC20Receiver": { }
     };
     EmbarkSpec.deployAll(contractsConfig, async function(accounts) { 
       ERC20Token = TestToken;
       accountsArr = accounts; 
       for(i=0;i<accountsArr.length;i++){
-        await ERC20Token.methods.mint(100).send({from: accountsArr[i]})
+        await ERC20Token.methods.mint(7 * 10 ^ 18).send({from: accountsArr[i]})
       }
       done()
     });
@@ -61,6 +61,21 @@ describe("ERC20Token", async function() {
     assert.equal(result, 0);
   });
 
+  it("should deposit approved amount to contract ERC20Receiver", async function() {
+    await ERC20Token.methods.approve(ERC20Receiver.address,10).send({from: accountsArr[0]});
+    await ERC20Receiver.methods.depositToken(ERC20Token.address).send({from: accountsArr[0]});
+    let result = await ERC20Receiver.methods.tokenBalanceOf(ERC20Token.address, accountsArr[0]).call();
+    assert.equal(result, 10, "ERC20Receiver.tokenBalanceOf("+ERC20Token.address+","+accountsArr[0]+") wrong");
+  });
+
+  it("should witdraw approved amount from contract ERC20Receiver", async function() {
+    let tokenBalance = await ERC20Receiver.methods.tokenBalanceOf(ERC20Token.address, accountsArr[0]).call();
+    await ERC20Receiver.methods.withdrawToken(ERC20Token.address, tokenBalance).send({from: accountsArr[0]});
+    tokenBalance = await ERC20Receiver.methods.tokenBalanceOf(ERC20Token.address, accountsArr[0]).call();
+    assert.equal(tokenBalance, 0, "ERC20Receiver.tokenBalanceOf("+ERC20Token.address+","+accountsArr[0]+") wrong");
+  });
+
   //TODO: include checks for expected events fired
+
 
 });

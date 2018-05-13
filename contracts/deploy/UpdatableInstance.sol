@@ -21,7 +21,7 @@ contract UpdatableInstance is Instance {
     
     function updateUpdatableInstance(address _kernel) external {
         require(msg.sender == address(this));
-        InstanceUpdated(kernel, _kernel);
+        emit InstanceUpdated(kernel, _kernel);
         kernel = _kernel;
     }
 
