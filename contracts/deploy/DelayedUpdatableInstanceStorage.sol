@@ -17,4 +17,6 @@ contract DelayedUpdatableInstanceStorage {
         uint256 activation;
     }
     // protected zone end
+
+    constructor() internal { }
 }
