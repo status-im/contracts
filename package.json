@@ -1,6 +1,7 @@
 {
   "name": "status-contracts",
-  "version": "1.0.0",
+  "version": "0.0.1",
+  "description": "",
   "scripts": {
     "solidity-coverage": "./node_modules/.bin/solidity-coverage",
     "test": "embark test"
@@ -15,13 +16,6 @@
     "url": "https://github.com/status-im/contracts/issues"
   },
   "homepage": "https://github.com/status-im/contracts#readme",
-  "devDependencies": {
-    "solidity-coverage": "^0.5.0",
-    "elliptic": "^6.4.0"
-  },
-  "dependencies": {
-    "embark": "^2.7.0",
-    "elliptic-curve": "^0.1.0",
-    "ethereumjs-util": "^5.1.5"
+  "dependencies": { 
   }
 }

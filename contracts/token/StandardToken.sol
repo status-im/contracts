@@ -66,7 +66,7 @@ contract StandardToken is ERC20Token {
     function totalSupply() 
         external 
         view 
-        returns(uint256 supply) 
+        returns(uint256 totalSupply) 
     {
         return supply;
     }
