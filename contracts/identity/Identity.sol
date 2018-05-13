@@ -428,7 +428,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         view 
         returns (bool exists) 
     {
-        return isKeyPurpose[keccak256(_key, _purpose)];
+        return isKeyPurpose[keccak256(keccak256(_key, salt), _purpose)];
     }
 
     function getKeyPurpose(bytes32 _key)
@@ -486,10 +486,11 @@ contract Identity is ERC725, ERC735, MessageSigned {
         internal 
     {
         uint256 _salt = salt;
-        require(purposeThreshold[MANAGEMENT_KEY] == 0);
-        require(keysByPurpose[keccak256(MANAGEMENT_KEY, _salt)].length == 0);
-        require(len == _purposes.length);
         uint len = _keys.length;
+        require(len > 0);
+        require(purposeThreshold[MANAGEMENT_KEY] == 0, "Already Initialized (1)");
+        require(keysByPurpose[keccak256(MANAGEMENT_KEY, _salt)].length == 0, "Already Initialized (2)");
+        require(len == _purposes.length, "Wrong _purposes lenght");
         uint managersAdded = 0;
         for(uint i = 0; i < len; i++) {
             uint256 _purpose = _purposes[i];
@@ -498,7 +499,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
                 managersAdded++;
             }
         }
-        require(_managerThreshold <= managersAdded);
+        require(_managerThreshold <= managersAdded, "managers added is less then required");
         purposeThreshold[MANAGEMENT_KEY] = _managerThreshold;
         purposeThreshold[ACTION_KEY] = _actorThreshold;
         recoveryContract = _recoveryContract;
@@ -643,7 +644,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         private 
     {
         bytes32 keySaltedHash = keccak256(_key, _salt); // key storage pointer
-        _removeKeyFromPurposes(keySaltedHash, _key, _purpose, _salt);
+        _removeKeyFromPurposes(keySaltedHash, _purpose, _salt);
         //remove key purposes array purpose element
         Key storage myKey = keys[keySaltedHash]; //load Key storage pointer
         uint256 _type = myKey.keyType; //save type for case key deleted
@@ -666,11 +667,15 @@ contract Identity is ERC725, ERC735, MessageSigned {
         emit KeyRemoved(_key, _purpose, _type);
     }
 
-    function _removeKeyFromPurposes(bytes32 keySaltedHash, bytes32 _key, uint256 _purpose, uint256 _salt) private {
+    function _removeKeyFromPurposes(
+        bytes32 keySaltedHash,
+        uint256 _purpose,
+        uint256 _salt
+    ) private {
         bytes32 purposeSaltedHash = keccak256(_purpose, _salt); // salted accounts by purpose array index pointer   
         // forbidden to remove last management key
         if (_purpose == MANAGEMENT_KEY) {
-            require(keysByPurpose[purposeSaltedHash].length > purposeThreshold[MANAGEMENT_KEY]);
+            require(purposeThreshold[MANAGEMENT_KEY] <= keysByPurpose[purposeSaltedHash].length-1);
         }
 
         bytes32 saltedKeyPurposeHash = keccak256(keySaltedHash, _purpose); // accounts by purpose hash element index pointer
@@ -690,9 +695,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
         keysByPurpose[purposeSaltedHash].length--; // remove last element
     }
     
-    function _removePurposeFromKey(bytes32 keySaltedHash, bytes32 _key, uint256 _purpose, uint256 _salt) private {
-
-    }
     /**
      * @notice Replaces one `_oldKey` with other `_newKey`
      * @param _oldKey key to remove
