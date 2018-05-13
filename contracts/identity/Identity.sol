@@ -46,7 +46,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     }
 
     /**
-     * @notices requires called by recovery address
+     * @notice requires called by recovery address
      */
     modifier recoveryOnly {
         require(
@@ -264,7 +264,6 @@ contract Identity is ERC725, ERC735, MessageSigned {
 
     /**
      * @notice Replaces one `_oldKey` with other `_newKey`
-     * @param _purpose what purpose being replaced
      * @param _oldKey key to remove
      * @param _newKey key to add
      * @param _newType inform type of `_newKey`
@@ -350,7 +349,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
                 _includeClaim(claimHash, _topic, _scheme, _issuer, _signature, _data, _uri);
             }
         } else {
-            require(hasKeyPurpose(keccak256(msg.sender), CLAIM_SIGNER_KEY));
+            require(keyHasPurpose(keccak256(msg.sender), CLAIM_SIGNER_KEY));
             _requestApproval(0, address(this), 0, msg.data);
             emit ClaimRequested(
                 claimHash,
@@ -424,10 +423,10 @@ contract Identity is ERC725, ERC735, MessageSigned {
         return (myKey.purposes, myKey.keyType, myKey.key);
     }
     
-    function hasKeyPurpose(bytes32 _key, uint256 _purpose) 
+    function keyHasPurpose(bytes32 _key, uint256 _purpose) 
         public
         view 
-        returns (bool) 
+        returns (bool exists) 
     {
         return isKeyPurpose[keccak256(_key, _purpose)];
     }
@@ -515,7 +514,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         returns (uint256 txId)
     {
         uint256 requiredPurpose = _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
-        require(hasKeyPurpose(_key, requiredPurpose));
+        require(keyHasPurpose(_key, requiredPurpose));
         if (purposeThreshold[requiredPurpose] == 1) {
             txId = nonce++;
             _commitCall(txId, _to, _value, _data);
@@ -582,7 +581,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
         Transaction memory approvedTx = pendingTx[_txId];
         require(approvedTx.approverCount > 0);
         uint256 requiredKeyPurpose = approvedTx.to == address(this) ? MANAGEMENT_KEY : ACTION_KEY;
-        require(hasKeyPurpose(_key, requiredKeyPurpose));
+        require(keyHasPurpose(_key, requiredKeyPurpose));
         require(pendingTx[_txId].approvals[_key] != _approval);
         
         if (_approval) {
@@ -643,29 +642,8 @@ contract Identity is ERC725, ERC735, MessageSigned {
     )
         private 
     {
-        bytes32 purposeSaltedHash = keccak256(_purpose, _salt); // salted accounts by purpose array index pointer   
-        // forbidden to remove last management key
-        if (_purpose == MANAGEMENT_KEY) {
-            require(keysByPurpose[purposeSaltedHash].length > purposeThreshold[MANAGEMENT_KEY]);
-        }
-
         bytes32 keySaltedHash = keccak256(_key, _salt); // key storage pointer
-        bytes32 saltedKeyPurposeHash = keccak256(keySaltedHash, _purpose); // accounts by purpose hash element index pointer
-        require(isKeyPurpose[saltedKeyPurposeHash]); //not possible to remove what not exists
-        delete isKeyPurpose[saltedKeyPurposeHash]; //remove authorization
-
-        // remove keys by purpose array key element
-        uint256 removedKeyIndex = indexes[saltedKeyPurposeHash]; // read old key element index
-        delete indexes[saltedKeyPurposeHash]; // delete key index
-        
-        uint256 replacerKeyIndex = keysByPurpose[purposeSaltedHash].length - 1; // replacer is last element
-        if (removedKeyIndex != replacerKeyIndex) {  // deleted not the last element, replace deleted by last element
-            bytes32 replacerKey = keysByPurpose[purposeSaltedHash][replacerKeyIndex]; // get replacer key 
-            keysByPurpose[purposeSaltedHash][removedKeyIndex] = replacerKey; // overwrite removed index by replacer
-            indexes[keccak256(keccak256(replacerKey, _salt), _purpose)] = removedKeyIndex; // update saltedKeyPurposeHash index of replacer
-        }
-        keysByPurpose[purposeSaltedHash].length--; // remove last element
-
+        _removeKeyFromPurposes(keySaltedHash, _key, _purpose, _salt);
         //remove key purposes array purpose element
         Key storage myKey = keys[keySaltedHash]; //load Key storage pointer
         uint256 _type = myKey.keyType; //save type for case key deleted
@@ -688,7 +666,33 @@ contract Identity is ERC725, ERC735, MessageSigned {
         emit KeyRemoved(_key, _purpose, _type);
     }
 
+    function _removeKeyFromPurposes(bytes32 keySaltedHash, bytes32 _key, uint256 _purpose, uint256 _salt) private {
+        bytes32 purposeSaltedHash = keccak256(_purpose, _salt); // salted accounts by purpose array index pointer   
+        // forbidden to remove last management key
+        if (_purpose == MANAGEMENT_KEY) {
+            require(keysByPurpose[purposeSaltedHash].length > purposeThreshold[MANAGEMENT_KEY]);
+        }
+
+        bytes32 saltedKeyPurposeHash = keccak256(keySaltedHash, _purpose); // accounts by purpose hash element index pointer
+        require(isKeyPurpose[saltedKeyPurposeHash]); //not possible to remove what not exists
+        delete isKeyPurpose[saltedKeyPurposeHash]; //remove authorization
+
+        // remove keys by purpose array key element
+        uint256 removedKeyIndex = indexes[saltedKeyPurposeHash]; // read old key element index
+        delete indexes[saltedKeyPurposeHash]; // delete key index
+        
+        uint256 replacerKeyIndex = keysByPurpose[purposeSaltedHash].length - 1; // replacer is last element
+        if (removedKeyIndex != replacerKeyIndex) {  // deleted not the last element, replace deleted by last element
+            bytes32 replacerKey = keysByPurpose[purposeSaltedHash][replacerKeyIndex]; // get replacer key 
+            keysByPurpose[purposeSaltedHash][removedKeyIndex] = replacerKey; // overwrite removed index by replacer
+            indexes[keccak256(keccak256(replacerKey, _salt), _purpose)] = removedKeyIndex; // update saltedKeyPurposeHash index of replacer
+        }
+        keysByPurpose[purposeSaltedHash].length--; // remove last element
+    }
     
+    function _removePurposeFromKey(bytes32 keySaltedHash, bytes32 _key, uint256 _purpose, uint256 _salt) private {
+
+    }
     /**
      * @notice Replaces one `_oldKey` with other `_newKey`
      * @param _oldKey key to remove
@@ -715,27 +719,38 @@ contract Identity is ERC725, ERC735, MessageSigned {
         delete keys[oldKeySaltedHash];
         uint256 len = oldKey.purposes.length;
         for (uint i = 0; i < len; i++) {
-            uint256 _purpose = oldKey.purposes[i];
-            bytes32 purposeSaltedHash = keccak256(_purpose, _salt); // salted accounts by purpose array index pointer   
-            bytes32 saltedOldKeyPurposeHash = keccak256(oldKeySaltedHash, _purpose); // accounts by purpose hash element index pointer
-            bytes32 saltedNewKeyPurposeHash = keccak256(newKeySaltedHash, _purpose); // accounts by purpose hash element index pointer
-            bytes32 oldKeyPurposeSaltedHash = keccak256(_oldKey, _purpose, _salt); //account purpose array element index
-            bytes32 newKeyPurposeSaltedHash = keccak256(_newKey, _purpose, _salt); //account purpose array element index
-
-            delete isKeyPurpose[saltedOldKeyPurposeHash]; //clear oldKey auth
-            isKeyPurpose[saltedNewKeyPurposeHash] = true; //set newKey auth
-            
-            uint256 replacedKeyElementIndex = indexes[saltedOldKeyPurposeHash];
-            delete indexes[saltedOldKeyPurposeHash];
-            keysByPurpose[purposeSaltedHash][replacedKeyElementIndex] = _newKey; //replace key at list by purpose
-            indexes[saltedNewKeyPurposeHash] = replacedKeyElementIndex; // save index
-            
-            indexes[newKeyPurposeSaltedHash] = indexes[oldKeyPurposeSaltedHash]; //transfer key purposes list index
-            delete indexes[oldKeyPurposeSaltedHash];
+            _replaceKeyPurpose(oldKeySaltedHash, oldKeySaltedHash, _oldKey, _newKey, oldKey.purposes[i], _salt);
         }
         keys[newKeySaltedHash] = Key(oldKey.purposes, _newType, _newKey); //add new key
         return true;
     } 
+
+    function _replaceKeyPurpose(
+        bytes32 newKeySaltedHash,
+        bytes32 oldKeySaltedHash,
+        bytes32 _oldKey,
+        bytes32 _newKey,
+        uint256 _purpose,
+        uint256 _salt
+    ) internal
+    {
+        bytes32 purposeSaltedHash = keccak256(_purpose, _salt); // salted accounts by purpose array index pointer   
+        bytes32 saltedOldKeyPurposeHash = keccak256(oldKeySaltedHash, _purpose); // accounts by purpose hash element index pointer
+        bytes32 saltedNewKeyPurposeHash = keccak256(newKeySaltedHash, _purpose); // accounts by purpose hash element index pointer
+        bytes32 oldKeyPurposeSaltedHash = keccak256(_oldKey, _purpose, _salt); //account purpose array element index
+        bytes32 newKeyPurposeSaltedHash = keccak256(_newKey, _purpose, _salt); //account purpose array element index
+
+        delete isKeyPurpose[saltedOldKeyPurposeHash]; //clear oldKey auth
+        isKeyPurpose[saltedNewKeyPurposeHash] = true; //set newKey auth
+        
+        uint256 replacedKeyElementIndex = indexes[saltedOldKeyPurposeHash];
+        delete indexes[saltedOldKeyPurposeHash];
+        keysByPurpose[purposeSaltedHash][replacedKeyElementIndex] = _newKey; //replace key at list by purpose
+        indexes[saltedNewKeyPurposeHash] = replacedKeyElementIndex; // save index
+        
+        indexes[newKeyPurposeSaltedHash] = indexes[oldKeyPurposeSaltedHash]; //transfer key purposes list index
+        delete indexes[oldKeyPurposeSaltedHash];
+    }
 
     function _includeClaim(
         bytes32 _claimHash,

@@ -1,8 +1,4 @@
 
-const assert = require('assert');
-const Embark = require('embark');
-let EmbarkSpec = Embark.initTests();
-let web3 = EmbarkSpec.web3;
 const TestUtils = require("../utils/testUtils.js");
 const idUtils = require('../utils/identityUtils.js');
 
