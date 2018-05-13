@@ -17,6 +17,9 @@
   },
   "homepage": "https://github.com/status-im/contracts#readme",
   "dependencies": {
-    "web3-eth-abi": "^1.0.0-beta.34"
+    "web3-eth-abi": "^1.0.0-beta.34",
+    "react": "^16.3.2",
+    "react-bootstrap": "^0.32.1",
+    "react-dom": "^16.3.2"
   }
 }

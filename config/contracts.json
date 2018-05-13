@@ -15,6 +15,15 @@
     ],
     "gas": "auto",
     "contracts": {
+      "Factory": {
+        "deploy": false
+      },
+      "Instance": { 
+        "deploy": false
+      },
+      "UpdatableInstance": { 
+        "deploy": false
+      }
     }
   }
 }
