@@ -24,7 +24,7 @@ contract ERC725 {
     function approve(uint256 _id, bool _approve) public returns (bool success);
     function addKey(bytes32 _key, uint256 _purpose, uint256 _keyType) public returns (bool success);
     function removeKey(bytes32 _key, uint256 _purpose) public returns (bool success);
-    function getKey(bytes32 _key, uint256 _purpose) public view returns(uint256[] purposes, uint256 keyType, bytes32 key);
+    function getKey(bytes32 _key) public view returns(uint256[] purposes, uint256 keyType, bytes32 key);
     function getKeyPurpose(bytes32 _key) public view returns(uint256[] purpose);
     function getKeysByPurpose(uint256 _purpose) public view returns(bytes32[] keys);
     function keyHasPurpose(bytes32 _key, uint256 purpose) public view returns(bool exists);

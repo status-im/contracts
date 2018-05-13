@@ -412,8 +412,7 @@ contract Identity is ERC725, ERC735, MessageSigned {
     ////////////////
 
     function getKey(
-        bytes32 _key,
-        uint256 _purpose
+        bytes32 _key
     ) 
         public 
         view 
