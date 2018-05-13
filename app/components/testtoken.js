@@ -25,14 +25,13 @@ class TestTokenUI extends React.Component {
   
       var value = parseInt(this.state.amountToMint, 10);
   
-      // If web3.js 1.0 is being used
       if (EmbarkJS.isNewWeb3()) {
         TestToken.methods.mint(value).send({from: web3.eth.defaultAccount});
-        this._addToLog("TestToken.methods.mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
       } else {
         TestToken.mint(value);
         this._addToLog("#blockchain", "TestToken.mint(" + value + ")");
       }
+      this._addToLog(TestToken.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
     }
   
     getBalance(e){
