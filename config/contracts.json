@@ -23,7 +23,20 @@
       },
       "UpdatableInstance": { 
         "deploy": false
+      },
+      "DelayedUpdatableInstance": {
+        "deploy": false
+      }, 
+      "Identity": {
+        "deploy": false
+      },
+      "IdentityKernel": {
+        "deploy": false
+      },
+      "IdentityFactory": {
+        "deploy": true
       }
+      
     }
   }
 }

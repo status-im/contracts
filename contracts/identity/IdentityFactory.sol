@@ -9,7 +9,7 @@ contract IdentityFactory is Factory {
 
     event IdentityCreated(address instance);
 
-    constructor(bytes _infohash) 
+    constructor() 
         public
         Factory(new IdentityKernel()) 
     {
