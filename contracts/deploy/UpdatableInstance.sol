@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "./Instance.sol";
 
@@ -12,7 +12,7 @@ contract UpdatableInstance is Instance {
 
     event InstanceUpdated(address oldKernel, address newKernel);
 
-    function UpdatableInstance(address _kernel) 
+    constructor(address _kernel) 
         Instance(_kernel) 
         public
     {
