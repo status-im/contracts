@@ -17,5 +17,8 @@
   },
   "homepage": "https://github.com/status-im/contracts#readme",
   "dependencies": { 
+    "react": "^16.3.2",
+    "react-bootstrap": "^0.32.1",
+    "react-dom": "^16.3.2"
   }
 }
