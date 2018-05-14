@@ -186,7 +186,7 @@ exports.promisify = (func) =>
     }
     
 exports.zeroAddress = '0x0000000000000000000000000000000000000000';
-
+exports.zeroBytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 exports.ensureException = function(error) {
     assert(isException(error), error.toString());
 };
