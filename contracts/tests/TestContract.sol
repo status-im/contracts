@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 
 contract TestContract {
@@ -6,7 +6,7 @@ contract TestContract {
     event TestFunctionExecuted();
 
     function test() public {
-        TestFunctionExecuted();
+        emit TestFunctionExecuted();
     }   
 
     /*

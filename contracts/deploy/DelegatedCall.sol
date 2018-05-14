@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 
 /**
@@ -8,6 +8,10 @@ pragma solidity ^0.4.21;
  *      Important to avoid overwriting wrong storage pointers is that never define storage to this contract
  */
 contract DelegatedCall {
+
+    constructor() internal {
+
+    }
     /**
      * @dev delegates the call of this function
      */

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 
 /**
@@ -12,4 +12,5 @@ contract InstanceStorage {
     // protected zone start (InstanceStorage vars)
     address public kernel;
     // protected zone end
+    constructor() internal { }
 }

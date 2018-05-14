@@ -10,7 +10,7 @@ import "./DelegatedCall.sol";
  */
 contract Instance is InstanceStorage, DelegatedCall {
 
-    function Instance(address _kernel) public {
+    constructor(address _kernel) public {
         kernel = _kernel;
     }
 
