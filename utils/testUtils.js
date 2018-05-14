@@ -191,7 +191,7 @@ exports.ensureException = function(error) {
     assert(isException(error), error.toString());
 };
 
-exports.isException = function(error) {
+function isException(error) {
     let strError = error.toString();
     return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
 }
