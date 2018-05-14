@@ -11,10 +11,67 @@ import "../token/ERC20Token.sol";
  */
 contract IdentityGasRelay is IdentityKernel, MessageSigned {
     
-    bytes4 public constant CALL_PREFIX = bytes4(keccak256("callGasRelay(address,uint256,bytes32,uint256,uint256,address)"));
-    bytes4 public constant APPROVEANDCALL_PREFIX = bytes4(keccak256("approveAndCallGasRelay(address,address,uint256,bytes32,uint256,uint256)"));
+    bytes4 public constant MSG_CALL_PREFIX = bytes4(keccak256("callGasRelay(address,uint256,bytes32,uint256,uint256,address)"));
+    bytes4 public constant MSG_DEPLOY_PREFIX = bytes4(keccak256("deployGasRelay(uint256,bytes32,uint256,uint256,address)"));
+    bytes4 public constant MSG_APPROVEANDCALL_PREFIX = bytes4(keccak256("approveAndCallGasRelay(address,address,uint256,bytes32,uint256,uint256)"));
 
-    event ExecutedGasRelayed(bytes32 signHash, bool success);
+    event ExecutedGasRelayed(bytes32 messageHash);
+    event ContractDeployed(address deployedAddress);
+
+    /**
+     * @param _messageHash that is signed
+     * @param _required key purpose for this type of call
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasLimit minimal gasLimit required to execute this call
+     * @param _gasToken token being used for paying `msg.sender`
+     * @param _messageSignatures rsv concatenated ethereum signed message signatures required   
+     */
+    modifier gasRelayed (
+        bytes32 _messageHash, 
+        uint256 _requiredPurpose, 
+        uint _nonce,
+        uint _gasPrice,
+        uint _gasLimit,
+        address _gasToken, 
+        bytes _messageSignatures
+    ) {
+        //query current gas available
+        uint startGas = gasleft(); 
+        
+        //verify transaction parameters
+        require(startGas >= _gasLimit);
+        require(_nonce == nonce);
+        
+        //verify if signatures are valid and came from correct actors;
+        verifySignatures(
+            _requiredPurpose,
+            _messageHash, 
+            _messageSignatures
+        );
+        
+        //increase nonce
+        nonce++;
+
+        //executes transaction
+        _; 
+
+        //signal execution to event listeners
+        emit ExecutedGasRelayed(
+            _messageHash
+        );
+
+        //refund gas used using contract held ERC20 tokens or ETH
+        if (_gasPrice > 0) {
+            uint256 _amount = 21000 + (startGas - gasleft());
+            _amount = _amount * _gasPrice;
+            if (_gasToken == address(0)) {
+                address(msg.sender).transfer(_amount);
+            } else {
+                ERC20Token(_gasToken).transfer(msg.sender, _amount);
+            }
+        }
+    }
 
     /**
      * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
@@ -39,13 +96,7 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
         bytes _messageSignatures
     ) 
         external 
-    {
-        uint startGas = gasleft();
-        //verify transaction parameters
-        require(startGas >= _gasLimit);
-        require(_nonce == nonce);
-        // calculates signHash
-        bytes32 signHash = getSignHash(
+        gasRelayed(
             callGasRelayHash(
                 _to,
                 _value,
@@ -54,35 +105,63 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
                 _gasPrice,
                 _gasLimit,
                 _gasToken                
-            )
-        );
-        
-        //verify if signatures are valid and came from correct actors;
-        verifySignatures(
+            ),
             _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY,
-            signHash, 
+            _nonce,
+            _gasPrice,
+            _gasLimit,
+            _gasToken,
             _messageSignatures
-        );
-        
-        //executes transaction
-        nonce++;
-        bool success = _to.call.value(_value)(_data);
-        emit ExecutedGasRelayed(
-            signHash,
-            success
-        );
-
-        //refund gas used using contract held ERC20 tokens or ETH
-        if (_gasPrice > 0) {
-            uint256 _amount = 21000 + (startGas - gasleft());
-            _amount = _amount * _gasPrice;
-            if (_gasToken == address(0)) {
-                address(msg.sender).transfer(_amount);
-            } else {
-                ERC20Token(_gasToken).transfer(msg.sender, _amount);
-            }
-        }        
+         )
+         returns (bool success)
+    {
+        success = _to.call.value(_value)(_data);
     }
+
+
+    /**
+     * @notice deploys contract in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
+     *         allows identity of being controlled without requiring ether in key balace
+     * @param _value call value (ether) to be sent to newly created contract
+     * @param _data contract code data
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasLimit minimal gasLimit required to execute this call
+     * @param _gasToken token being used for paying `msg.sender`
+     * @param _messageSignatures rsv concatenated ethereum signed message signatures required
+     */
+    function deployGasRelayed(
+        uint256 _value, 
+        bytes _data,
+        uint _nonce,
+        uint _gasPrice,
+        uint _gasLimit,
+        address _gasToken, 
+        bytes _messageSignatures
+    ) 
+        external 
+        gasRelayed(
+            deployGasRelayHash(
+                _value,
+                keccak256(_data),
+                _nonce,
+                _gasPrice,
+                _gasLimit,
+                _gasToken                
+            ),
+            ACTION_KEY,
+            _nonce,
+            _gasPrice,
+            _gasLimit,
+            _gasToken,
+            _messageSignatures
+        )
+        returns(address deployedAddress)
+    {
+        deployedAddress = doCreate(_value, _data);
+        emit ContractDeployed(deployedAddress);        
+    }
+
 
     /**
      * @notice include ethereum signed approve ERC20 and call hash 
@@ -111,16 +190,7 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
         bytes _messageSignatures
     ) 
         external 
-    {
-        uint startGas = gasleft();
-        //verify transaction parameters
-        require(startGas >= _gasLimit);
-        require(_nonce == nonce);
-        require(_baseToken != address(0)); //_baseToken should be something!
-        require(_to != address(this)); //no management with approveAndCall
-        
-        // calculates signHash
-        bytes32 signHash = getSignHash(
+        gasRelayed(
             approveAndCallGasRelayHash(
                 _baseToken,
                 _to,
@@ -130,59 +200,47 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
                 _gasPrice,
                 _gasLimit,
                 _gasToken               
-            )
-        );
-        
-        //verify if signatures are valid and came from correct actors;
-        verifySignatures(
-            ACTION_KEY, //no management with approveAndCall
-            signHash, 
+            ),
+            ACTION_KEY,
+            _nonce,
+            _gasPrice,
+            _gasLimit,
+            _gasToken,
             _messageSignatures
-        );
+        )
+        returns(bool success)
+    {
+        require(_baseToken != address(0)); //_baseToken should be something!
+        require(_to != address(this)); //no management with approveAndCall
         
-        approveAndCall(
-            signHash,
-            _baseToken,
-            _to,
-            _value,
-            _data
-        );
-
-        //refund gas used using contract held ERC20 tokens or ETH
-        if (_gasPrice > 0) {
-            uint256 _amount = 21000 + (startGas - gasleft());
-            _amount = _amount * _gasPrice;
-            if (_gasToken == address(0)) {
-                address(msg.sender).transfer(_amount);
-            } else {
-                ERC20Token(_gasToken).transfer(msg.sender, _amount);
-            }
-        }        
-
+        ERC20Token(_baseToken).approve(_to, _value);
+        success = _to.call(_data);
     }
 
     /**
      * @notice reverts if signatures are not valid for the signed hash and required key type. 
      * @param _requiredKey key required to call, if _to from payload is the identity itself, is `MANAGEMENT_KEY`, else `ACTION_KEY`
-     * @param _signHash ethereum signable callGasRelayHash message provided for the payload
-     * @param _messageSignatures ethereum signed `_signHash` messages
+     * @param _messageHash message hash provided for the payload
+     * @param _messageSignatures ethereum signed `getSignHash(_messageHash)` message
      * @return true case valid
      */    
     function verifySignatures(
         uint256 _requiredKey,
-        bytes32 _signHash,
+        bytes32 _messageHash,
         bytes _messageSignatures
     ) 
         public
         view
         returns(bool)
     {
+        // calculates signHash
+        bytes32 signHash = getSignHash(_messageHash);
         uint _amountSignatures = _messageSignatures.length / 65;
         require(_amountSignatures == purposeThreshold[_requiredKey]);
         bytes32 _lastKey = 0;
         for (uint256 i = 0; i < _amountSignatures; i++) {
             bytes32 _currentKey = recoverKey(
-                _signHash,
+                signHash,
                 _messageSignatures,
                 i
                 );
@@ -220,8 +278,42 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
     {
         _callGasRelayHash = keccak256(
             address(this), 
-            CALL_PREFIX, 
+            MSG_CALL_PREFIX, 
             _to,
+            _value,
+            _dataHash,
+            _nonce,
+            _gasPrice,
+            _gasLimit,
+            _gasToken
+        );
+    }
+
+/**
+     * @notice get callHash
+     * @param _value call value (ether)
+     * @param _dataHash call data hash
+     * @param _nonce current identity nonce
+     * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
+     * @param _gasLimit minimal gasLimit required to execute this call
+     * @param _gasToken token being used for paying `msg.sender` 
+     * @return callGasRelayHash the hash to be signed by wallet
+     */
+    function deployGasRelayHash(
+        uint256 _value,
+        bytes32 _dataHash,
+        uint256 _nonce,
+        uint256 _gasPrice,
+        uint256 _gasLimit,
+        address _gasToken
+    )
+        public 
+        view 
+        returns (bytes32 _callGasRelayHash) 
+    {
+        _callGasRelayHash = keccak256(
+            address(this), 
+            MSG_DEPLOY_PREFIX,
             _value,
             _dataHash,
             _nonce,
@@ -259,7 +351,7 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
     {
         _callGasRelayHash = keccak256(
             address(this), 
-            APPROVEANDCALL_PREFIX, 
+            MSG_APPROVEANDCALL_PREFIX, 
             _baseToken,
             _to,
             _value,
@@ -327,24 +419,25 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
 
         require(v == 27 || v == 28);
     }
-    
-    function approveAndCall(
-        bytes32 _signHash,
-        address _token,
-        address _to,
-        uint256 _value,
-        bytes _data
-    )
-        private 
+
+    /**
+     * @notice creates new contract based on input `_code` and transfer `_value` ETH to this instance
+     * @param _value amount ether in wei to sent to deployed address at its initialization
+     * @param _data contract code
+     */
+    function doCreate(
+        uint _value,
+        bytes _code
+    ) 
+        internal 
+        returns (address createdContract) 
     {
-        //executes transaction
-        nonce++;
-        ERC20Token(_token).approve(_to, _value);
-        emit ExecutedGasRelayed(
-            _signHash, 
-            _to.call(_data)
-        );
-        
+        bool failed;
+        assembly {
+            createdContract := create(_value, add(_code, 0x20), mload(_code))
+            failed := iszero(extcodesize(createdContract))
+        }
+        require(!failed);
     }
 
 }
