@@ -103,10 +103,11 @@ class MessageProcessor {
         }
     }
 
-    async _estimateGas(input){
+    async _estimateGas(input, gasLimit){
         let web3Sim = new Web3(ganache.provider({
             fork: `${this.config.node.ganache.protocol}://${this.config.node.ganache.host}:${this.config.node.ganache.port}`,
-            locked: false
+            locked: false,
+            gasLimit: 10000000
         }));
         
         let simAccounts = await web3Sim.eth.getAccounts();
@@ -115,7 +116,9 @@ class MessageProcessor {
             from: simAccounts[0],
             to: input.address,
             value: 0,
-            data: input.payload
+            data: input.payload, 
+            gasLimit: gasLimit * 0.95 // 95% of current chain latest gas block limit
+
         });
 
         return web3Sim.utils.toBN(simulatedReceipt.gasUsed);
@@ -170,14 +173,16 @@ class MessageProcessor {
                 return;
             }
 
+            const latestBlock = await web3.eth.getBlock("latest");
+            
             const factor = this._getFactor(input, contract, gasToken);
             const balanceInETH = balance.div(factor);
             const gasPriceInETH = gasPrice.div(factor);
-            const gasLimitInETH = gasLimit.div(factor);
+            
             let estimatedGas = 0;
             try {
-                 estimatedGas = await this._estimateGas(input);
-                if(gasLimitInETH.lt(estimatedGas)) {
+                 estimatedGas = await this._estimateGas(input, latestBlock.gasLimit);
+                if(gasLimit.lt(estimatedGas)) {
                     return this._reply("Gas limit below estimated gas", message);
                 } 
             } catch(exc){
@@ -187,7 +192,7 @@ class MessageProcessor {
 
             const estimatedGasInToken = estimatedGas.mul(factor);
             if(estimatedGasInToken.mul(gasPrice) < token.minRelayFactor){
-                return this._reply("Token gasPrice*gasLimit below accepted minimum", message);
+                return this._reply("tokenGasPriceInETH * gasLimit below accepted minimum", message);
             }
 
             let p = {
@@ -195,8 +200,8 @@ class MessageProcessor {
                 to: input.address,
                 value: 0,
                 data: input.payload,
-                gas: gasLimitInETH,
-                gasPrice: gasPriceInETH
+                gas: gasLimit, 
+                gasPrice: this.config.gasPrice
             };
 
             this.web3.eth.sendTransaction(p)

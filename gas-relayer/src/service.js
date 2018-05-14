@@ -13,7 +13,7 @@ console.info("Starting...");
 const events = new EventEmitter();
 
 // Web3 Connection
-let connectionURL = `${config.node.protocol}://${config.node.host}:${config.node.port}`;
+let connectionURL = `${config.node.local.protocol}://${config.node.local.host}:${config.node.local.port}`;
 const web3 = new Web3(connectionURL);
 
 web3.eth.net.isListening()

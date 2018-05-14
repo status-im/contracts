@@ -1,8 +1,11 @@
 {
+    "gasPrice": 20,
     "node": {
-        "protocol": "ws",
-        "host": "localhost",
-        "port": 8546,
+        "local":{
+            "protocol": "ws",
+            "host": "localhost",
+            "port": 8546
+        },
         "ganache": {
             "protocol": "http",
             "host": "localhost",
