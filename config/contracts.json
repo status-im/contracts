@@ -15,6 +15,9 @@
     ],
     "gas": "auto",
     "contracts": {
+      "ERC20Receiver": {
+        "deploy": false
+      },
       "TestToken": {
         "args": [
           "10000000000000000000"
