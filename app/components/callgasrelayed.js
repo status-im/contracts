@@ -2,13 +2,15 @@ import Web3 from 'web3';
 
 import React from 'react';
 import { Grid, Row, Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel, Col, InputGroup, Alert } from 'react-bootstrap';
- 
+import AccountBalance from './accountBalance'; 
+
 class CallGasRelayed extends React.Component {
 
     constructor(props) {
       super(props);
 
       this.state = {
+        account: '0x1847ab5a71eaa95315c3fc2d3dfb53b7e6e8f313',
         address: this.props.IdentityGasRelay.options.address,
         topic: '0x4964656e',
         to: '0x00',
@@ -154,6 +156,17 @@ class CallGasRelayed extends React.Component {
         }
         <Form>
           <Row>
+            <Col md={3}>
+              <AccountBalance name="Identity" address={this.state.address} web3={this.props.web3} RND={this.props.RND} />
+            </Col>
+            <Col md={3}>
+              <AccountBalance name="To" address={this.state.to} web3={this.props.web3} RND={this.props.RND} />
+            </Col>
+            <Col md={3}>
+              <AccountBalance name="Gas Relayer Node" address={this.state.account} web3={this.props.web3} RND={this.props.RND} />
+            </Col>
+          </Row>
+          <Row>
             <Col md={9}>
               <ControlLabel>Identity Address</ControlLabel>
               <InputGroup> 
@@ -188,11 +201,11 @@ class CallGasRelayed extends React.Component {
               <FormControl type="string" defaultValue={this.state.nonce} onChange={(ev) => this.handleChange(ev, 'nonce')} />
             </Col>
             <Col md={1}>
-              <ControlLabel>Gas Price</ControlLabel>
+              <ControlLabel>Gas Price in Tokens</ControlLabel>
               <FormControl type="string" defaultValue={this.state.gasPrice} onChange={(ev) => this.handleChange(ev, 'gasPrice')} />
             </Col>
             <Col md={1}>
-              <ControlLabel>Gas Limit</ControlLabel>
+              <ControlLabel>Gas Limit in Ether</ControlLabel>
               <FormControl type="string" defaultValue={this.state.gasLimit} onChange={(ev) => this.handleChange(ev, 'gasLimit')} />
             </Col>
             <Col md={6}>
