@@ -20,8 +20,9 @@ contract ENSSubdomainRegistry is Controlled {
     mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => Account) public accounts;
     
-    event Registered(bytes32 indexed _subDomainHash, address _owner);
-    event Released(bytes32 indexed _subDomainHash);
+    event DomainPrice(bytes32 indexed namehash, uint256 price);
+    event DomainMoved(bytes32 indexed namehash, address newRegistry);
+
     enum NodeState { Free, Owned, Moved }
     struct Domain {
         NodeState state;
@@ -75,39 +76,39 @@ contract ENSSubdomainRegistry is Controlled {
     {
         Domain memory domain = domains[_domainHash];
         require(domain.state == NodeState.Owned);
-        subdomainHash = keccak256(_userHash, _domainHash);
+        subdomainHash = keccak256(_domainHash, _userHash);
         require(ens.owner(subdomainHash) == address(0));
         require(accounts[subdomainHash].creationTime == 0);
         accounts[subdomainHash] = Account(domain.price, block.timestamp, msg.sender);
-        require(token.allowance(msg.sender, address(this)) >= domain.price);
+        require(domain.price == 0 || token.allowance(msg.sender, address(this)) >= domain.price);
         
         bool resolvePubkey = _pubkeyA != 0 || _pubkeyB != 0;
         bool resolveAccount = _account != address(0);
-        if(resolvePubkey || resolveAccount) {
+        if (resolvePubkey || resolveAccount) {
             //set to self the ownship to setup initial resolver
             ens.setSubnodeOwner(_domainHash, _userHash, address(this));
             ens.setResolver(subdomainHash, resolver); //default resolver
-            if(resolveAccount){
+            if (resolveAccount) {
                 resolver.setAddr(subdomainHash, _account);
             }
-            if(resolvePubkey) {
+            if (resolvePubkey) {
                 resolver.setPubkey(subdomainHash, _pubkeyA, _pubkeyB);
             }
+            ens.setOwner(subdomainHash, msg.sender);
+        }else {
+            //transfer ownship of subdone to registrant
+            ens.setSubnodeOwner(_domainHash, _userHash, msg.sender);
         }
-        
-        //transfer ownship of subdone to registrant
-        ens.setSubnodeOwner(_domainHash, _userHash, msg.sender);
-
-        //get payment
-        require(
-            token.transferFrom(
-                address(msg.sender),
-                address(this),
-                domain.price
-            )
-        );
-
-        emit Registered(subdomainHash, msg.sender);
+        if (domain.price > 0) {   
+            //get payment
+            require(
+                token.transferFrom(
+                    address(msg.sender),
+                    address(this),
+                    domain.price
+                )
+            );
+        }
     }
     
     /** 
@@ -122,7 +123,7 @@ contract ENSSubdomainRegistry is Controlled {
         external 
     {
         bool isDomainController = ens.owner(_domainHash) == address(this);
-        bytes32 subdomainHash = keccak256(_userHash, _domainHash);
+        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
         Account memory account = accounts[subdomainHash];
         require(account.creationTime > 0);
         if (isDomainController) {
@@ -135,8 +136,10 @@ contract ENSSubdomainRegistry is Controlled {
             require(msg.sender == account.backupOwner);
         }
         delete accounts[subdomainHash];
-        require(token.transfer(msg.sender, account.tokenBalance));
-        emit Released(subdomainHash);
+        if (account.tokenBalance > 0) {
+            require(token.transfer(msg.sender, account.tokenBalance));
+        }
+        
     }
     
     /** 
@@ -154,6 +157,7 @@ contract ENSSubdomainRegistry is Controlled {
         require(domains[_domain].state == NodeState.Free);
         require(ens.owner(_domain) == address(this));
         domains[_domain] = Domain(NodeState.Owned, _price);
+        emit DomainPrice(_domain, _price);
     }
 
     /**
@@ -171,6 +175,7 @@ contract ENSSubdomainRegistry is Controlled {
         Domain storage domain = domains[_domain];
         require(domain.state == NodeState.Owned);
         domain.price = _price;
+        emit DomainPrice(_domain, _price);
     }
 
 
@@ -192,6 +197,7 @@ contract ENSSubdomainRegistry is Controlled {
         domains[_domain].state = NodeState.Moved;
         ens.setOwner(_domain, _newRegistry);
         _newRegistry.migrateDomain(_domain, price);
+        emit DomainMoved(_domain, _newRegistry);
     }
 
     /** 
@@ -232,7 +238,7 @@ contract ENSSubdomainRegistry is Controlled {
     {
         require(ens.owner(_domainHash) == address(_newRegistry));
         require(address(this) == _newRegistry.parentRegistry());
-        bytes32 subdomainHash = keccak256(_userHash, _domainHash);
+        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
         require(msg.sender == ens.owner(subdomainHash));
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
@@ -272,9 +278,36 @@ contract ENSSubdomainRegistry is Controlled {
         external
     {
         require(msg.sender == parentRegistry);
-        bytes32 subdomainHash = keccak256(_userHash, _domainHash);
+        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
         accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _backupOwner);
-        require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
+        if (_tokenBalance > 0) {
+            require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
+        }
+        
+    }
+
+    function getPrice(bytes32 _domainHash) 
+        external 
+        view 
+        returns(uint256 subdomainPrice) 
+    {
+        subdomainPrice = domains[_domainHash].price;
+    }
+
+    function getAccountBalance(bytes32 _subdomainHash)
+        external
+        view
+        returns(uint256 accountBalance) 
+    {
+        accountBalance = accounts[_subdomainHash].tokenBalance;
+    }
+
+    function getBackupOwner(bytes32 _subdomainHash)
+        external
+        view
+        returns(address backupOwner) 
+    {
+        backupOwner = accounts[_subdomainHash].backupOwner;
     }
    
 }
