@@ -12,9 +12,7 @@
     "gas": "auto",
     "contracts": {
       "TestToken": {
-        "args": [
-          "10000000000000000000"
-        ]
+        "args": [ ]
       },
       "ENSRegistry": {
         "args": []
