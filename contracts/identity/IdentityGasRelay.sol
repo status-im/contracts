@@ -9,7 +9,7 @@ import "../token/ERC20Token.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @notice enables economic abstraction for Identity
  */
-contract IdentityGasRelay is Identity, MessageSigned {
+contract IdentityGasRelay is Identity {
     
     bytes4 public constant MSG_CALL_PREFIX = bytes4(keccak256("callGasRelay(address,uint256,bytes32,uint256,uint256,address)"));
     bytes4 public constant MSG_DEPLOY_PREFIX = bytes4(keccak256("deployGasRelay(uint256,bytes32,uint256,uint256,address)"));
@@ -27,7 +27,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
      * @param _gasToken token being used for paying `msg.sender`
      * @param _messageSignatures rsv concatenated ethereum signed message signatures required   
      */
-    modifier gasRelayed (
+    modifier executeGasRelayed (
         bytes32 _messageHash, 
         uint256 _requiredPurpose, 
         uint _nonce,
@@ -55,11 +55,6 @@ contract IdentityGasRelay is Identity, MessageSigned {
 
         //executes transaction
         _; 
-
-        //signal execution to event listeners
-        emit ExecutedGasRelayed(
-            _messageHash
-        );
 
         //refund gas used using contract held ERC20 tokens or ETH
         if (_gasPrice > 0) {
@@ -96,7 +91,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
         bytes _messageSignatures
     ) 
         external 
-        gasRelayed(
+        executeGasRelayed(
             callGasRelayHash(
                 _to,
                 _value,
@@ -115,7 +110,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
          )
          returns (bool success)
     {
-        success = _to.call.value(_value)(_data);
+        success = _commitCall(_nonce, _to, _value, _data);
     }
 
 
@@ -140,7 +135,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
         bytes _messageSignatures
     ) 
         external 
-        gasRelayed(
+        executeGasRelayed(
             deployGasRelayHash(
                 _value,
                 keccak256(_data),
@@ -158,6 +153,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
         )
         returns(address deployedAddress)
     {
+        nonce++;
         deployedAddress = doCreate(_value, _data);
         emit ContractDeployed(deployedAddress);        
     }
@@ -170,7 +166,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
      *         fixes race condition in double transaction for ERC20.
      * @param _baseToken token approved for `_to`
      * @param _to destination of call
-     * @param _value call value (ether)
+     * @param _value call value (in `_baseToken`)
      * @param _data call data
      * @param _nonce current identity nonce
      * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
@@ -190,7 +186,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
         bytes _messageSignatures
     ) 
         external 
-        gasRelayed(
+        executeGasRelayed(
             approveAndCallGasRelayHash(
                 _baseToken,
                 _to,
@@ -212,9 +208,9 @@ contract IdentityGasRelay is Identity, MessageSigned {
     {
         require(_baseToken != address(0)); //_baseToken should be something!
         require(_to != address(this)); //no management with approveAndCall
-        
+        require(_to != address(0)); //need valid destination
         ERC20Token(_baseToken).approve(_to, _value);
-        success = _to.call(_data);
+        success = _commitCall(_nonce, _to, 0, _data); 
     }
 
     /**
@@ -245,7 +241,7 @@ contract IdentityGasRelay is Identity, MessageSigned {
                 i
                 );
             require(_currentKey > _lastKey); //assert keys are different
-            require(isKeyPurpose(_currentKey, _requiredKey));
+            require(keyHasPurpose(_currentKey, _requiredKey));
             _lastKey = _currentKey;
         }
         return true;
