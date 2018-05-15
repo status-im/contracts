@@ -210,14 +210,14 @@ exports.increaseTime = async (amount) => {
         {
             jsonrpc: '2.0', 
             method: 'evm_increaseTime', 
-            params: [amount], 
+            params: [+amount], 
             id: new Date().getSeconds()
         }, 
         (error) => {
             if(error) {
                 console.log(error)
             } else {
-                web3.currentProvider.sendAsync(
+                /*web3.currentProvider.sendAsync(
                     {
                         jsonrpc: '2.0', 
                         method: 'evm_mine', 
@@ -228,7 +228,7 @@ exports.increaseTime = async (amount) => {
                             console.log(error)
                         }
                     }
-                )
+                )*/
             }
         }
     )
