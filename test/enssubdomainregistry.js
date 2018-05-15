@@ -356,7 +356,8 @@ contract('ENSSubdomainRegistry', function () {
         await ens.methods.setOwner(usernameHash, newOwner).send({from: registrant});
 
         let result = await ENSSubdomainRegistry.methods.updateBackupOwner(
-            usernameHash
+            labelHash,
+            domains.paid.namehash
         ).send({from: newOwner});       
         //TODO: check events
 
