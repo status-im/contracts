@@ -68,7 +68,7 @@ contract('ENSSubdomainRegistry', function () {
         assert.equal(result, utils.zeroAddress);
         let accountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
         assert(accountBalance, 0, "Registry subdomain account balance wrong");
-        let result = await ENSSubdomainRegistry.methods.getBackupOwner(usernameHash).call();
+        result = await ENSSubdomainRegistry.methods.getBackupOwner(usernameHash).call();
         assert(result, registrant, "Backup owner not set");
     });
 
