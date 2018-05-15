@@ -128,7 +128,7 @@ contract ENSSubdomainRegistry is Controlled {
         require(account.creationTime > 0);
         if (isDomainController) {
             require(msg.sender == ens.owner(subdomainHash));
-            require(account.creationTime + releaseDelay > block.timestamp);
+            require(account.creationTime + releaseDelay >= block.timestamp);
             ens.setSubnodeOwner(_domainHash, _userHash, address(this));
             ens.setResolver(subdomainHash, address(0));
             ens.setSubnodeOwner(_domainHash, _userHash, address(0));
