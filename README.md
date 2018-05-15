@@ -15,3 +15,6 @@ Usage:
 | -------------------------------------- | ------ | ---- | --- |
 | token/TestToken                        | Yes    | Yes  | Yes |
 | token/ERC20Token                       | No     | Yes  | Yes |
+| ens/ENSRegistry                        | Yes    | Yes  | No  |
+| ens/PublicRegistry                     | Yes    | Yes  | No  |
+| registry/ENSSubdomainRegistry          | Yes    | Yes  | No  |
