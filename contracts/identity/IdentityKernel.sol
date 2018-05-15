@@ -27,7 +27,7 @@ contract IdentityKernel is DelayedUpdatableInstanceStorage, Identity {
         uint256 _actorThreshold,
         address _recoveryContract
     ) external {
-        _constructIdentity(
+        constructIdentity(
             _keys,
             _purposes,
             _types,
