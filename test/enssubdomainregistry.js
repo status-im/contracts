@@ -9,6 +9,7 @@ contract('ENSSubdomainRegistry', function () {
 
     before(function(done) {
         this.timeout(0);
+        
         var contractsConfig = {
             "TestToken": {
             
@@ -33,6 +34,7 @@ contract('ENSSubdomainRegistry', function () {
         EmbarkSpec.deployAll(contractsConfig, async (accounts) => { 
           ens = ENSRegistry;
           accountsArr = accounts; 
+          await utils.increaseTime(1 * utils.timeUnits.days) //time cannot start zero
           await ens.methods.setSubnodeOwner(utils.zeroBytes32, web3Utils.sha3('eth'), accountsArr[0]).send({from: accountsArr[0]});
           await ens.methods.setSubnodeOwner(namehash.hash('eth'), web3Utils.sha3('stateofus'), ENSSubdomainRegistry.address).send({from: accountsArr[0]});
           await ens.methods.setSubnodeOwner(namehash.hash('eth'), web3Utils.sha3('stateofus'), ENSSubdomainRegistry.address).send({from: accountsArr[0]});
@@ -149,11 +151,13 @@ contract('ENSSubdomainRegistry', function () {
         assert.equal(result[1], pubkey[1], "Resolved pubkey[1] not set");
     });
 
-    xit('should release subdomain registered with zero cost', async () => {
+    it('should release subdomain registered with zero cost', async () => {
         let domain = 'stateofus.eth';
         let subdomain = 'frank';
         let registrant = accountsArr[6];
-
+        let domainHash = namehash.hash('stateofus.eth');
+        let usernameHash = namehash.hash(subdomain + '.' + domain);
+        
         await ENSSubdomainRegistry.methods.register(
             web3Utils.sha3(subdomain), 
             namehash.hash(domain),
@@ -161,10 +165,12 @@ contract('ENSSubdomainRegistry', function () {
             utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});  
+        let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
+        await utils.increaseTime(releaseDelay)
         
         let initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
         let initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
-        //TODO: Forward time 1 year
+        
         await ENSSubdomainRegistry.methods.release(
             web3Utils.sha3(subdomain), 
             domainHash
@@ -227,7 +233,7 @@ contract('ENSSubdomainRegistry', function () {
     });
 
 
-    xit('should release subdomain with cost', async () => {
+    it('should release subdomain with cost', async () => {
         let domain = 'stateofus.eth';
         let subdomain = 'frank';
         let labelHash = web3Utils.sha3(subdomain);
@@ -245,10 +251,13 @@ contract('ENSSubdomainRegistry', function () {
             utils.zeroBytes32
         ).send({from: registrant});       
 
+        let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
+        utils.increaseTime(releaseDelay)
+
         let initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
         let initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
         let initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
-        //TODO: Forward time 1 year
+        
         await ENSSubdomainRegistry.methods.release(
             web3Utils.sha3(subdomain), 
             domainHash
@@ -262,7 +271,7 @@ contract('ENSSubdomainRegistry', function () {
         
     });
 
-    xit('should release transfered subdomain with cost', async () => {
+    it('should release transfered subdomain with cost', async () => {
         let domain = 'stateofus.eth';
         let subdomain = 'grace';
         let labelHash = web3Utils.sha3(subdomain);
@@ -282,10 +291,13 @@ contract('ENSSubdomainRegistry', function () {
         ).send({from: registrant});       
         await ens.methods.setOwner(usernameHash, newOwner).send({from: registrant});
 
+        let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
+        await utils.increaseTime(releaseDelay)
+
         let initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
         let initialRegistrantBalance = await TestToken.methods.balanceOf(newOwner).call();
         let initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
-        //TODO: Forward time 1 year
+                
         await ENSSubdomainRegistry.methods.release(
             web3Utils.sha3(subdomain), 
             domainHash
