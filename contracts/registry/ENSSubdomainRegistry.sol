@@ -202,13 +202,14 @@ contract ENSSubdomainRegistry is Controlled {
 
     /** 
      * @notice updates backup owner useful in case of opt-out domain move to new registry.
-     * @param _subdomainHash hash of the subdomain regarding this
+     * @param _userHash `msg.sender` owned subdomain hash 
+     * @param _domainHash choosen contract owned domain hash
      **/
     function updateBackupOwner(
         bytes32 _userHash,
         bytes32 _domainHash
     ) 
-            external 
+        external 
     {
         bytes32 subdomainHash = keccak256(_domainHash, _userHash);
         require(accounts[subdomainHash].creationTime > 0);
