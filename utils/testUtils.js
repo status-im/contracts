@@ -195,3 +195,19 @@ function isException(error) {
     let strError = error.toString();
     return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
 }
+
+exports.increaseTime = async (web3, amount) => {
+    web3.currentProvider.sendAsync(
+        {
+            jsonrpc: '2.0', 
+            method: 'evm_increaseTime', 
+            params: [amount], 
+            id: new Date().getSeconds()
+        }, 
+        (err, resp) => {
+            console.log(err)
+            console.log(resp)
+        }
+    )
+    
+}
