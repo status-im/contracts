@@ -17,3 +17,6 @@ Usage:
 | token/ERC20Token                       | No     | Yes  | Yes |
 | deploy/Instance                        | No     | No   | No  |
 | deploy/Factory                         | No     | No   | No  |
+| deploy/DelayedUpdatableInstance        | No     | No   | No  |
+| identity/Identity                      | No     | Yes  | No  |
+| identity/IdentityFactory               | No     | No   | No  |
