@@ -131,7 +131,7 @@ contract ENSSubdomainRegistry is Controlled {
             require(account.creationTime + releaseDelay >= block.timestamp);
             ens.setSubnodeOwner(_domainHash, _userHash, address(this));
             ens.setResolver(subdomainHash, address(0));
-            ens.setSubnodeOwner(_domainHash, _userHash, address(0));
+            ens.setOwner(subdomainHash, address(0));
         } else {
             require(msg.sender == account.backupOwner);
         }
@@ -204,10 +204,17 @@ contract ENSSubdomainRegistry is Controlled {
      * @notice updates backup owner useful in case of opt-out domain move to new registry.
      * @param _subdomainHash hash of the subdomain regarding this
      **/
-    function updateBackupOwner(bytes32 _subdomainHash) external {
-        require(accounts[_subdomainHash].creationTime > 0);
-        require(msg.sender == ens.owner(_subdomainHash));
-        accounts[_subdomainHash].backupOwner = msg.sender;
+    function updateBackupOwner(
+        bytes32 _userHash,
+        bytes32 _domainHash
+    ) 
+            external 
+    {
+        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
+        require(accounts[subdomainHash].creationTime > 0);
+        require(msg.sender == ens.owner(subdomainHash));
+        require(ens.owner(_domainHash) == address(this));
+        accounts[subdomainHash].backupOwner = msg.sender;
     }
 
     /** 
@@ -239,7 +246,7 @@ contract ENSSubdomainRegistry is Controlled {
         require(ens.owner(_domainHash) == address(_newRegistry));
         require(address(this) == _newRegistry.parentRegistry());
         bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        require(msg.sender == ens.owner(subdomainHash));
+        require(msg.sender == accounts[subdomainHash].backupOwner);
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
         token.approve(_newRegistry, account.tokenBalance);
