@@ -1,7 +1,7 @@
 const utils = require('../utils/testUtils.js');
 const web3Utils = require('web3-utils');
 const namehash = require('eth-ens-namehash');
-const utils.zeroBytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
 contract('ENS', function () {
 
     let ens;
