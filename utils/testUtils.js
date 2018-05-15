@@ -187,6 +187,15 @@ exports.promisify = (func) =>
     
 exports.zeroAddress = '0x0000000000000000000000000000000000000000';
 exports.zeroBytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+exports.timeUnits = {
+    seconds: 1,
+    minutes: 60,
+    hours: 60 * 60,
+    days: 24 * 60 * 60,
+    weeks: 7 * 24 * 60 * 60,
+    years: 365 * 24 * 60 * 60
+}
+
 exports.ensureException = function(error) {
     assert(isException(error), error.toString());
 };
@@ -194,4 +203,34 @@ exports.ensureException = function(error) {
 function isException(error) {
     let strError = error.toString();
     return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
+}
+
+exports.increaseTime = async (amount) => {
+    web3.currentProvider.sendAsync(
+        {
+            jsonrpc: '2.0', 
+            method: 'evm_increaseTime', 
+            params: [amount], 
+            id: new Date().getSeconds()
+        }, 
+        (error) => {
+            if(error) {
+                console.log(error)
+            } else {
+                web3.currentProvider.sendAsync(
+                    {
+                        jsonrpc: '2.0', 
+                        method: 'evm_mine', 
+                        params: [], 
+                        id: new Date().getSeconds()
+                    },  (error) => { 
+                        if(error) {
+                            console.log(error)
+                        }
+                    }
+                )
+            }
+        }
+    )
+    
 }
