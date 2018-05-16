@@ -20,6 +20,7 @@ contract ENSSubdomainRegistry is Controlled {
     mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => Account) public accounts;
     
+    event FundsOwner(bytes32 indexed subdomainhash, address fundsOwner);
     event DomainPrice(bytes32 indexed namehash, uint256 price);
     event DomainMoved(bytes32 indexed namehash, address newRegistry);
 
@@ -32,7 +33,7 @@ contract ENSSubdomainRegistry is Controlled {
     struct Account {
         uint256 tokenBalance;
         uint256 creationTime;
-        address backupOwner;
+        address fundsOwner;
     }
 
     /** 
@@ -133,7 +134,7 @@ contract ENSSubdomainRegistry is Controlled {
             ens.setResolver(subdomainHash, address(0));
             ens.setOwner(subdomainHash, address(0));
         } else {
-            require(msg.sender == account.backupOwner);
+            require(msg.sender == account.fundsOwner);
         }
         delete accounts[subdomainHash];
         if (account.tokenBalance > 0) {
@@ -201,11 +202,11 @@ contract ENSSubdomainRegistry is Controlled {
     }
 
     /** 
-     * @notice updates backup owner useful in case of opt-out domain move to new registry.
+     * @notice updates funds owner useful to move subdomain account to new registry.
      * @param _userHash `msg.sender` owned subdomain hash 
      * @param _domainHash choosen contract owned domain hash
      **/
-    function updateBackupOwner(
+    function updateFundsOwner(
         bytes32 _userHash,
         bytes32 _domainHash
     ) 
@@ -215,7 +216,9 @@ contract ENSSubdomainRegistry is Controlled {
         require(accounts[subdomainHash].creationTime > 0);
         require(msg.sender == ens.owner(subdomainHash));
         require(ens.owner(_domainHash) == address(this));
-        accounts[subdomainHash].backupOwner = msg.sender;
+        accounts[subdomainHash].fundsOwner = msg.sender;
+        emit FundsOwner(subdomainHash, msg.sender);
+
     }
 
     /** 
@@ -247,11 +250,11 @@ contract ENSSubdomainRegistry is Controlled {
         require(ens.owner(_domainHash) == address(_newRegistry));
         require(address(this) == _newRegistry.parentRegistry());
         bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        require(msg.sender == accounts[subdomainHash].backupOwner);
+        require(msg.sender == accounts[subdomainHash].fundsOwner);
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
         token.approve(_newRegistry, account.tokenBalance);
-        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime, account.backupOwner);
+        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime, account.fundsOwner);
     }
     
     /**
@@ -274,20 +277,20 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _domainHash choosen contract owned domain hash
      * @param _tokenBalance amount being transferred
      * @param _creationTime any value coming from parent
-     * @param _backupOwner backupOwner for opt-out/release at domain move
+     * @param _fundsOwner fundsOwner for opt-out/release at domain move
      **/
     function migrateAccount(
         bytes32 _userHash,
         bytes32 _domainHash,
         uint256 _tokenBalance,
         uint256 _creationTime,
-        address _backupOwner
+        address _fundsOwner
     )
         external
     {
         require(msg.sender == parentRegistry);
         bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _backupOwner);
+        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _fundsOwner);
         if (_tokenBalance > 0) {
             require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
         }
@@ -310,12 +313,12 @@ contract ENSSubdomainRegistry is Controlled {
         accountBalance = accounts[_subdomainHash].tokenBalance;
     }
 
-    function getBackupOwner(bytes32 _subdomainHash)
+    function getFundsOwner(bytes32 _subdomainHash)
         external
         view
-        returns(address backupOwner) 
+        returns(address fundsOwner) 
     {
-        backupOwner = accounts[_subdomainHash].backupOwner;
+        fundsOwner = accounts[_subdomainHash].fundsOwner;
     }
    
 }
