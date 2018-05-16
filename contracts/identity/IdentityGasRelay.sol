@@ -20,7 +20,7 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
 
     /**
      * @param _messageHash that is signed
-     * @param _required key purpose for this type of call
+     * @param _requiredPurpose key purpose for this type of call
      * @param _nonce current identity nonce
      * @param _gasPrice price in SNT paid back to msg.sender for each gas unit used
      * @param _gasLimit minimal gasLimit required to execute this call
@@ -423,7 +423,7 @@ contract IdentityGasRelay is IdentityKernel, MessageSigned {
     /**
      * @notice creates new contract based on input `_code` and transfer `_value` ETH to this instance
      * @param _value amount ether in wei to sent to deployed address at its initialization
-     * @param _data contract code
+     * @param _code contract code
      */
     function doCreate(
         uint _value,

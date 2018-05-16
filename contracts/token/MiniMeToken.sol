@@ -306,7 +306,7 @@ contract MiniMeToken is MiniMeTokenInterface, Controlled {
         uint256 _amount,
         bytes _extraData
     ) 
-        external 
+        public
         returns (bool success)
     {
         require(doApprove(msg.sender, _spender, _amount));
@@ -405,7 +405,7 @@ contract MiniMeToken is MiniMeTokenInterface, Controlled {
      * @param _cloneTokenName Name of the clone token
      * @param _cloneDecimalUnits Number of decimals of the smallest unit
      * @param _cloneTokenSymbol Symbol of the clone token
-     * @param snapshotBlock Block when the distribution of the parent token is
+     * @param _snapshotBlock Block when the distribution of the parent token is
      *  copied to set the initial distribution of the new clone token;
      *  if the block is zero than the actual block, the current block is used
      * @param _transfersEnabled True if transfers are allowed in the clone
