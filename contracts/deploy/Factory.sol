@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "../common/Controlled.sol";
 
@@ -20,7 +20,7 @@ contract Factory is Controlled {
     uint256 latestUpdate;
     address latestKernel;
 
-    function Factory(address _kernel)
+    constructor(address _kernel)
         public 
     {
         _setKernel(_kernel);

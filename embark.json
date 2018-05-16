@@ -3,13 +3,17 @@
   "app": {
     "js/relayer-test.js": ["app/relayer-test.js"],
     "relayer-test.html": "app/relayer-test.html",
+    "js/dapp.js": ["app/dapp.js"],
+    "index.html": "app/index.html",
     "images/": ["app/images/**"]
   },
   "buildDir": "dist/",
   "config": "config/",
-  "plugins": {
-  },
   "versions": {
-    "solc": "0.4.23"
+    "web3": "1.0.0-beta",
+    "solc": "0.4.23",
+    "ipfs-api": "17.2.4"
+  },
+  "plugins": {
   }
 }

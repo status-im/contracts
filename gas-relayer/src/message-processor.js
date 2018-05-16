@@ -190,9 +190,9 @@ class MessageProcessor {
                     return this._reply("Transaction will revert", message);
             }
 
-            const estimatedGasInToken = estimatedGas.mul(factor);
-            if(estimatedGasInToken.mul(gasPrice) < token.minRelayFactor){
-                return this._reply("tokenGasPriceInETH * gasLimit below accepted minimum", message);
+            const estimatedGasInTokens = estimatedGas.mul(gasPrice).mul(factor);
+            if(estimatedGasInToken < token.minRelayFactor){
+                return this._reply("estimatedGasInTokens below accepted minimum", message);
             }
 
             let p = {

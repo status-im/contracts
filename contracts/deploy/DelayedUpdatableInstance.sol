@@ -14,7 +14,7 @@ contract DelayedUpdatableInstance is DelayedUpdatableInstanceStorage, DelegatedC
     event UpdateCancelled();
     event UpdateConfirmed(address oldKernel, address newKernel);
 
-    function DelayedUpdatableInstance(address _kernel) public {
+    constructor(address _kernel) public {
         kernel = _kernel;
     }
 
