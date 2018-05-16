@@ -69,12 +69,24 @@ class MessageProcessor {
     }
 
     _extractInput(message){
-        return {
-            address: message.payload.slice(0, 42),
-            functionName: '0x' + message.payload.slice(42, 50),
-            functionParameters: '0x' + message.payload.slice(50),
-            payload: '0x' + message.payload.slice(42)
+        let obj = {
+            address: null,
+            functionName: null,
+            functionParameters: null,
+            payload: null
+        };
+
+        try {
+            let parsedObj = JSON.parse(this.web3.utils.toAscii(message.payload));
+            obj.address = parsedObj.address;
+            obj.functionName = parsedObj.encodedFunctionCall.slice(0, 8);
+            obj.functionParameters = "0x" + parsedObj.encodedFunctionCall.slice(8);
+            obj.payload = parsedObj.encodedFunctionCall;
+        } catch(err){
+            console.err("Couldn't parse " + message);
         }
+        
+        return obj;
     }
 
     _obtainParametersFunc(contract, input){
@@ -129,7 +141,7 @@ class MessageProcessor {
           console.error(error);
         } else {
             
-            let input = this._extractInput(message);
+            let input = JSON.parse(web3.utils.toAscii(message));
 
             const contract = this.settings.getContractByTopic(message.topic);
 

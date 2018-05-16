@@ -97,7 +97,10 @@ class ApproveAndCallGasRelayed extends React.Component {
           powTarget: 1, 
           powTime: 20, 
           topic: this.state.topic, 
-          payload: this.state.address + funCall.slice(2)
+          payload: this.props.web3.utils.toHex({
+            'address': this.state.address,
+            'encodedFunctionCall': funCall
+          })
         };
 
         console.log(msgObj);
