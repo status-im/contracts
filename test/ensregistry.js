@@ -3,12 +3,11 @@ const web3Utils = require('web3-utils');
 const namehash = require('eth-ens-namehash');
 
 contract('ENS', function () {
-
+    this.timeout(0);
     let ens;
     let accountsArr;
 
     before(function(done) {
-        this.timeout(0);
         var contractsConfig = {
           "ENSRegistry": { },
         };
