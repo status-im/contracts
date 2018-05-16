@@ -36,6 +36,11 @@ contract ENSSubdomainRegistry is Controlled {
         address fundsOwner;
     }
 
+    modifier onlyParentRegistry {
+        require(msg.sender == parentRegistry);
+        _;
+    }
+
     /** 
      * @notice Initializes a UserRegistry contract 
      * @param _token fee token base 
@@ -142,7 +147,111 @@ contract ENSSubdomainRegistry is Controlled {
         }
         
     }
+
+    /** 
+     * @notice updates funds owner useful to move subdomain account to new registry.
+     * @param _userHash `msg.sender` owned subdomain hash 
+     * @param _domainHash choosen contract owned domain hash
+     **/
+    function updateFundsOwner(
+        bytes32 _userHash,
+        bytes32 _domainHash
+    ) 
+        external 
+    {
+        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
+        require(accounts[subdomainHash].creationTime > 0);
+        require(msg.sender == ens.owner(subdomainHash));
+        require(ens.owner(_domainHash) == address(this));
+        accounts[subdomainHash].fundsOwner = msg.sender;
+        emit FundsOwner(subdomainHash, msg.sender);
+
+    }    
+
+    /**
+     * @notice Migrate account to new registry
+     * @param _newRegistry new registry address
+     * @param _userHash `msg.sender` owned subdomain hash 
+     * @param _domainHash choosen contract owned domain hash
+     **/
+    function moveAccount(
+        ENSSubdomainRegistry _newRegistry,
+        bytes32 _userHash,
+        bytes32 _domainHash
+    ) 
+        external 
+    {
+        require(ens.owner(_domainHash) == address(_newRegistry));
+        require(address(this) == _newRegistry.parentRegistry());
+        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
+        require(msg.sender == accounts[subdomainHash].fundsOwner);
+        Account memory account = accounts[subdomainHash];
+        delete accounts[subdomainHash];
+        token.approve(_newRegistry, account.tokenBalance);
+        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime, account.fundsOwner);
+    }
     
+    /**
+        @dev callabe only by parent registry to continue migration of domain
+     */
+    function migrateDomain(
+        bytes32 _domain,
+        uint256 _price
+    ) 
+        external
+        onlyParentRegistry
+    {
+        require(domains[_domain].state == NodeState.Free);
+        require(ens.owner(_domain) == address(this));
+        domains[_domain] = Domain(NodeState.Owned, _price);
+    }
+    /**
+     * @dev callable only by parent registry for continue user opt-in migration
+     * @param _userHash any subdomain hash coming from parent
+     * @param _domainHash choosen contract owned domain hash
+     * @param _tokenBalance amount being transferred
+     * @param _creationTime any value coming from parent
+     * @param _fundsOwner fundsOwner for opt-out/release at domain move
+     **/
+    function migrateAccount(
+        bytes32 _userHash,
+        bytes32 _domainHash,
+        uint256 _tokenBalance,
+        uint256 _creationTime,
+        address _fundsOwner
+    )
+        external
+        onlyParentRegistry
+    {
+        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
+        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _fundsOwner);
+        if (_tokenBalance > 0) {
+            require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
+        }
+        
+    }
+     
+    /**
+     * @notice moves a domain to other Registry (will not move subdomains accounts)
+     * @param _newRegistry new registry hodling this domain
+     * @param _domain domain being moved
+     */
+    function moveDomain(
+        ENSSubdomainRegistry _newRegistry,
+        bytes32 _domain
+    ) 
+        external
+        onlyController
+    {
+        require(ens.owner(_domain) == address(this));
+        require(domains[_domain].state == NodeState.Owned);
+        uint256 price = domains[_domain].price;
+        domains[_domain].state = NodeState.Moved;
+        ens.setOwner(_domain, _newRegistry);
+        _newRegistry.migrateDomain(_domain, price);
+        emit DomainMoved(_domain, _newRegistry);
+    }
+       
     /** 
      * @notice Controller include new domain available to register
      * @param _domain domain owned by user registry being activated
@@ -179,48 +288,6 @@ contract ENSSubdomainRegistry is Controlled {
         emit DomainPrice(_domain, _price);
     }
 
-
-    /**
-     * @notice moves a domain to other Registry (will not move subdomains accounts)
-     * @param _newRegistry new registry hodling this domain
-     * @param _domain domain being moved
-     */
-    function moveDomain(
-        ENSSubdomainRegistry _newRegistry,
-        bytes32 _domain
-    ) 
-        external
-        onlyController
-    {
-        require(ens.owner(_domain) == address(this));
-        require(domains[_domain].state == NodeState.Owned);
-        uint256 price = domains[_domain].price;
-        domains[_domain].state = NodeState.Moved;
-        ens.setOwner(_domain, _newRegistry);
-        _newRegistry.migrateDomain(_domain, price);
-        emit DomainMoved(_domain, _newRegistry);
-    }
-
-    /** 
-     * @notice updates funds owner useful to move subdomain account to new registry.
-     * @param _userHash `msg.sender` owned subdomain hash 
-     * @param _domainHash choosen contract owned domain hash
-     **/
-    function updateFundsOwner(
-        bytes32 _userHash,
-        bytes32 _domainHash
-    ) 
-        external 
-    {
-        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        require(accounts[subdomainHash].creationTime > 0);
-        require(msg.sender == ens.owner(subdomainHash));
-        require(ens.owner(_domainHash) == address(this));
-        accounts[subdomainHash].fundsOwner = msg.sender;
-        emit FundsOwner(subdomainHash, msg.sender);
-
-    }
-
     /** 
      * @notice updates default public resolver for newly registred subdomains
      * @param _resolver new default resolver  
@@ -232,69 +299,6 @@ contract ENSSubdomainRegistry is Controlled {
         onlyController
     {
         resolver = PublicResolver(_resolver);
-    }    
-
-    /**
-     * @notice Migrate account to new registry
-     * @param _newRegistry new registry address
-     * @param _userHash `msg.sender` owned subdomain hash 
-     * @param _domainHash choosen contract owned domain hash
-     **/
-    function moveAccount(
-        ENSSubdomainRegistry _newRegistry,
-        bytes32 _userHash,
-        bytes32 _domainHash
-    ) 
-        external 
-    {
-        require(ens.owner(_domainHash) == address(_newRegistry));
-        require(address(this) == _newRegistry.parentRegistry());
-        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        require(msg.sender == accounts[subdomainHash].fundsOwner);
-        Account memory account = accounts[subdomainHash];
-        delete accounts[subdomainHash];
-        token.approve(_newRegistry, account.tokenBalance);
-        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime, account.fundsOwner);
-    }
-    
-    /**
-        @dev callabe only by parent registry to continue migration of domain
-     */
-    function migrateDomain(
-        bytes32 _domain,
-        uint256 _price
-    ) 
-        external
-    {
-        require(msg.sender == parentRegistry);
-        require(domains[_domain].state == NodeState.Free);
-        require(ens.owner(_domain) == address(this));
-        domains[_domain] = Domain(NodeState.Owned, _price);
-    }
-    /**
-     * @dev callable only by parent registry for continue user opt-in migration
-     * @param _userHash any subdomain hash coming from parent
-     * @param _domainHash choosen contract owned domain hash
-     * @param _tokenBalance amount being transferred
-     * @param _creationTime any value coming from parent
-     * @param _fundsOwner fundsOwner for opt-out/release at domain move
-     **/
-    function migrateAccount(
-        bytes32 _userHash,
-        bytes32 _domainHash,
-        uint256 _tokenBalance,
-        uint256 _creationTime,
-        address _fundsOwner
-    )
-        external
-    {
-        require(msg.sender == parentRegistry);
-        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _fundsOwner);
-        if (_tokenBalance > 0) {
-            require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
-        }
-        
     }
 
     function getPrice(bytes32 _domainHash) 
