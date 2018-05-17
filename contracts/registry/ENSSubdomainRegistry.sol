@@ -170,23 +170,21 @@ contract ENSSubdomainRegistry is Controlled {
 
     /**
      * @notice Migrate account to new registry
-     * @param _newRegistry new registry address
      * @param _userHash `msg.sender` owned subdomain hash 
      * @param _domainHash choosen contract owned domain hash
      **/
     function moveAccount(
-        ENSSubdomainRegistry _newRegistry,
         bytes32 _userHash,
         bytes32 _domainHash
     ) 
         external 
     {
-        require(ens.owner(_domainHash) == address(_newRegistry));
-        require(address(this) == _newRegistry.parentRegistry());
         bytes32 subdomainHash = keccak256(_domainHash, _userHash);
         require(msg.sender == accounts[subdomainHash].fundsOwner);
+        ENSSubdomainRegistry _newRegistry = ENSSubdomainRegistry(ens.owner(_domainHash));
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
+        require(address(this) == _newRegistry.parentRegistry()); 
         token.approve(_newRegistry, account.tokenBalance);
         _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime, account.fundsOwner);
     }
@@ -323,6 +321,14 @@ contract ENSSubdomainRegistry is Controlled {
         returns(address fundsOwner) 
     {
         fundsOwner = accounts[_subdomainHash].fundsOwner;
+    }
+
+    function getCreationTime(bytes32 _subdomainHash)
+        external
+        view
+        returns(uint256 creationTime) 
+    {
+        creationTime = accounts[_subdomainHash].creationTime;
     }
    
 }
