@@ -3,7 +3,6 @@ describe("TestToken", async function() {
   var accountsArr;
 
   before(function(done) {
-    this.timeout(0);
     var contractsConfig = {
       "TestToken": {
       }

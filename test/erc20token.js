@@ -3,7 +3,6 @@ describe("ERC20Token", async function() {
   var ERC20Token;
   var accountsArr;
   before(function(done) {
-    this.timeout(0);
     var contractsConfig = {
       "TestToken": { },
       "ERC20Receiver": { }
