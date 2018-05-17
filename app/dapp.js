@@ -5,6 +5,7 @@ import { Tabs, Tab } from 'react-bootstrap';
 import EmbarkJS from 'Embark/EmbarkJS';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
+import ENSSubdomainRegistryUI from './components/enssubdomainregistry';
 
 import './dapp.css';
 
@@ -39,6 +40,9 @@ class App extends React.Component {
       </Tab>
       <Tab eventKey={2} title="ERC20Token">
           <ERC20TokenUI />
+      </Tab>
+      <Tab eventKey={3} title="ENSSubdomainRegistry">
+          <ENSSubdomainRegistryUI />
       </Tab>
       </Tabs>
     </div>);
