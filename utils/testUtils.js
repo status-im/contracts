@@ -206,31 +206,34 @@ function isException(error) {
 }
 
 exports.increaseTime = async (amount) => {
-    web3.currentProvider.sendAsync(
+    return new Promise(function(resolve, reject) {
+      web3.currentProvider.sendAsync(
         {
-            jsonrpc: '2.0', 
-            method: 'evm_increaseTime', 
-            params: [+amount], 
-            id: new Date().getSeconds()
-        }, 
+          jsonrpc: '2.0',
+          method: 'evm_increaseTime',
+          params: [+amount],
+          id: new Date().getSeconds()
+        },
         (error) => {
-            if(error) {
-                console.log(error)
-            } else {
-                /*web3.currentProvider.sendAsync(
-                    {
-                        jsonrpc: '2.0', 
-                        method: 'evm_mine', 
-                        params: [], 
-                        id: new Date().getSeconds()
-                    },  (error) => { 
-                        if(error) {
-                            console.log(error)
-                        }
-                    }
-                )*/
+          if (error) {
+            console.log(error);
+            return reject(err);
+          }
+          web3.currentProvider.sendAsync(
+            {
+              jsonrpc: '2.0',
+              method: 'evm_mine',
+              params: [],
+              id: new Date().getSeconds()
+            }, (error) => {
+              if (error) {
+                console.log(error);
+                return reject(err);
+              }
+              resolve();
             }
+          )
         }
-    )
-    
+      )
+    });
 }
