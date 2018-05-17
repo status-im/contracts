@@ -32,10 +32,13 @@
       "UpdatableInstance": {"deploy": false},
       "Controlled": {"deploy": false},
       "Owned": {"deploy": false},
-      "IdentityGasRelay": {"gasLimit": 4000000},
+      "IdentityGasRelay": {
+        "deploy": true,
+        "args": [[], [], [], 1, 1, "0x0000000000000000000000000000000000000000"] 
+      },
       "IdentityKernel": {"deploy": false},
       "IdentityFactory": {
-        "args":["0x00"], 
+        "args":[], 
         "gasLimit": 5000000,
         "onDeploy": ["IdentityFactory.methods.setKernel('$IdentityGasRelay').send({gasLimit: 1000000})"]
       },
