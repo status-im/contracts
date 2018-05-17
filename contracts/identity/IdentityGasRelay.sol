@@ -68,6 +68,27 @@ contract IdentityGasRelay is Identity {
         }
     }
 
+    constructor(   
+        bytes32[] _keys,
+        uint256[] _purposes,
+        uint256[] _types,           
+        uint256 _managerThreshold,
+        uint256 _actorThreshold,
+        address _recoveryContract
+    ) 
+        Identity(
+            _keys,
+            _purposes,
+            _types,
+            _managerThreshold,
+            _actorThreshold,
+            _recoveryContract
+        ) 
+        public
+    {
+
+    }
+
     /**
      * @notice include ethereum signed callHash in return of gas proportional amount multiplied by `_gasPrice` of `_gasToken`
      *         allows identity of being controlled without requiring ether in key balace
@@ -91,7 +112,19 @@ contract IdentityGasRelay is Identity {
         bytes _messageSignatures
     ) 
         external 
-        executeGasRelayed(
+        returns (bool success)
+    {
+        
+        //query current gas available
+        uint startGas = gasleft(); 
+        
+        //verify transaction parameters
+        require(startGas >= _gasLimit);
+        require(_nonce == nonce);
+        
+        //verify if signatures are valid and came from correct actors;
+        verifySignatures(
+            _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY,
             callGasRelayHash(
                 _to,
                 _value,
@@ -100,17 +133,27 @@ contract IdentityGasRelay is Identity {
                 _gasPrice,
                 _gasLimit,
                 _gasToken                
-            ),
-            _to == address(this) ? MANAGEMENT_KEY : ACTION_KEY,
-            _nonce,
-            _gasPrice,
-            _gasLimit,
-            _gasToken,
+            ), 
             _messageSignatures
-         )
-         returns (bool success)
-    {
+        );
+        
+        //increase nonce
+        nonce++;
+
+        //executes transaction
         success = _commitCall(_nonce, _to, _value, _data);
+
+        //refund gas used using contract held ERC20 tokens or ETH
+        if (_gasPrice > 0) {
+            uint256 _amount = 21000 + (startGas - gasleft());
+            _amount = _amount * _gasPrice;
+            if (_gasToken == address(0)) {
+                address(msg.sender).transfer(_amount);
+            } else {
+                ERC20Token(_gasToken).transfer(msg.sender, _amount);
+            }
+        }
+        
     }
 
 
@@ -135,7 +178,19 @@ contract IdentityGasRelay is Identity {
         bytes _messageSignatures
     ) 
         external 
-        executeGasRelayed(
+        returns(address deployedAddress)
+    {
+                
+        //query current gas available
+        uint startGas = gasleft(); 
+        
+        //verify transaction parameters
+        require(startGas >= _gasLimit);
+        require(_nonce == nonce);
+        
+        //verify if signatures are valid and came from correct actors;
+        verifySignatures(
+            ACTION_KEY,
             deployGasRelayHash(
                 _value,
                 keccak256(_data),
@@ -143,19 +198,26 @@ contract IdentityGasRelay is Identity {
                 _gasPrice,
                 _gasLimit,
                 _gasToken                
-            ),
-            ACTION_KEY,
-            _nonce,
-            _gasPrice,
-            _gasLimit,
-            _gasToken,
+            ), 
             _messageSignatures
-        )
-        returns(address deployedAddress)
-    {
+        );
+        
+        //increase nonce
         nonce++;
+
         deployedAddress = doCreate(_value, _data);
-        emit ContractDeployed(deployedAddress);        
+        emit ContractDeployed(deployedAddress); 
+
+        //refund gas used using contract held ERC20 tokens or ETH
+        if (_gasPrice > 0) {
+            uint256 _amount = 21000 + (startGas - gasleft());
+            _amount = _amount * _gasPrice;
+            if (_gasToken == address(0)) {
+                address(msg.sender).transfer(_amount);
+            } else {
+                ERC20Token(_gasToken).transfer(msg.sender, _amount);
+            }
+        }       
     }
 
 
@@ -186,31 +248,49 @@ contract IdentityGasRelay is Identity {
         bytes _messageSignatures
     ) 
         external 
-        executeGasRelayed(
-            approveAndCallGasRelayHash(
-                _baseToken,
-                _to,
+        returns(bool success)
+    {
+                        
+        //query current gas available
+        uint startGas = gasleft(); 
+        
+        //verify transaction parameters
+        require(startGas >= _gasLimit);
+        require(_nonce == nonce);
+        
+        //verify if signatures are valid and came from correct actors;
+        verifySignatures(
+            ACTION_KEY,
+            deployGasRelayHash(
                 _value,
                 keccak256(_data),
                 _nonce,
                 _gasPrice,
                 _gasLimit,
-                _gasToken               
-            ),
-            ACTION_KEY,
-            _nonce,
-            _gasPrice,
-            _gasLimit,
-            _gasToken,
+                _gasToken                
+            ), 
             _messageSignatures
-        )
-        returns(bool success)
-    {
+        );
+        
+        //increase nonce
+        nonce++;
+        
         require(_baseToken != address(0)); //_baseToken should be something!
         require(_to != address(this)); //no management with approveAndCall
         require(_to != address(0)); //need valid destination
         ERC20Token(_baseToken).approve(_to, _value);
         success = _commitCall(_nonce, _to, 0, _data); 
+
+        //refund gas used using contract held ERC20 tokens or ETH
+        if (_gasPrice > 0) {
+            uint256 _amount = 21000 + (startGas - gasleft());
+            _amount = _amount * _gasPrice;
+            if (_gasToken == address(0)) {
+                address(msg.sender).transfer(_amount);
+            } else {
+                ERC20Token(_gasToken).transfer(msg.sender, _amount);
+            }
+        }
     }
 
     /**

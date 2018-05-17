@@ -1,12 +1,12 @@
 pragma solidity ^0.4.17;
 
 import "../deploy/DelayedUpdatableInstanceStorage.sol";
-import "./Identity.sol";
+import "./IdentityGasRelay.sol";
 
-contract IdentityKernel is DelayedUpdatableInstanceStorage, Identity {
+contract IdentityKernel is DelayedUpdatableInstanceStorage, IdentityGasRelay {
 
     constructor() 
-        Identity(
+        IdentityGasRelay(
             new bytes32[](0),
             new uint256[](0),
             new uint256[](0),
