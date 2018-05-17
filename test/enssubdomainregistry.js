@@ -3,6 +3,7 @@ const web3Utils = require('web3-utils');
 const namehash = require('eth-ens-namehash');
 
 contract('ENSSubdomainRegistry', function () {
+    this.timeout(0);
     let domains = {
         free : {
             name: 'freedomain.eth',
@@ -19,8 +20,6 @@ contract('ENSSubdomainRegistry', function () {
     let accountsArr;
 
     before(function(done) {
-        this.timeout(0);
-        
         var contractsConfig = {
             "TestToken": {
             
@@ -100,7 +99,8 @@ contract('ENSSubdomainRegistry', function () {
             utils.zeroAddress,
             utils.zeroBytes32,
             utils.zeroBytes32
-        ).send({from: registrant});       
+        ).send({from: registrant});     
+
         //TODO: check events
 
         result = await ens.methods.owner(usernameHash).call()
@@ -109,7 +109,7 @@ contract('ENSSubdomainRegistry', function () {
         assert.equal(result, utils.zeroAddress);
         let accountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
         assert(accountBalance, 0, "Registry subdomain account balance wrong");
-        result = await ENSSubdomainRegistry.methods.getBackupOwner(usernameHash).call();
+        result = await ENSSubdomainRegistry.methods.getFundsOwner(usernameHash).call();
         assert(result, registrant, "Backup owner not set");
     });
 
@@ -123,7 +123,8 @@ contract('ENSSubdomainRegistry', function () {
             registrant,
             utils.zeroBytes32,
             utils.zeroBytes32
-        ).send({from: registrant});       
+        ).send({from: registrant});
+ 
         //TODO: check events
         
         result = await ens.methods.owner(usernameHash).call()
@@ -148,7 +149,8 @@ contract('ENSSubdomainRegistry', function () {
             utils.zeroAddress,
             pubkey[0],
             pubkey[1]
-        ).send({from: registrant});       
+        ).send({from: registrant});  
+
         //TODO: check events
 
         result = await ens.methods.owner(usernameHash).call()
@@ -175,7 +177,8 @@ contract('ENSSubdomainRegistry', function () {
             registrant,
             pubkey[0],
             pubkey[1]
-        ).send({from: registrant});       
+        ).send({from: registrant});    
+     
         //TODO: check events
 
         result = await ens.methods.owner(usernameHash).call()
@@ -203,7 +206,6 @@ contract('ENSSubdomainRegistry', function () {
         ).send({from: registrant});  
         let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
         await utils.increaseTime(releaseDelay)
-        this.timeout(1000)
 
         let initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
         let initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
@@ -212,6 +214,7 @@ contract('ENSSubdomainRegistry', function () {
             web3Utils.sha3(subdomain), 
             domains.free.namehash
         ).send({from: registrant});
+
         //TODO: check events
 
         result = await ens.methods.owner(usernameHash).call()
@@ -242,7 +245,9 @@ contract('ENSSubdomainRegistry', function () {
             utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});       
+
         //TODO: check events
+ 
         result = await ens.methods.owner(namehash.hash(subdomain + '.' + domains.paid.name)).call()
         assert.equal(result, registrant);
         result = await ens.methods.resolver(namehash.hash(subdomain + '.' + domains.paid.name)).call()
@@ -272,12 +277,13 @@ contract('ENSSubdomainRegistry', function () {
             utils.zeroAddress,
             utils.zeroBytes32,
             utils.zeroBytes32
-        ).send({from: registrant});       
-        //TODO: check events
+        ).send({from: registrant});  
 
+        //TODO: check events
+        
         let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
         utils.increaseTime(releaseDelay)
-        this.timeout(1000)
+        
         let initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
         let initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
         let initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
@@ -316,7 +322,6 @@ contract('ENSSubdomainRegistry', function () {
 
         let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
         await utils.increaseTime(releaseDelay)
-        this.timeout(1000)
 
         let initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
         let initialRegistrantBalance = await TestToken.methods.balanceOf(newOwner).call();
@@ -326,8 +331,9 @@ contract('ENSSubdomainRegistry', function () {
             web3Utils.sha3(subdomain), 
             domains.paid.namehash
         ).send({from: newOwner});       
+        
         //TODO: check events
-
+        
         let finalAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
         assert(finalAccountBalance, 0, "Final balance didnt zeroed");
         let finalRegistrantBalance = await TestToken.methods.balanceOf(newOwner).call();
@@ -337,7 +343,7 @@ contract('ENSSubdomainRegistry', function () {
         
     });
 
-    it('should update subdomain backup owner', async () => {
+    it('should update subdomain funds owner', async () => {
         let subdomain = 'heidi';
         let labelHash = web3Utils.sha3(subdomain);
         let registrant = accountsArr[8];
@@ -355,13 +361,14 @@ contract('ENSSubdomainRegistry', function () {
         ).send({from: registrant});       
         await ens.methods.setOwner(usernameHash, newOwner).send({from: registrant});
 
-        let result = await ENSSubdomainRegistry.methods.updateBackupOwner(
+        let result = await ENSSubdomainRegistry.methods.updateFundsOwner(
             labelHash,
             domains.paid.namehash
         ).send({from: newOwner});       
+        
         //TODO: check events
-
-        result = await ENSSubdomainRegistry.methods.getBackupOwner(usernameHash).call();
+        
+        result = await ENSSubdomainRegistry.methods.getFundsOwner(usernameHash).call();
         assert(result, newOwner, "Backup owner not updated");
     });
 
@@ -369,26 +376,28 @@ contract('ENSSubdomainRegistry', function () {
     it('should move domain to new registry and migrate', async () => {
         let price = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
         let result = await ENSSubdomainRegistry.methods.moveDomain(UpdatedENSSubdomainRegistry.address, domains.paid.namehash).send();
+        
         //TODO: check events
+        
         result = await ens.methods.owner(domains.paid.namehash).call()
         assert(result, UpdatedENSSubdomainRegistry.address, "domain ownership not moved correctly")
         result = await UpdatedENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
         assert(result, price, "updated registry didnt migrated price")
     });
 
-    xit('should release moved free subdomain account balance by backup owner', async () => {
+    xit('should release moved free subdomain account balance by funds owner', async () => {
         
     });
 
-    xit('should migrate free subdomain to new registry by backup owner', async () => {
+    xit('should migrate free subdomain to new registry by funds owner', async () => {
         
     });
 
-    xit('should release moved paid subdomain account balance by backup owner', async () => {
+    xit('should release moved paid subdomain account balance by funds owner', async () => {
         
     });
 
-    xit('should migrate paid subdomain to new registry by backup owner', async () => {
+    xit('should migrate paid subdomain to new registry by funds owner', async () => {
         
     });
     
