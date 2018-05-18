@@ -1,7 +1,8 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import React from 'react';
 import { Navbar, NavItem, Nav, MenuItem , NavDropdown} from 'react-bootstrap';
-import AccList from './acclist'; 
+import AccountList from './accountList'; 
+
 class TopNavbar extends React.Component {
 
     constructor(props) {
@@ -22,7 +23,7 @@ class TopNavbar extends React.Component {
               <a href="#home">Status.im Demo</a>
             </Navbar.Brand>
           </Navbar.Header>
-          <AccList />
+          <AccountList />
         </Navbar>
       </React.Fragment>
       );

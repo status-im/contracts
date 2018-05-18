@@ -1,3 +1,12 @@
+.identicon {
+  border-radius: 50%;
+}
+
+.accounts {
+  float: right;
+  margin-left: 10px;
+}
+
 .logs {
   background-color: black;
   font-size: 14px;

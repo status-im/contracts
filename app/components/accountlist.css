@@ -1,0 +1,31 @@
+.accounts {
+    
+}
+
+.identicon {
+    border-radius: 50%;
+}
+
+.selectedIdenticon {
+    border-radius: 50%;
+    overflow: hidden;
+    float: left;
+    margin: 8px 0;
+}
+
+.accountIdenticon {
+    margin-right: 5px;
+}
+
+.accountHexString {
+    
+}
+
+.accountList {
+    float: left;
+}
+
+.account {
+    display: flex;
+    align-items: center;
+}
