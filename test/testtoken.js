@@ -1,3 +1,5 @@
+const ERC20Token = require('./erc20token');
+
 describe("TestToken", async function() {
   this.timeout(0);
   var accountsArr;
@@ -29,5 +31,10 @@ describe("TestToken", async function() {
     let result = await TestToken.methods.balanceOf(accountsArr[0]).call();
     assert.equal(result, +initialBalance+100);
   });
-  
+
+  ERC20Token.Test({ "instanceOf" : "TestToken" }, async function (accounts, TestToken) {
+    for(i=0;i<accounts.length;i++){
+      await TestToken.methods.mint(7 * 10 ^ 18).send({from: accounts[i]})
+    }
+  });
 });
