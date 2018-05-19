@@ -1,7 +1,3 @@
-.accounts {
-    
-}
-
 .identicon {
     border-radius: 50%;
 }
@@ -10,19 +6,29 @@
     border-radius: 50%;
     overflow: hidden;
     float: left;
-    margin: 8px 0;
-}
-
-.accountIdenticon {
-    margin-right: 5px;
+    margin: 7px 0;
 }
 
 .accountHexString {
-    
+    margin-left: 7px;
+    width: 267px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display:inline-block;
+}
+
+.accountBalance {
+    margin-left: 10px;
+    overflow: hidden;
+    display: inline-block;
+    width:77px;
+    text-align: center;
+    text-overflow: ellipsis;
 }
 
 .accountList {
     float: left;
+    margin-left: 10px;
 }
 
 .account {

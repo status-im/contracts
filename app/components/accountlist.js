@@ -11,30 +11,50 @@ class AccList extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            accounts: [],
-            defaultAccount: "0x0000000000000000000000000000000000000000"
+            classNameNavDropdown: props.classNameNavDropdown,
+            defaultAccount: "0x0000000000000000000000000000000000000000",
+            addresses: [],
+            balances: []
         }
         __embarkContext.execWhenReady(() => {
-            this.loadAccs()   
+            this.load()   
         });
     }  
     
 
-    loadAccs() {
-        let result = web3.eth.getAccounts().then((accs) => { 
-            if (accs) {
-                var defaultAcc = web3.eth.defaultAccount;
-                this.setState({defaultAccount:  defaultAcc ? accs[0] : defaultAcc });
-                this.setState({accounts: accs});
+    load() {
+        web3.eth.getAccounts((err, addresses) => { 
+            if (addresses) {
+                var defaultAccount = web3.eth.defaultAccount;
+                if(!defaultAccount){
+                    web3.eth.defaultAccount = addresses[0];
+                }
+                
+                var balances = [];
+                balances.length == addresses.length;
+                addresses.forEach((address, index) => {
+                    web3.eth.getBalance(address, 'latest', (err, balance) => {
+                        balances[index] = balance;
+                        if(index+1 == balances.length){
+                            this.setState({
+                                balances: balances
+                            });
+                        }
+                    })
+                })
+                this.setState({
+                    defaultAccount: defaultAccount,
+                    addresses: addresses
+                });
+                
             } else {
-                console.log("No accounts available.");
+                console.log("No addresses available.");
             }
             
         })
     }
     setDefaultAccount(index) {
-        
-        var defaultAcc = this.state.accounts[index];
+        var defaultAcc = this.state.addresses[index];
         if(defaultAcc){
             web3.eth.defaultAccount = defaultAcc;
             this.setState({defaultAccount: defaultAcc });
@@ -47,9 +67,9 @@ class AccList extends React.Component {
         
         var accsTitle;
         var accsList = [];
-        if (this.state.accounts) {
+        if (this.state.addresses) {
             accsTitle = this.state.defaultAccount;
-            this.state.accounts.forEach(
+            this.state.addresses.forEach(
                 (name, index) => {
                     accsList.push(
                     <MenuItem key={index} onClick={(e) => this.setDefaultAccount(index) }>
@@ -57,9 +77,12 @@ class AccList extends React.Component {
                             <div className="accountIdenticon">
                                 <Blockies seed={name} />
                             </div>
-                            <p className="accountHexString">
+                            <div className="accountHexString">
                                 {name}
-                            </p>
+                            </div>
+                            <div className="accountBalance">
+                                 Ξ {this.state.balances[index] / (10**18)}
+                            </div>
                         </div>
                     </MenuItem>);
                 } 
@@ -74,7 +97,7 @@ class AccList extends React.Component {
                     </div>
                     <div className="accountList">
                         <Nav>
-                            <NavDropdown key={1} title={accsTitle} id="basic-nav-dropdown">
+                            <NavDropdown key={1} title={accsTitle} id="basic-nav-dropdown" className={ this.state.classNameNavDropdown }>
                                 {accsList}
                             </NavDropdown>
                         </Nav>

@@ -23,7 +23,7 @@ class TopNavbar extends React.Component {
               <a href="#home">Status.im Demo</a>
             </Navbar.Brand>
           </Navbar.Header>
-          <AccountList />
+          <AccountList classNameNavDropdown="pull-right" />
         </Navbar>
       </React.Fragment>
       );

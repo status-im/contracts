@@ -1,11 +1,17 @@
-.identicon {
-  border-radius: 50%;
+.navbar {
+  
 }
 
 .accounts {
   float: right;
-  margin-left: 10px;
+  margin-right: 17px;
+  font-family: monospace;
 }
+
+.identicon {
+  border-radius: 50%;
+}
+
 
 .logs {
   background-color: black;
