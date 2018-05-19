@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "./ERC20Token.sol";
 
@@ -19,7 +19,7 @@ contract MiniMeTokenInterface is ERC20Token {
         uint256 _amount,
         bytes _extraData
     ) 
-        public 
+        external 
         returns (bool success);
 
     /**    

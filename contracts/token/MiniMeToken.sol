@@ -116,6 +116,7 @@ contract MiniMeToken is MiniMeTokenInterface, Controlled {
     ) 
         public
     {
+        require(_tokenFactory != address(0)); //if not set, clone feature will not work properly
         tokenFactory = MiniMeTokenFactory(_tokenFactory);
         name = _tokenName;                                 // Set the name
         decimals = _decimalUnits;                          // Set the decimals
@@ -399,11 +400,11 @@ contract MiniMeToken is MiniMeTokenInterface, Controlled {
 
     /**
      * @notice Creates a new clone token with the initial distribution being
-     *  this token at `snapshotBlock`
+     *  this token at `_snapshotBlock`
      * @param _cloneTokenName Name of the clone token
      * @param _cloneDecimalUnits Number of decimals of the smallest unit
      * @param _cloneTokenSymbol Symbol of the clone token
-     * @param snapshotBlock Block when the distribution of the parent token is
+     * @param _snapshotBlock Block when the distribution of the parent token is
      *  copied to set the initial distribution of the new clone token;
      *  if the block is zero than the actual block, the current block is used
      * @param _transfersEnabled True if transfers are allowed in the clone
