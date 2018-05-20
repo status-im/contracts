@@ -1,18 +1,18 @@
 
 exports.Test = (contractsConfig, afterDeploy) => {
-  describe("ERC20Token", async function() {
-    this.timeout(0);
-    var ERC20Token;
-    var accountsArr;
-    before(function(done) {
-      contractsConfig["ERC20Receiver"] = {};
-      EmbarkSpec.deployAll(contractsConfig, async function(accounts) { 
-        ERC20Token = Token;
-        accountsArr = accounts; 
-        await afterDeploy(accounts, Token);
-        done()
+    describe("ERC20Token", async function() {
+      this.timeout(0);
+      var ERC20Token;
+      var accountsArr;
+      before(function(done) {
+        contractsConfig["ERC20Receiver"] = {};
+        EmbarkSpec.deployAll(contractsConfig, async function(accounts) { 
+          ERC20Token = Contract;
+          accountsArr = accounts; 
+          await afterDeploy(accounts, Contract);
+          done()
+        });
       });
-    });
 
     it("should transfer 1 token", async function() {
       let initialBalance0 = await ERC20Token.methods.balanceOf(accountsArr[0]).call();
