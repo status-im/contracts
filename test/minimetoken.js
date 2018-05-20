@@ -1,5 +1,6 @@
 const utils = require('../utils/testUtils')
 const ERC20Token = require('./erc20token');
+const Controlled = require('./controlled');
 
 describe("MiniMeToken", async function() {
   this.timeout(0);
@@ -44,7 +45,7 @@ describe("MiniMeToken", async function() {
   var erc20tokenConfig = {
     "MiniMeTokenFactory": {
     },
-    "Token": { 
+    "Contract": { 
         "instanceOf" : "MiniMeToken", 
         "args": [
             "$MiniMeTokenFactory",
@@ -57,10 +58,13 @@ describe("MiniMeToken", async function() {
         ] 
     }
   }
+
   ERC20Token.Test(erc20tokenConfig, async function (accounts, MiniMeToken) {
     for(i=0;i<accounts.length;i++){
       await MiniMeToken.methods.generateTokens(accounts[i], 7 * 10 ^ 18).send({from: accounts[0]})
     }
   });
-
+  Controlled.Test(erc20tokenConfig, async function (accounts, MiniMeToken) {
+    
+  });
 });
