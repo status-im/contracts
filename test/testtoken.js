@@ -11,9 +11,6 @@ describe("TestToken", async function() {
     };
     EmbarkSpec.deployAll(contractsConfig, async function(accounts) { 
       accountsArr = accounts
-      for(i=0;i<accountsArr.length;i++) {
-        await TestToken.methods.mint(7 * 10 ^ 18).send({from: accountsArr[i]})
-      }
       done() 
     });
   });
@@ -31,8 +28,10 @@ describe("TestToken", async function() {
     let result = await TestToken.methods.balanceOf(accountsArr[0]).call();
     assert.equal(result, +initialBalance+100);
   });
-
-  ERC20Token.Test({ "instanceOf" : "TestToken" }, async function (accounts, TestToken) {
+  var erc20tokenConfig = {
+    "Token": { "instanceOf" : "TestToken" }
+  }
+  ERC20Token.Test(erc20tokenConfig, async function (accounts, TestToken) {
     for(i=0;i<accounts.length;i++){
       await TestToken.methods.mint(7 * 10 ^ 18).send({from: accounts[i]})
     }
