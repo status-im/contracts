@@ -29,7 +29,7 @@ describe("TestToken", async function() {
     assert.equal(result, +initialBalance+100);
   });
   var erc20tokenConfig = {
-    "Token": { "instanceOf" : "TestToken" }
+    "Contract": { "instanceOf" : "TestToken" }
   }
   ERC20Token.Test(erc20tokenConfig, async function (accounts, TestToken) {
     for(i=0;i<accounts.length;i++){
