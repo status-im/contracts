@@ -1,18 +1,15 @@
 
-exports.Test = (tokenContract, afterDeploy) => {
+exports.Test = (contractsConfig, afterDeploy) => {
   describe("ERC20Token", async function() {
     this.timeout(0);
     var ERC20Token;
     var accountsArr;
     before(function(done) {
-      var contractsConfig = {
-        "Token": tokenContract,
-        "ERC20Receiver": { }
-      };
+      contractsConfig["ERC20Receiver"] = {};
       EmbarkSpec.deployAll(contractsConfig, async function(accounts) { 
         ERC20Token = Token;
         accountsArr = accounts; 
-        afterDeploy(accounts, Token);
+        await afterDeploy(accounts, Token);
         done()
       });
     });
@@ -24,8 +21,8 @@ exports.Test = (tokenContract, afterDeploy) => {
       let result0 = await ERC20Token.methods.balanceOf(accountsArr[0]).call();
       let result1 = await ERC20Token.methods.balanceOf(accountsArr[1]).call();
       
-      assert.equal(result0, +initialBalance0-1);
-      assert.equal(result1, +initialBalance1+1);
+      assert.equal(result0, +initialBalance0-1, "account 0 balance unexpected");
+      assert.equal(result1, +initialBalance1+1, "account 1 balance unexpected");
     });
 
     it("should set approved amount", async function() {
