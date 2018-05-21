@@ -23,6 +23,42 @@
       },
       "MiniMeTokenFactory": {
         "deploy": true
+      },
+      "FeeRecycler": {
+        "deploy": false
+      },
+      "DelegationProxy": {
+        "deploy": false
+      },
+      "DelegationProxyFactory": {
+        "deploy": false
+      },
+      "Democracy": {
+        "deploy": false
+      },
+      "DemocracyStorage": {
+        "deploy": false
+      },
+      "ProposalManager": {
+        "deploy": false
+      },
+      "TrustNetwork": {
+        "deploy": false
+      },
+      "Factory": {
+        "deploy": false
+      },
+      "Instance": {
+        "deploy": false
+      },
+      "InstanceStorage": {
+        "deploy": false
+      },
+      "UpdatableInstance": {
+        "deploy": false
+      },
+      "TestToken": {
+        "deploy": false
       }
     }
   }
