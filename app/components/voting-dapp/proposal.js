@@ -10,4 +10,4 @@ const Proposal = props => <div>
 
     </div>
 
-module.exports = Proposal;
+export default Proposal;

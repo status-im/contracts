@@ -7,6 +7,8 @@ import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
 
+import VotingDapp from './components/voting-dapp/voting-dapp';
+
 import './dapp.css';
 
 class App extends React.Component {
@@ -34,6 +36,9 @@ class App extends React.Component {
       <div>
         <TopNavbar />
         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
+          <Tab eventKey={0} title="VotingDapp">
+              <VotingDapp />
+          </Tab>
           <Tab eventKey={1} title="TestToken">
               <TestTokenUI />
           </Tab>
