@@ -61,9 +61,7 @@ describe("MiniMeToken", async function() {
       'MMTc',
       0,
       true).send({ from: accounts[0]});
-    let addr = miniMeTokenCloneTx.events.NewCloneToken.raw.topics[1];
-    addr = `0x${addr.slice(26)}`;
-    addr = web3.utils.toChecksumAddress(addr);
+    let addr = miniMeTokenCloneTx.events.NewCloneToken.returnValues[0];
     miniMeTokenClone = new web3.eth.Contract(MiniMeToken._jsonInterface, addr);
 
     b[3] = await web3.eth.getBlockNumber();
