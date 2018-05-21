@@ -13,13 +13,10 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-
-    
   }
 
-  componentDidMount(){ 
+  componentDidMount(){
     __embarkContext.execWhenReady(() => {
-      
     });
   }
 
@@ -27,7 +24,7 @@ class App extends React.Component {
   _renderStatus(title, available) {
     let className = available ? 'pull-right status-online' : 'pull-right status-offline';
     return <React.Fragment>
-      {title} 
+      {title}
       <span className={className}></span>
     </React.Fragment>;
   }
