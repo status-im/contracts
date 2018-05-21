@@ -96,14 +96,6 @@ class MessageProcessor {
         }
     }
 
-    _getFactor(input, contract, gasToken){
-        if(contract.allowedFunctions[input.functionName].isToken){
-            return this.web3.utils.toBN(this.settings.getToken(gasToken).pricePlugin.getFactor());
-        } else {
-            return this.web3.utils.toBN(1);
-        }
-    }
-
     async getBalance(token, input, gasToken){
         // Determining balances of token used
         if(token.symbol == "ETH"){
@@ -186,11 +178,6 @@ class MessageProcessor {
             }
 
             const latestBlock = await web3.eth.getBlock("latest");
-            
-            const factor = this._getFactor(input, contract, gasToken);
-            const balanceInETH = balance.div(factor);
-            const gasPriceInETH = gasPrice.div(factor);
-            
             let estimatedGas = 0;
             try {
                  estimatedGas = await this._estimateGas(input, latestBlock.gasLimit);
@@ -200,11 +187,6 @@ class MessageProcessor {
             } catch(exc){
                 if(exc.message.indexOf("revert") > -1)
                     return this._reply("Transaction will revert", message);
-            }
-
-            const estimatedGasInTokens = estimatedGas.mul(gasPrice).mul(factor);
-            if(estimatedGasInToken < token.minRelayFactor){
-                return this._reply("estimatedGasInTokens below accepted minimum", message);
             }
 
             let p = {

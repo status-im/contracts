@@ -24,15 +24,12 @@
 
     "tokens": {
         "0x0000000000000000000000000000000000000000": {
-            "minRelayFactor": 1,
             "name": "Ethereum",
             "symbol": "ETH"
         },
         "0xD10e6dAe987Dcc0B3ADaA375C9f59690a4C97a27": {
-            "minRelayFactor": 10000,
-            "name": "Random Test Token",
-            "symbol": "RDN",
-            "pricePlugin": "../plugins/token-utils.js"
+            "name": "Status Network Token",
+            "symbol": "SNT"
         }
     },
 
