@@ -77,13 +77,13 @@ class MessageProcessor {
         };
 
         try {
-            let parsedObj = JSON.parse(this.web3.utils.toAscii(message.payload));
+            let parsedObj = JSON.parse(this.web3.utils.toAscii(message));
             obj.address = parsedObj.address;
-            obj.functionName = parsedObj.encodedFunctionCall.slice(0, 8);
-            obj.functionParameters = "0x" + parsedObj.encodedFunctionCall.slice(8);
+            obj.functionName = parsedObj.encodedFunctionCall.slice(0, 10);
+            obj.functionParameters = "0x" + parsedObj.encodedFunctionCall.slice(10);
             obj.payload = parsedObj.encodedFunctionCall;
         } catch(err){
-            console.err("Couldn't parse " + message);
+            console.error("Couldn't parse " + message);
         }
         
         return obj;
@@ -133,7 +133,7 @@ class MessageProcessor {
           console.error(error);
         } else {
             
-            let input = JSON.parse(web3.utils.toAscii(message));
+            let input = this._extractInput(message.payload);
 
             const contract = this.settings.getContractByTopic(message.topic);
 
@@ -177,7 +177,7 @@ class MessageProcessor {
                 return;
             }
 
-            const latestBlock = await web3.eth.getBlock("latest");
+            const latestBlock = await this.web3.eth.getBlock("latest");
             let estimatedGas = 0;
             try {
                  estimatedGas = await this._estimateGas(input, latestBlock.gasLimit);
@@ -194,7 +194,7 @@ class MessageProcessor {
                 to: input.address,
                 value: 0,
                 data: input.payload,
-                gas: gasLimit, 
+                gas: gasLimit.toString(), 
                 gasPrice: this.config.gasPrice
             };
 
