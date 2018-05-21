@@ -1,7 +1,7 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import React from 'react';
 import { Navbar, NavItem, Nav, MenuItem , NavDropdown} from 'react-bootstrap';
-import AccountList from './accountList'; 
+import AccountList from './accountlist'; 
 
 class TopNavbar extends React.Component {
 
