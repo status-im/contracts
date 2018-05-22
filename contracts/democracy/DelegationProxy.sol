@@ -10,10 +10,22 @@ import "./DelegationProxyInterface.sol";
  * @dev Creates a delegation proxy layer for MiniMeTokenInterface. 
  */
 contract DelegationProxy is DelegationProxyInterface {
+    
+    //default delegation proxy, being used when user didn't set any delegation at this level.
+    address public parentProxy;
+
+    //snapshots of changes, allow delegation changes be done at any time without compromising vote results.
+    mapping (address => Delegation[]) public delegations;
 
     //storage of indexes of the addresses to `delegations[to].from` 
     mapping (address => uint256) toIndexes;
 
+    struct Delegation {
+        uint128 fromBlock; //when this was updated
+        address to; //who recieved this delegaton
+        address[] from; //list of addresses that delegated to this address
+    }
+    
     /**
      * @notice Calls Constructor
      */
