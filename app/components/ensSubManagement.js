@@ -14,7 +14,7 @@ const FieldGroup = ({ id, label, help, ...props }) => (
 
 const ENSSubManagement = (props) => (
   <Fragment>
-    <h2>Subdomain management</h2>
+    <h2 style={{textAlign: 'center'}}>Subdomain Management</h2>
     <h3>Add Domain</h3>
     <AddDomain />
   </Fragment>
