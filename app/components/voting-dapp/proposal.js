@@ -7,7 +7,7 @@ class Proposal extends React.Component {
     constructor(props) {
       super(props);
       this.state = {
-          url: web3.utils.toAscii(props.data.topic),
+          url: web3.utils.toAscii(props.data.description),
           content: ''
       };
     }

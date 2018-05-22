@@ -39,7 +39,7 @@ class App extends React.Component {
     return (
       <div>
         <TopNavbar accountUpdateHandler={(e) => this.setAccount(e)} />
-        <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
+        <Tabs defaultActiveKey={0} id="uncontrolled-tab-example">
           <Tab eventKey={0} title="VotingDapp">
               <VotingDapp />
           </Tab>
