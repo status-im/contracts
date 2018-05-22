@@ -13,23 +13,21 @@ const FieldGroup = ({ id, label, help, ...props }) => (
 
 const ENSSubManagement = (props) => (
   <Fragment>
-    <h2> Subdomain management</h2>
+    <h2>Subdomain management</h2>
+    <h3>Add Domain</h3>
     <form>
       <FieldGroup
-        id="updateUsername"
+        id="domainName"
         type="text"
-        label="Update Username"
+        label="Domain Name"
       />
       <FieldGroup
-        id="updateAddress"
-        type="text"
-        label="Update Address"
+        id="domainPrice"
+        type="number"
+        label="Domain Price"
+        placeholder="(Optional) Domain will be free if left blank"
       />
-      <FieldGroup
-        id="updateUsername"
-        type="text"
-        label="Update Pubkey"
-      />
+      <Button type="submit">Submit</Button>
     </form>
   </Fragment>
 )
