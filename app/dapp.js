@@ -6,6 +6,7 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
+import ProposalManager from './components/proposalManager'
 
 import VotingDapp from './components/voting-dapp/voting-dapp';
 
@@ -47,6 +48,9 @@ class App extends React.Component {
           </Tab>
           <Tab eventKey={2} title="ERC20Token">
               <ERC20TokenUI />
+          </Tab>
+          <Tab eventKey={3} title="ProposalManager">
+            <ProposalManager />
           </Tab>
         </Tabs>
       </div>);
