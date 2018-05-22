@@ -6,6 +6,7 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
 import ENSSubdomainRegistryUI from './components/enssubdomainregistry';
+import ENSSubManagement from './components/ensSubManagement'
 
 import './dapp.css';
 
@@ -13,13 +14,11 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-
-    
   }
 
-  componentDidMount(){ 
+  componentDidMount(){
     __embarkContext.execWhenReady(() => {
-      
+
     });
   }
 
@@ -27,7 +26,7 @@ class App extends React.Component {
   _renderStatus(title, available){
     let className = available ? 'pull-right status-online' : 'pull-right status-offline';
     return <React.Fragment>
-      {title} 
+      {title}
       <span className={className}></span>
     </React.Fragment>;
   }
@@ -35,15 +34,18 @@ class App extends React.Component {
   render(){
     return (<div><h3>Status.im Contracts</h3>
       <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-      <Tab eventKey={1} title="TestToken">
+        <Tab eventKey={1} title="TestToken">
           <TestTokenUI />
-      </Tab>
-      <Tab eventKey={2} title="ERC20Token">
+        </Tab>
+        <Tab eventKey={2} title="ERC20Token">
           <ERC20TokenUI />
-      </Tab>
-      <Tab eventKey={3} title="ENSSubdomainRegistry">
+        </Tab>
+        <Tab eventKey={3} title="ENSSubdomainRegistry">
           <ENSSubdomainRegistryUI />
-      </Tab>
+        </Tab>
+        <Tab eventKey={4} title="ENS Management">
+          <ENSSubManagement />
+        </Tab>
       </Tabs>
     </div>);
   }
