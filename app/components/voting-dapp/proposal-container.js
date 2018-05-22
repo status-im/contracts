@@ -7,20 +7,30 @@ import Proposal from './proposal';
 import ProposalList from './proposal-list';
 import Paginator from './paginator';
 
+const pageLength = 10;
 class ProposalContainer extends React.Component {
 
     constructor(props) {
       super(props);
       this.state = {
-          proposals: []
+          proposals: [],
+          total: 10,  // TODO get total
+          page: 1
       };
     }
 
     componentDidMount(){
-        this.fetchProposals(_p => this.setState({proposals: _p}));
+        this.getProposalsOnPage(this.state.page);
     }
 
-    fetchProposals(cb){
+    getProposalsOnPage(pageNum){
+        this.fetchProposals((pageNum - 1) * pageLength, pageLength, _p => this.setState({proposals: _p, page: pageNum}));
+    }
+
+    fetchProposals(from, qty, cb){
+
+        console.log("Loading %s records starting from record %s", qty, from);
+
         // TODO: populate proposals
         let proposalList = [
             {
@@ -39,7 +49,7 @@ class ProposalContainer extends React.Component {
     render(){
         return <React.Fragment>
             <ProposalList proposals={this.state.proposals} />
-            <Paginator />
+            <Paginator total={this.state.total} recordsByPage={pageLength} page={this.state.page} pageHandler={(e, pageNum) => this.getProposalsOnPage(pageNum) } />
             </React.Fragment>;
     }
 
