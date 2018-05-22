@@ -17,7 +17,7 @@ class VotingDapp extends React.Component {
 
     render(){
         return <div>
-            <StatusBar />
+            <StatusBar {...this.props} />
             <ProposalContainer />
             <ProposalForm />
         </div>;

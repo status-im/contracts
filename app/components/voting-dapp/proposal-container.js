@@ -22,7 +22,20 @@ class ProposalContainer extends React.Component {
 
     fetchProposals(cb){
         // TODO: populate proposals
-        cb([1, 2, 3]);
+        let proposalList = [
+            {
+                topic: "0x68747470733a2f2f69646561732e7374617475732e696d2f69646561732f3038382d646170702d657870657269656e6365",
+                txHash: "0x1234566",
+                approved: true
+            },
+            {
+                topic: "0x68747470733a2f2f69646561732e7374617475732e696d2f69646561732f3039302d6272616e63682d706572662d7374617473",
+                txHash: "0x1234566",
+                approved: true
+            }
+        ]
+
+        cb(proposalList);
     }
 
     render(){
