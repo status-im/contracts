@@ -61,3 +61,9 @@
 input.form-control {
   margin: 5px;
 }
+
+
+.SNTBalance {
+  float: right;
+  display: block;
+}

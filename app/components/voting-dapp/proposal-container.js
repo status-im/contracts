@@ -5,6 +5,7 @@ import React from 'react';
 import ProposalForm from './proposal-form';
 import Proposal from './proposal';
 import ProposalList from './proposal-list';
+import Paginator from './paginator';
 
 class ProposalContainer extends React.Component {
 
@@ -25,7 +26,10 @@ class ProposalContainer extends React.Component {
     }
 
     render(){
-        return <ProposalList proposals={this.state.proposals} />;
+        return <React.Fragment>
+            <ProposalList proposals={this.state.proposals} />
+            <Paginator />
+            </React.Fragment>;
     }
 
 }

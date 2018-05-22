@@ -58,6 +58,7 @@ class AccList extends React.Component {
         if(defaultAcc){
             web3.eth.defaultAccount = defaultAcc;
             this.setState({defaultAccount: defaultAcc });
+            this.props.accountUpdateHandler(defaultAcc);
         } else { 
             console.log("invalid account")
         }

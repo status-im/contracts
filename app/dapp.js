@@ -22,6 +22,9 @@ class App extends React.Component {
     });
   }
 
+  setAccount(_account){
+    this.setState({account: _account});
+  }
 
   _renderStatus(title, available) {
     let className = available ? 'pull-right status-online' : 'pull-right status-offline';
@@ -34,7 +37,7 @@ class App extends React.Component {
   render(){
     return (
       <div>
-        <TopNavbar />
+        <TopNavbar accountUpdateHandler={(e) => this.setAccount(e)} />
         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
           <Tab eventKey={0} title="VotingDapp">
               <VotingDapp />

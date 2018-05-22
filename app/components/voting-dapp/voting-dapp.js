@@ -4,6 +4,7 @@ import React from 'react';
 
 import ProposalForm from './proposal-form';
 import ProposalContainer from './proposal-container';
+import StatusBar from './status-bar';
 
 class VotingDapp extends React.Component {
 
@@ -16,6 +17,7 @@ class VotingDapp extends React.Component {
 
     render(){
         return <div>
+            <StatusBar />
             <ProposalContainer />
             <ProposalForm />
         </div>;

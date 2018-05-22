@@ -58,7 +58,20 @@
         "deploy": false
       },
       "TestToken": {
-        "deploy": false
+        "deploy": true
+      },
+      "SNT": {
+        "instanceOf": "MiniMeToken",
+        "deploy": true,
+        "args": [
+          "$MiniMeTokenFactory",
+          0,
+          0,
+          "TestMiniMeToken",
+          18,
+          "TST",
+          true
+        ]
       }
     }
   }
