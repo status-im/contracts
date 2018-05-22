@@ -1,12 +1,18 @@
 pragma solidity ^0.4.21;
 
-import "./DemocracyInterface.sol";
+import "../token/MiniMeTokenInterface.sol";
+import "./DelegationProxyFactory.sol";
+import "./TrustNetwork.sol";
+import "./ProposalCuration.sol";
 import "./ProposalManager.sol";
-import "./FeeRecycler.sol";
 
 
-contract Democracy is DemocracyInterface {
+contract Democracy {
 
+    MiniMeTokenInterface public token;
+    TrustNetwork public trustNet;
+    ProposalManager public proposalManager;
+    
     mapping (bytes32 => Allowance) topicAllowance;
     mapping (uint256 => bool) executedProposals;
 
@@ -15,11 +21,10 @@ contract Democracy is DemocracyInterface {
         mapping(bytes32 => bool) calls;
     }
 
-    function Democracy(MiniMeTokenInterface _token, TrustNetworkInterface _trustNetwork) public {
+    constructor(MiniMeTokenInterface _token, DelegationProxyFactory _delegationProxyFactory) public {
         token = _token;
-        trustNet = _trustNetwork;
-        feeCollector = new FeeRecycler(_token);
-        proposalManager = new ProposalManager(_token, _trustNetwork, feeCollector);
+        trustNet = new TrustNetwork(_delegationProxyFactory);
+        proposalManager = new ProposalCuration(_token, trustNet).proposalManager();
     }
 
     function allowTopicSpecific(bytes32 _topic, address _destination, bytes4 _allowedCall, bool allowance)

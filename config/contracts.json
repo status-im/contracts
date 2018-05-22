@@ -32,7 +32,48 @@
       },
       "UpdatableInstance": { 
         "deploy": false
-      } 
+      },
+      "SNT": {
+        "instanceOf": "MiniMeToken",
+        "deploy": true,
+        "args": [
+          "$MiniMeTokenFactory",
+          0,
+          0,
+          "TestMiniMeToken",
+          18,
+          "TST",
+          true
+        ]
+      },
+      "DelegationProxyFactory": {
+        "deploy": true
+      },
+      "DelegationProxy": {
+        "deploy": false
+      },
+      "DelegationProxyView": {
+        "deploy": false
+      },
+      "DelegationProxyKernel": { 
+        "deploy": false
+      },
+      "TrustNetwork": {
+        "deploy" : false
+      },
+      "ProposalCuration": { 
+        "deploy": false
+      },
+      "ProposalManager": { 
+        "deploy": false
+      },
+      "Democracy": {
+        "deploy": true,
+        "args": [
+          "$SNT",
+          "$DelegationProxyFactory"
+        ]
+      }
     }
   }
 }

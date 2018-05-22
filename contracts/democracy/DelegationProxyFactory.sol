@@ -12,7 +12,7 @@ import "../deploy/Instance.sol";
  */
 contract DelegationProxyFactory is Factory {
 
-    function DelegationProxyFactory() 
+    constructor() 
         Factory(new DelegationProxyKernel()) 
         public 
     { }

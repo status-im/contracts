@@ -17,7 +17,7 @@ contract DelegationProxy is DelegationProxyInterface {
     /**
      * @notice Calls Constructor
      */
-    function DelegationProxy(address _parentProxy) public {
+    constructor(address _parentProxy) public {
         parentProxy = _parentProxy;
     }
 
@@ -258,7 +258,7 @@ contract DelegationProxy is DelegationProxyInterface {
      */
     function _updateDelegate(address _from, address _to) internal {
         require(delegationOfAt(_to, block.number) != msg.sender); //block impossible circular delegation
-        Delegate(_from, _to);
+        emit Delegate(_from, _to);
         Delegation memory _newFrom; //allocate memory
         Delegation[] storage fromHistory = delegations[_from];
         if (fromHistory.length > 0) { //have old config?
