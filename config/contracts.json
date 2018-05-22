@@ -23,7 +23,16 @@
       },
       "MiniMeTokenFactory": {
         "deploy": true
-      }
+      },
+      "Factory": {
+        "deploy": false
+      },
+      "Instance": { 
+        "deploy": false
+      },
+      "UpdatableInstance": { 
+        "deploy": false
+      } 
     }
   }
 }

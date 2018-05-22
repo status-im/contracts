@@ -15,3 +15,5 @@ Usage:
 | -------------------------------------- | ------ | ---- | --- |
 | token/TestToken                        | Yes    | Yes  | Yes |
 | token/ERC20Token                       | No     | Yes  | Yes |
+| deploy/Instance                        | No     | No   | No  |
+| deploy/Factory                         | No     | No   | No  |
