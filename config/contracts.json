@@ -19,7 +19,7 @@
         "deploy": false
       },
       "TestToken": {
-        "args": [ ]
+        "deploy": false
       },
       "ENSRegistry": {
         "args": []
@@ -37,6 +37,13 @@
           "0x0"
         ]
       }
+    }
+  },
+  "development": {
+    "contracts": {
+      "TestToken": {
+        "deploy": true
+      }  
     }
   }
 }

@@ -1,7 +1,17 @@
-
-div {
-  margin: 15px;
+.navbar {
+  
 }
+
+.accounts {
+  float: right;
+  margin-right: 17px;
+  font-family: monospace;
+}
+
+.identicon {
+  border-radius: 50%;
+}
+
 
 .logs {
   background-color: black;
