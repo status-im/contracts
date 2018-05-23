@@ -69,5 +69,4 @@ const AddDomain = withFormik({
   }
 })(InnerForm)
 
-setTimeout(() => {ENSSubdomainRegistry.methods.controller().call().then(console.log)}, 2000)
 export default AddDomain;
