@@ -17,7 +17,17 @@
     "contracts": {
       "ERC20Receiver": {
         "deploy": false
+      },
+      "TestToken": {
+        "deploy": false
       }
+    }
+  },
+  "development": {
+    "contracts": {
+      "TestToken": {
+        "deploy": true
+      }  
     }
   }
 }
