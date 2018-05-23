@@ -33,7 +33,7 @@ class App extends React.Component {
   }
 
   render(){
-    return 
+    return (
     <div>
       <TopNavbar />
       <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
