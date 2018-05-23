@@ -1,8 +1,9 @@
 import EmbarkJS from 'Embark/EmbarkJS';
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
 import AddDomain from './ens/addDomain'
+import SetupENS from './ens/setupENS'
 
 const FieldGroup = ({ id, label, help, ...props }) => (
   <FormGroup controlId={id}>
@@ -17,7 +18,14 @@ const ENSSubManagement = (props) => (
     <h2 style={{textAlign: 'center'}}>Subdomain Management</h2>
     <h3>Add Domain</h3>
     <AddDomain />
+    <hr/>
+    <SetupENS ENSRegistry={ENSRegistry} />
   </Fragment>
 )
 
+//console.log(ENSRegistry);
+setTimeout(() => ENSRegistry.getPastEvents(
+  'allEvents',
+  {},
+  (err, res) => { console.log(err, res) }), 2000)
 export default ENSSubManagement
