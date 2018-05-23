@@ -33,7 +33,9 @@ class App extends React.Component {
   }
 
   render(){
-    return (<div><h3>Status.im Contracts</h3>
+    return (
+    <div>
+      <TopNavbar />
       <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
         <Tab eventKey={1} title="TestToken">
           <TestTokenUI />
