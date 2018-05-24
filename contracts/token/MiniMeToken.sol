@@ -71,7 +71,7 @@ contract MiniMeToken is MiniMeTokenInterface, Controlled {
 
     // `balances` is the map that tracks the balance of each address, in this
     //  contract when the balance changes the block number that the change
-    //  occurred is also included in the map
+    //  occurred is also included in the map 
     mapping (address => Checkpoint[]) balances;
 
     // `allowed` tracks any extra transfer rights as in all ERC20 tokens

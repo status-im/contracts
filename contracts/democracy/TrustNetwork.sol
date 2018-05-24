@@ -21,7 +21,7 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
         DelegationProxyInterface vetoDelegation;
     }
     
-    function TrustNetwork(address _delegationFactory) public {
+    constructor(address _delegationFactory) public {
         delegationFactory = DelegationProxyFactory(_delegationFactory);
         topics[0x0] = newTopic(0x0, 0x0);
     }

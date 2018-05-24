@@ -12,10 +12,14 @@ contract DelegationProxyView is DelegationProxy {
 
     //storage of preprocessed view of FinalDelegate
     mapping(bytes32 => FinalDelegate) public delegationView;
-
+    
     struct FinalDelegate {
         address delegate;
         bool found;
+    }
+    
+    constructor(address _parentTopic) DelegationProxy(0x0) public {
+
     }
     
     /**

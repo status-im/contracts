@@ -6,9 +6,11 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
-import ProposalManager from './components/proposalManager'
-
+import ProposalManager from './components/proposal-manager/proposal-manager'
 import VotingDapp from './components/voting-dapp/voting-dapp';
+
+import SNT from  'Embark/contracts/SNT';
+window['SNT'] = SNT;
 
 import './dapp.css';
 

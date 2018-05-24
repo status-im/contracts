@@ -10,14 +10,26 @@ import "./DelegationProxyInterface.sol";
  * @dev Creates a delegation proxy layer for MiniMeTokenInterface. 
  */
 contract DelegationProxy is DelegationProxyInterface {
+    
+    //default delegation proxy, being used when user didn't set any delegation at this level.
+    address public parentProxy;
+
+    //snapshots of changes, allow delegation changes be done at any time without compromising vote results.
+    mapping (address => Delegation[]) public delegations;
 
     //storage of indexes of the addresses to `delegations[to].from` 
     mapping (address => uint256) toIndexes;
 
+    struct Delegation {
+        uint128 fromBlock; //when this was updated
+        address to; //who recieved this delegaton
+        address[] from; //list of addresses that delegated to this address
+    }
+    
     /**
      * @notice Calls Constructor
      */
-    function DelegationProxy(address _parentProxy) public {
+    constructor(address _parentProxy) public {
         parentProxy = _parentProxy;
     }
 
@@ -258,7 +270,7 @@ contract DelegationProxy is DelegationProxyInterface {
      */
     function _updateDelegate(address _from, address _to) internal {
         require(delegationOfAt(_to, block.number) != msg.sender); //block impossible circular delegation
-        Delegate(_from, _to);
+        emit Delegate(_from, _to);
         Delegation memory _newFrom; //allocate memory
         Delegation[] storage fromHistory = delegations[_from];
         if (fromHistory.length > 0) { //have old config?

@@ -24,26 +24,18 @@
       "MiniMeTokenFactory": {
         "deploy": true
       },
-      "FeeRecycler": {
-        "deploy": false
-      },
       "DelegationProxy": {
         "deploy": false
       },
       "DelegationProxyFactory": {
-        "deploy": false
-      },
-      "Democracy": {
-        "deploy": false
-      },
-      "DemocracyStorage": {
-        "deploy": false
+        "deploy": true
       },
       "ProposalManager": {
         "deploy": false
       },
       "TrustNetwork": {
-        "deploy": false
+        "deploy": true,
+        "args": ["$DelegationProxyFactory"]
       },
       "Factory": {
         "deploy": false
@@ -72,6 +64,24 @@
           "TST",
           true
         ]
+      },
+      "DelegationProxyView": {
+        "deploy": false
+      },
+      "DelegationProxyKernel": { 
+        "deploy": false
+      },
+      "ProposalCuration": { 
+        "deploy": true,
+        "args": ["$SNT", "$TrustNetwork"]
+      },
+      "Democracy": {
+        "deploy": true,
+        "args": [
+          "$SNT",
+          "$DelegationProxyFactory"
+        ],
+        "gasLimit": 5000000
       }
     }
   }

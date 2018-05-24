@@ -14,7 +14,7 @@ contract DelegationProxyKernel is InstanceStorage, DelegationProxyView {
     /**
      * @notice Constructor of the model - only knows about watchdog that can trigger upgrade
      */
-    function DelegationProxyKernel() DelegationProxy(0x0) public {
+    constructor() DelegationProxyView(0x0) public {
         ready = true; 
     }
 
