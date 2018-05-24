@@ -13,7 +13,5 @@
     "solc": "0.4.24",
     "ipfs-api": "17.2.4"
   },
-  "plugins": {
-    "embark-babel": {}
-  }
+  "plugins": {}
 }
