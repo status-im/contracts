@@ -3,6 +3,13 @@ import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash'
+import { debounce } from 'lodash/fp'
+
+
+const delay = debounce(1000);
+const getDomain = (hashedDomain, domains) => domains(hashedDomain).call();
+const fetchDomain = delay(getDomain);
+const setPrice = (domainFn, hashedDomain, price) => domainFn(hashedDomain, price || 0).send()
 
 const FieldGroup = ({ id, label, error, ...props }) => (
   <FormGroup controlId={id} validationState={error ? 'error' : null}>
@@ -50,14 +57,19 @@ const AddDomain = withFormik({
   mapPropsToValues: props => ({ domainName: '', domainPrice: '' }),
   validate(values, props) {
     const errors = {};
-    if (!values.domainName) errors.domainName = 'Required';
+    if (!domainName) errors.domainName = 'Required';
     return errors;
   },
-  handleSubmit(values, { setSubmitting }) {
+  async handleSubmit(values, { setSubmitting }) {
     const { domainName, domainPrice } = values
-    const { methods: { addDomain } } = ENSSubdomainRegistry
-    addDomain(hash(domainName), domainPrice || 0)
-      .send()
+    const { methods: { domains, addDomain, setDomainPrice } } = ENSSubdomainRegistry
+    const hashedDomain = hash(domainName);
+    const { state } = await getDomain(hashedDomain, domains);
+    setPrice(
+      !!state ? setDomainPrice : addDomain,
+      hashedDomain,
+      domainPrice
+    )
       .then(res => {
         setSubmitting(false);
         console.log(res);
