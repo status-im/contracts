@@ -1,15 +1,22 @@
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash'
 import { debounce } from 'lodash/fp'
 
+const { methods: { owner } } = ENSRegistry;
 
 const delay = debounce(1000);
 const getDomain = (hashedDomain, domains) => domains(hashedDomain).call();
+const registryIsOwner = address => address == ENSSubdomainRegistry._address;
+const getAndIsOwner = async domainName => {
+  const address = await owner(hash(domainName)).call();
+  return registryIsOwner(address);
+}
 const fetchDomain = delay(getDomain);
-const setPrice = (domainFn, hashedDomain, price) => domainFn(hashedDomain, price || 0).send()
+const setPrice = (domainFn, hashedDomain, price) => domainFn(hashedDomain, price || 0).send();
 
 const FieldGroup = ({ id, label, error, ...props }) => (
   <FormGroup controlId={id} validationState={error ? 'error' : null}>
@@ -49,22 +56,24 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.domainPrice}
     />
-    <Button bsStyle="primary" type="submit" disabled={isSubmitting}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
+    <Button bsStyle="primary" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
   </form>
 )
 
 const AddDomain = withFormik({
   mapPropsToValues: props => ({ domainName: '', domainPrice: '' }),
-  validate(values, props) {
+  async validate(values, props) {
+    const { domainName } = values
     const errors = {};
     if (!domainName) errors.domainName = 'Required';
-    return errors;
+    if (domainName && !await getAndIsOwner(domainName)) errors.domainName = 'This domain is not owned by registry'
+    if (Object.keys(errors).length) throw errors;
   },
   async handleSubmit(values, { setSubmitting }) {
     const { domainName, domainPrice } = values
     const { methods: { domains, addDomain, setDomainPrice } } = ENSSubdomainRegistry
     const { sha3 } = window.web3.utils
-    const hashedDomain = sha3(domainName);
+    const hashedDomain = hash(domainName)
     const debugTable =  await ['eth', 'stateofus', 'stateofus.eth', 'freedomain', 'freedomain.eth', domainName]
         .map(async str => {
           const result = {};
@@ -82,7 +91,7 @@ const AddDomain = withFormik({
     Promise.all(debugTable).then(v => { console.table(v) });
     const { state } = await getDomain(hashedDomain, domains);
     setPrice(
-      !!state ? setDomainPrice : addDomain,
+      !!Number(state) ? setDomainPrice : addDomain,
       hashedDomain,
       domainPrice
     )
