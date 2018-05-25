@@ -71,6 +71,10 @@ contract('ENSSubdomainRegistry', function () {
         assert.equal(result.events.DomainPrice.returnValues.namehash, domains.free.namehash);
         result = await ENSSubdomainRegistry.methods.getPrice(domains.free.namehash).call()
         assert.equal(result, 0);
+        result = await ENSSubdomainRegistry.methods.domains(domains.free.namehash).call()
+    
+        assert(result.state, 1)
+        assert(result.price, domains.free.price)
     });
     
     it('should add paid domain', async () => {
@@ -80,6 +84,9 @@ contract('ENSSubdomainRegistry', function () {
         assert.equal(result.events.DomainPrice.returnValues.namehash, domains.paid.namehash);
         result = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
         assert.equal(result, initialPrice);
+        result = await ENSSubdomainRegistry.methods.domains(domains.free.namehash).call()
+        assert(result.state, 1)
+        assert(result.price, domains.paid.price)
     });
 
     it('should change paid domain price', async () => {
@@ -89,6 +96,10 @@ contract('ENSSubdomainRegistry', function () {
         assert.equal(result.events.DomainPrice.returnValues.namehash, domains.paid.namehash, "Wrong namehash at event");
         result = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
         assert.equal(result, newPrice, "Wrong return value at getPrice");
+        result = await ENSSubdomainRegistry.methods.domains(domains.paid.namehash).call()
+    
+        assert(result.state, 1)
+        assert(result.price, newPrice)
     });
 
 
