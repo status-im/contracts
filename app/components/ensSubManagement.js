@@ -16,14 +16,13 @@ const FieldGroup = ({ id, label, help, ...props }) => (
 const ENSSubManagement = (props) => (
   <Fragment>
     <h2 style={{textAlign: 'center'}}>Subdomain Management</h2>
-    <h3>Add Domain</h3>
+    <h3>Add Domain Price</h3>
     <AddDomain />
     <hr/>
     <SetupENS ENSRegistry={ENSRegistry} />
   </Fragment>
 )
 
-//console.log(ENSRegistry);
 setTimeout(() => ENSRegistry.getPastEvents(
   'allEvents',
   {},

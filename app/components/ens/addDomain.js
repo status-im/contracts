@@ -8,11 +8,13 @@ import { debounce } from 'lodash/fp'
 
 const { methods: { owner } } = ENSRegistry;
 
-const delay = debounce(1000);
+const delay = debounce(250);
 const getDomain = (hashedDomain, domains) => domains(hashedDomain).call();
 const registryIsOwner = address => address == ENSSubdomainRegistry._address;
+const fetchOwner = domainName => owner(hash(domainName)).call();
+const debounceFetchOwner = delay(fetchOwner);
 const getAndIsOwner = async domainName => {
-  const address = await owner(hash(domainName)).call();
+  const address = await debounceFetchOwner(domainName);
   return registryIsOwner(address);
 }
 const fetchDomain = delay(getDomain);
