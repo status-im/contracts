@@ -60,25 +60,24 @@ const AddDomain = withFormik({
     if (!domainName) errors.domainName = 'Required';
     return errors;
   },
-  handleSubmit(values, { setSubmitting }) {
+  async handleSubmit(values, { setSubmitting }) {
     const { domainName, domainPrice } = values
     const { methods: { domains, addDomain, setDomainPrice } } = ENSSubdomainRegistry
     const hashedDomain = hash(domainName);
-    getDomain(hashedDomain, domains).then(({ state }) => {
-      setPrice(
-        !!state ? setDomainPrice : addDomain,
-        hashedDomain,
-        domainPrice
-      )
-        .then(res => {
-          setSubmitting(false);
-          console.log(res);
-        })
-        .catch(err => {
-          setSubmitting(false);
-          console.log(err);
-        })
-    })
+    const { state } = await getDomain(hashedDomain, domains);
+    setPrice(
+      !!state ? setDomainPrice : addDomain,
+      hashedDomain,
+      domainPrice
+    )
+      .then(res => {
+        setSubmitting(false);
+        console.log(res);
+      })
+      .catch(err => {
+        setSubmitting(false);
+        console.log(err);
+      })
   }
 })(InnerForm)
 
