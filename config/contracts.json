@@ -2,7 +2,7 @@
   "default": {
     "versions": {
       "web3.js": "1.0.0-beta",
-      "solc": "0.4.23"
+      "solc": "0.4.24"
     },
     "deployment": {
       "host": "localhost",
@@ -37,6 +37,22 @@
         "deploy": false
       },
       "IdentityFactory": {
+        "deploy": true
+      }, 
+      "CertifiedIdentity": {
+        "deploy": true,
+        "args": {
+          "_keys": [],
+          "_purposes": [],
+          "_types": [],
+          "_managerThreshold": 0,
+          "_actorThreshold": 0
+
+          
+          
+        }
+      },
+      "IdentityCertifier": {
         "deploy": true
       }
       
