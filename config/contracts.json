@@ -54,8 +54,18 @@
       },
       "IdentityCertifier": {
         "deploy": true
+      },
+      "TestToken": {
+        "deploy": false
       }
       
+    }
+  },
+  "development": {
+    "contracts": {
+      "TestToken": {
+        "deploy": true
+      }  
     }
   }
 }
