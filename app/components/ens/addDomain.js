@@ -1,7 +1,8 @@
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import React, { Fragment } from 'react';
-import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
+import FieldGroup from '../standard/FieldGroup'
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash'
 import { debounce } from 'lodash/fp'
@@ -19,14 +20,6 @@ const getAndIsOwner = async domainName => {
 }
 const fetchDomain = delay(getDomain);
 const setPrice = (domainFn, hashedDomain, price) => domainFn(hashedDomain, price || 0).send();
-
-const FieldGroup = ({ id, label, error, ...props }) => (
-  <FormGroup controlId={id} validationState={error ? 'error' : null}>
-    <ControlLabel>{label}</ControlLabel>
-    <FormControl {...props} />
-    {error && <HelpBlock>{error}</HelpBlock>}
-  </FormGroup>
-)
 
 const InnerForm = ({
   values,
