@@ -2,11 +2,13 @@ import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import React, { Fragment } from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, Input } from 'react-bootstrap';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash'
 import { zeroAddress, zeroBytes32 } from './utils'
 import FieldGroup from '../standard/FieldGroup'
+
+const { soliditySha3, sha3 } = web3.utils;
 
 const InnerForm = ({
   values,
@@ -37,7 +39,22 @@ const InnerForm = ({
       onChange={handleChange}
       onBlur={handleBlur}
       value={values.domainName}
+      button={
+        <Button onClick={() => {
+            ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
+                                .call()
+                                .then(res => { setFieldValue('price', res); })
+        }}>
+          Get Price
+        </Button>
+      }
     />
+    <FieldGroup
+      id="price"
+      name="price"
+      label="Domain Price"
+      disabled
+      value={values.price ? `${values.price} SNT` : null} />
     <FieldGroup
       id="address"
       name="address"
@@ -54,16 +71,16 @@ const InnerForm = ({
 )
 
 const RegisterSubDomain = withFormik({
-  mapPropsToValues: props => ({ subDomain: '', domainName: '' }),
+  mapPropsToValues: props => ({ subDomain: '', domainName: '', price: '' }),
   validate(values) {
     const errors = {};
-    const { address } = values;
-    if (address && !web3.utils.isAddress(address)) errors.address = 'Not a valid address'
+    const { address, subDomain } = values;
+    if (address && !web3.utils.isAddress(address)) errors.address = 'Not a valid address';
+    if (!subDomain) errors.subDomain = 'Required';
     return errors;
   },
   handleSubmit(values, { setSubmitting }) {
     const { subDomain, domainName, address } = values;
-    const { soliditySha3 } = web3.utils;
     const { methods: { register } } = ENSSubdomainRegistry;
     register(
       soliditySha3(subDomain),
