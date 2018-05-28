@@ -16,6 +16,7 @@ const InnerForm = ({
   handleBlur,
   handleSubmit,
   isSubmitting,
+  setFieldValue
 }) => (
   <form onSubmit={handleSubmit}>
     <FieldGroup
@@ -46,6 +47,7 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.address}
       error={errors.address}
+      button={<Button style={{ marginTop: '5px' }} onClick={() => setFieldValue('address', web3.eth.defaultAccount)}>Use My Primary Address</Button>}
     />
     <Button bsStyle="primary" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
   </form>
