@@ -40,7 +40,7 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.domainName}
       button={
-        <Button onClick={() => {
+        <Button style={{ marginTop: '5px' }} onClick={() => {
             ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
                                 .call()
                                 .then(res => { setFieldValue('price', res); })
