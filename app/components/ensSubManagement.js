@@ -1,9 +1,11 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
+import TestToken from 'Embark/contracts/TestToken';
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
 import AddDomain from './ens/addDomain';
 import RegisterSubDomain from './ens/registerSubDomain';
+import TokenPermissions from './standard/TokenPermission';
 import SetupENS from './ens/setupENS';
 
 const FieldGroup = ({ id, label, help, ...props }) => (
@@ -23,10 +25,14 @@ const ENSSubManagement = (props) => (
     <h3>Register Sub-Domain</h3>
     <RegisterSubDomain />
     <hr/>
+    <TokenPermissions
+      symbol='SNT'
+      spender={ENSRegistry._address}
+      methods={TestToken.methods} />
+    <hr/>
     <SetupENS ENSRegistry={ENSRegistry} />
   </Fragment>
 )
-
 setTimeout(() => ENSRegistry.getPastEvents(
   'allEvents',
   {},
