@@ -1,39 +1,47 @@
 import React from 'react';
 import $ from 'jquery';
 import {Button} from 'react-bootstrap';
+import EmbarkJS from 'Embark/EmbarkJS';
+import ProposalForm from './proposal-form';
 
 class Proposal extends React.Component {
 
     constructor(props) {
       super(props);
+
       this.state = {
-          url: web3.utils.toAscii(props.data.description),
-          content: ''
+          url: null,
+          title: null,
+          description: null
       };
     }
 
     componentDidMount(){
-        fetch(this.state.url)
-            .then((res) => {
-                return res.text();
-            })
-            .then((data) => {
-                data = data.replace(/<svg.+\/svg>/, '');
-                this.setState({'content': data});
-            });
+        __embarkContext.execWhenReady(() => {
+            EmbarkJS.Storage.get(this.props.data.description)
+                .then((content) => {
+                    let jsonObj = JSON.parse(content);
+                    this.setState({
+                        url: jsonObj.url,
+                        title: jsonObj.title,
+                        description: jsonObj.description
+                    })
+                })
+                .catch((err) => {
+                    if(err){
+                        // TODO handle error
+                        console.log("Storage get Error => " + err.message);
+                    }
+                });
+        });
     }
 
     render(){
-        let $content = $(this.state.content);
-        const title = $('h1.post-title', $content).text();
-        const summary = $('h2#summary', $content).next().text();
-
         return (<div>
-            <h3>{ title }</h3>
+            <h3>{ this.state.title }</h3>
+            <p>{ this.state.description }</p>
             <a href={ this.state.url } target="_blank">{ this.state.url }</a>
-            <p>{summary}</p>
-            <Button bsStyle="primary">Vote</Button>
-            <Button bsStyle="link">Cancel</Button>
+            <ProposalForm  />
         </div>);
     }
 

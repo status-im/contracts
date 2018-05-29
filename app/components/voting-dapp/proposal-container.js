@@ -34,11 +34,7 @@ class ProposalContainer extends React.Component {
         // TODO: populate proposals
         let proposalList = [
             {
-                description: "0x68747470733a2f2f69646561732e7374617475732e696d2f69646561732f3038382d646170702d657870657269656e6365",
-                approved: true
-            },
-            {
-                description: "0x68747470733a2f2f69646561732e7374617475732e696d2f69646561732f3039302d6272616e63682d706572662d7374617473",
+                description: "QmZ4hQ5jKUqtHEXhXDVSz81JexMoDmVfiypECFQZZibyrS",
                 approved: true
             }
         ]
