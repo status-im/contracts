@@ -1,6 +1,7 @@
 import web3 from "Embark/web3"
 import EmbarkJS from 'Embark/EmbarkJS';
 import React from 'react';
+import { Button } from 'react-bootstrap';
 
 class ProposalForm extends React.Component {
 
@@ -9,8 +10,16 @@ class ProposalForm extends React.Component {
       this.state = {};
     }
 
+    handleClick(e){
+        e.preventDefault();
+
+        
+    }
+
     render(){
-        return <div>TODO: Form</div>;
+        return <div>
+            <Button onClick={(e) => this.handleClick(e) }>Vote</Button>
+        </div>;
     }
 
 }

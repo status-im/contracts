@@ -1,6 +1,6 @@
 import React from 'react';
 import $ from 'jquery';
-import {Button} from 'react-bootstrap';
+import { Button, Alert } from 'react-bootstrap';
 import EmbarkJS from 'Embark/EmbarkJS';
 import ProposalForm from './proposal-form';
 
@@ -12,7 +12,8 @@ class Proposal extends React.Component {
       this.state = {
           url: null,
           title: null,
-          description: null
+          description: null,
+          error: null
       };
     }
 
@@ -29,7 +30,6 @@ class Proposal extends React.Component {
                 })
                 .catch((err) => {
                     if(err){
-                        // TODO handle error
                         console.log("Storage get Error => " + err.message);
                     }
                 });
@@ -38,6 +38,13 @@ class Proposal extends React.Component {
 
     render(){
         return (<div>
+            {
+                this.state.error !== null ?
+                <Alert bsStyle="warning">
+                { this.state.error }
+                </Alert>
+                : ''
+            }
             <h3>{ this.state.title }</h3>
             <p>{ this.state.description }</p>
             <a href={ this.state.url } target="_blank">{ this.state.url }</a>

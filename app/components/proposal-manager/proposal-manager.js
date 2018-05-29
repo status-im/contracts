@@ -1,8 +1,9 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import ERC20Token from 'Embark/contracts/ERC20Token';
-import ProposalCuration from 'Embark/contracts/ProposalCuration'
+import ProposalCuration from 'Embark/contracts/ProposalCuration';
+import SNT from 'Embark/contracts/SNT';
 import React, { Fragment } from 'react';
-import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
+import { Form, FormGroup, FormControl, HelpBlock, Button, Alert } from 'react-bootstrap';
 import web3 from "Embark/web3"
 
 class ProposalManager extends React.Component {
@@ -11,13 +12,11 @@ class ProposalManager extends React.Component {
         super(props);
         this.state = {
             submitPrice: "Loading...",
-            to: "",
-            value: "",
-            data: "",
+            url: "",
+            title: "",
             description: "",
-            topic: "0x00"
+            canSubmit: true
         };
-        window['ProposalCuration'] = ProposalCuration;
     }
 
     componentDidMount(){
@@ -33,67 +32,96 @@ class ProposalManager extends React.Component {
            try {
                 let _b = await ProposalCuration.methods.getSubmitPrice(web3.eth.defaultAccount).call();
                 this.setState({
-                    balance: _b
+                    submitPrice: _b,
+                    canSubmit: true
                 });
             } catch(err){
-                console.log("Couldn't get submit price")
+                this.setState({
+                    canSubmit: false, 
+                    submitPrice: "-"
+                });
             }
         });
     }
 
+    async handleClick(){
+        let description = {
+            "url": this.state.url,
+            "title": this.state.title,
+            "description": this.state.description
+        };
+
+        let hexDescription = web3.utils.toHex(JSON.stringify(description));
+
+        let receipt = await SNT.methods.approve(
+                            ProposalCuration.options.address, 
+                            this.state.submitPrice)
+                        .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
+
+        console.log(receipt);
+
+        receipt = await ProposalCuration.methods.submitProposal(
+            "0x00",
+            "0x0000000000000000000000000000000000000000", 
+            0, 
+            "0x00", 
+            hexDescription
+            )
+            .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
+        
+        console.log(receipt);
+    }
+    
+
     render(){
         return (
             <Fragment>
-            <h2>Add</h2>
-            <h3>Price for submitting proposals: {this.state.submitPrice}</h3>
+            {
+                !this.state.canSubmit ?
+                <Alert bsStyle="warning">
+                Account not allowed to submit proposals
+                </Alert>
+                : ''
+            }
+            <h2>Add proposal</h2>
+            <h3>Price: {this.state.submitPrice}</h3>
             <Form>
-            <FormGroup>
-              <label>
-                To:
-                <FormControl
-                  type="text"
-                  defaultValue={this.state.to}
-                  onChange={(e) => this.setState({to: e.target.value }) } />
-              </label>
-            </FormGroup>
-            <FormGroup>
-              <label>
-                Value:
-                <FormControl
-                  type="text"
-                  defaultValue={this.state.value}
-                  onChange={(e) => this.setState({value: e.target.value }) } />
-              </label>
-            </FormGroup>
-            <FormGroup>
-              <label>
-                Data:
-                <FormControl
-                  type="text"
-                  defaultValue={this.state.data}
-                  onChange={(e) => this.setState({value: e.target.value }) } />
-              </label>
-            </FormGroup>
-            <FormGroup>
-              <label>
-                Topic:
-                <FormControl
-                  type="text"
-                  defaultValue={this.state.topic} 
-                  readOnly={true} />
-              </label>
-            </FormGroup>
-            <FormGroup>
-              <label>
-                Description:
-                <FormControl
-                  type="text"
-                  defaultValue={this.state.description}
-                  onChange={(e) => this.setState({value: e.target.value }) } />
-              </label>
-            </FormGroup>
+                <FormGroup>
+                <label>
+                    Title:
+                    <FormControl
+                    type="text"
+                    defaultValue={this.state.title}
+                    onChange={(e) => this.setState({title: e.target.value }) } />
+                </label>
+                </FormGroup>
+                <FormGroup>
+                <label>
+                    Description:
+                    <FormControl
+                    type="text"
+                    defaultValue={this.state.description}
+                    onChange={(e) => this.setState({description: e.target.value }) } />
+                </label>
+                </FormGroup>
+                <FormGroup>
+                <label>
+                    URL:
+                    <FormControl
+                    type="text"
+                    defaultValue={this.state.url}
+                    onChange={(e) => this.setState({url: e.target.value }) } />
+                </label>
+                </FormGroup>
+                {
+                    this.state.canSubmit ?
+                    <FormGroup>
+                        <Button onClick={(e) => this.handleClick(e)}>Submit</Button>
+                    </FormGroup>
+                    : ''
+                }
           </Form>
-            </Fragment>
+        </Fragment>
         )
     }
 }
