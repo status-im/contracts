@@ -130,6 +130,13 @@ contract ProposalManager is Controlled {
         return uint8(proposals[_proposalId].result);
     } 
 
+    function getProposalCount() 
+        external
+        view 
+        returns (uint256){
+        return proposals.length;
+    }
+
     function getProposal(uint _proposalId)
         external
         view

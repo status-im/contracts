@@ -1,9 +1,9 @@
 import web3 from "Embark/web3"
 import EmbarkJS from 'Embark/EmbarkJS';
-import React from 'react';
+import React, {Component} from 'react';
 import SNT from 'Embark/contracts/SNT'; // TODO change this to SNT
 
-class StatusBar extends React.Component {
+class StatusBar extends Component {
 
     constructor(props) {
       super(props);

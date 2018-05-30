@@ -1,11 +1,11 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import Proposal from './proposal';
 
 const ProposalList = props =>
-  <React.Fragment>
+  <Fragment>
     {props.proposals.map((u, i) => (
       <Proposal key={i} data={u} />
     ))}
-  </React.Fragment>
+  </Fragment>
 
 export default ProposalList;

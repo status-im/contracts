@@ -1,37 +1,25 @@
 import web3 from "Embark/web3"
 import EmbarkJS from 'Embark/EmbarkJS';
-import React from 'react';
+import React, {Fragment} from 'react';
 import {Button} from 'react-bootstrap';
 
-class Paginator extends React.Component {
-
-    constructor(props) {
-      super(props);
-      this.state = {
-
-      };
+const Paginator = props => {
+    let ln = Math.ceil(props.total / props.recordsByPage);
+    let btnArray = []
+    for(let i = 1; i <= ln; i++){
+        btnArray.push(<Button 
+                            bsStyle="link" 
+                            className={i == props.pageNum ? 'current' : ''} 
+                            onClick={(e) => props.pageHandler(e, i)}>{i}</Button>)
     }
 
-    render(){
-        let ln = Math.ceil(this.props.total / this.props.recordsByPage);
-        let btnArray = []
-        for(let i = 1; i <= ln; i++){
-            btnArray.push(<Button bsStyle="link" className={i == this.props.pageNum ? 'current' : ''} onClick={(e) => this.props.pageHandler(e, i)}>{i}</Button>)
-        }
-
-        return <div>
-            <Button bsStyle="link" onClick={(e) => this.props.pageHandler(e, 1)}>&lt;</Button>
-            {
-                btnArray.map((component, index) => (
-                <React.Fragment key={index}>
+    return <div>{
+            btnArray.map((component, index) => (
+                <Fragment key={index}>
                     { component }
-                </React.Fragment>
-                ))
-            }
-            <Button bsStyle="link" onClick={(e) => this.props.pageHandler(e, ln)}>&gt;</Button>
-        </div>;
-    }
-
-}
+                </Fragment>
+            ))
+        }</div>;
+};
 
 export default Paginator;

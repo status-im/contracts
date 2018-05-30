@@ -45,14 +45,14 @@ class App extends React.Component {
           <Tab eventKey={0} title="VotingDapp">
               <VotingDapp />
           </Tab>
+          <Tab eventKey={3} title="ProposalManager">
+            <ProposalManager />
+          </Tab>
           <Tab eventKey={1} title="TestToken">
               <TestTokenUI />
           </Tab>
           <Tab eventKey={2} title="ERC20Token">
               <ERC20TokenUI />
-          </Tab>
-          <Tab eventKey={3} title="ProposalManager">
-            <ProposalManager />
           </Tab>
         </Tabs>
       </div>);

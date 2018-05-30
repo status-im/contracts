@@ -2,11 +2,11 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import ERC20Token from 'Embark/contracts/ERC20Token';
 import ProposalCuration from 'Embark/contracts/ProposalCuration';
 import SNT from 'Embark/contracts/SNT';
-import React, { Fragment } from 'react';
+import React, { Component, Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, Alert } from 'react-bootstrap';
 import web3 from "Embark/web3"
 
-class ProposalManager extends React.Component {
+class ProposalManager extends Component {
 
     constructor(props) {
         super(props);
@@ -51,25 +51,34 @@ class ProposalManager extends React.Component {
             "description": this.state.description
         };
 
-        let hexDescription = web3.utils.toHex(JSON.stringify(description));
+        EmbarkJS.Storage.saveText(JSON.stringify(description))
+            .then(async (hash) => {
+                let hexHash = web3.utils.toHex(hash);
 
-        let receipt = await SNT.methods.approve(
+                let receipt = await SNT.methods.approve(
                             ProposalCuration.options.address, 
                             this.state.submitPrice)
                         .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
 
-        console.log(receipt);
+                console.log(receipt);
 
-        receipt = await ProposalCuration.methods.submitProposal(
-            "0x00",
-            "0x0000000000000000000000000000000000000000", 
-            0, 
-            "0x00", 
-            hexDescription
-            )
-            .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
-        
-        console.log(receipt);
+                receipt = await ProposalCuration.methods.submitProposal(
+                "0x00",
+                "0x0000000000000000000000000000000000000000", 
+                0, 
+                "0x00", 
+                hexHash
+                )
+                .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
+
+                console.log(receipt);
+                })
+            .catch((err) => {
+                if(err){
+                    // TODO show error
+                    console.log("Storage saveText Error => " + err.message);
+                }
+            });
     }
     
 

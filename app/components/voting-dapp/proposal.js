@@ -17,23 +17,33 @@ class Proposal extends React.Component {
       };
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot){
+        if(prevProps.data.description !== this.props.data.description)
+            this.getProposalData();
+    }
+
     componentDidMount(){
         __embarkContext.execWhenReady(() => {
-            EmbarkJS.Storage.get(this.props.data.description)
-                .then((content) => {
-                    let jsonObj = JSON.parse(content);
-                    this.setState({
-                        url: jsonObj.url,
-                        title: jsonObj.title,
-                        description: jsonObj.description
-                    })
-                })
-                .catch((err) => {
-                    if(err){
-                        console.log("Storage get Error => " + err.message);
-                    }
-                });
+            this.getProposalData();
         });
+    }
+
+    getProposalData(){
+        let hash = web3.utils.toAscii(this.props.data.description);
+        EmbarkJS.Storage.get(hash)
+            .then((content) => {
+                let jsonObj = JSON.parse(content);
+                this.setState({
+                    url: jsonObj.url,
+                    title: jsonObj.title,
+                    description: jsonObj.description
+                })
+            })
+            .catch((err) => {
+                if(err){
+                    console.log("Storage get Error => " + err.message);
+                }
+            });
     }
 
     render(){
