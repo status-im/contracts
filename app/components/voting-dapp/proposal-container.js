@@ -50,6 +50,7 @@ class ProposalContainer extends Component {
         let proposalList = [];
         for(let i = from; i < from + qty && i < this.state.total; i++){
             let res = await ProposalCuration.methods.proposals(i).call();
+            res.id = i;
             proposalList.push(res);
         }
         cb(proposalList);

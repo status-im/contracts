@@ -56,7 +56,8 @@ contract Democracy {
         bytes32 topic;
         bytes32 txHash;
         bool approved;
-        (topic, txHash, approved) = proposalManager.getProposal(_proposalId);
+
+        (topic, txHash, approved, ) = proposalManager.getProposal(_proposalId);
         require(approved);
         require(
             txHash == keccak256(

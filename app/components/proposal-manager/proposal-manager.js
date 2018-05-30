@@ -93,6 +93,8 @@ class ProposalManager extends Component {
                 : ''
             }
             <h2>Add proposal</h2>
+            <p>Execute this on the console if proposal submit is not allowed</p>
+            <code>await ProposalCuration.methods.setSubmitPrice(web3.eth.defaultAccount, true, 1).send();</code>
             <h3>Price: {this.state.submitPrice}</h3>
             <Form>
                 <FormGroup>

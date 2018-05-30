@@ -8,7 +8,6 @@ class Proposal extends React.Component {
 
     constructor(props) {
       super(props);
-
       this.state = {
           url: null,
           title: null,
@@ -58,7 +57,7 @@ class Proposal extends React.Component {
             <h3>{ this.state.title }</h3>
             <p>{ this.state.description }</p>
             <a href={ this.state.url } target="_blank">{ this.state.url }</a>
-            <ProposalForm  />
+            <ProposalForm proposalId={this.props.data.id}  />
         </div>);
     }
 
