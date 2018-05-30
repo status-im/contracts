@@ -1,5 +1,6 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
+import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import TestToken from 'Embark/contracts/TestToken';
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
@@ -27,7 +28,7 @@ const ENSSubManagement = (props) => (
     <hr/>
     <TokenPermissions
       symbol='SNT'
-      spender={ENSRegistry._address}
+      spender={ENSSubdomainRegistry._address}
       methods={TestToken.methods} />
     <hr/>
     <SetupENS ENSRegistry={ENSRegistry} />

@@ -54,7 +54,7 @@ const InnerForm = ({
       name="price"
       label="Domain Price"
       disabled
-      value={values.price ? `${values.price} SNT` : null} />
+      value={values.price ? `${Number(values.price).toLocaleString()} SNT` : ''} />
     <FieldGroup
       id="address"
       name="address"

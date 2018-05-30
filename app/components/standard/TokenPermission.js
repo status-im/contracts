@@ -8,7 +8,6 @@ import "react-toggle/style.css";
 // We set an allowance to be "unlimited" by setting it to
 // it's maximum possible value -- namely, 2^256 - 1.
 const unlimitedAllowance = new BigNumber(2).pow(256).sub(1);
-
 const getDefaultAccount = () => web3.eth.defaultAccount;
 const SUPPORTED_TOKENS = ['SNT'];
 
@@ -34,20 +33,25 @@ class TokenHandle extends PureComponent {
   getAllowance = () => {
     const { methods, spender } = this.props;
     methods.allowance(getDefaultAccount(), spender)
-        .call()
-        .then(approved => { this.setState({ ...this.state, approved }) })
+           .call()
+           .then(approved => {
+             this.setState({ ...this.state, approved })
+           })
   }
 
   toggleApproved = () => {
     const { approved } = this.state;
     const { methods: { approve }, spender } = this.props;
-    const isApproved = !!approved;
+    const isApproved = !!Number(approved);
       approve(
         spender,
         isApproved ? 0 : unlimitedAllowance
       )
         .send()
-        .then(approval => { this.setState({ ...this.state, approved: !approved }) })
+        .then(approval => {
+          const { events: { Approval: { returnValues: { _value } } } } = approval
+          this.setState({ ...this.state, approved: _value })
+        })
   }
 
   render() {
@@ -56,10 +60,10 @@ class TokenHandle extends PureComponent {
     return (
       <div style={{ display: 'flex' }}>
         <Toggle
-          checked={!!approved}
+          checked={!!Number(approved)}
           name={symbol}
           onChange={this.toggleApproved} />
-        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${balance} ${symbol.toUpperCase()}`}</label>
+        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(balance).toLocaleString()} ${symbol.toUpperCase()}`}</label>
       </div>
     )
   }
