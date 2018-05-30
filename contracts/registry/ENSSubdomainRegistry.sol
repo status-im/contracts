@@ -255,7 +255,7 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _domain domain owned by user registry being activated
      * @param _price cost to register subnode from this node
      */
-    function addDomain(
+    function setDomainPrice(
         bytes32 _domain,
         uint256 _price
     ) 
@@ -273,7 +273,7 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _domain active domain being defined price
      * @param _price new price
      */
-    function setDomainPrice(
+    function updateDomainPrice(
         bytes32 _domain,
         uint256 _price
     ) 

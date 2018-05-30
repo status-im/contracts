@@ -66,7 +66,7 @@ contract('ENSSubdomainRegistry', function () {
       });
 
       it('should add free domain', async () => {
-        let result = await ENSSubdomainRegistry.methods.addDomain(domains.free.namehash, 0).send({from: accountsArr[0]});       
+        let result = await ENSSubdomainRegistry.methods.setDomainPrice(domains.free.namehash, 0).send({from: accountsArr[0]});       
         assert.equal(result.events.DomainPrice.returnValues.price, domains.free.price);
         assert.equal(result.events.DomainPrice.returnValues.namehash, domains.free.namehash);
         result = await ENSSubdomainRegistry.methods.getPrice(domains.free.namehash).call()
@@ -79,7 +79,7 @@ contract('ENSSubdomainRegistry', function () {
     
     it('should add paid domain', async () => {
         let initialPrice = 100
-        let result = await ENSSubdomainRegistry.methods.addDomain(domains.paid.namehash, initialPrice).send({from: accountsArr[0]});       
+        let result = await ENSSubdomainRegistry.methods.setDomainPrice(domains.paid.namehash, initialPrice).send({from: accountsArr[0]});       
         assert.equal(result.events.DomainPrice.returnValues.price, initialPrice);
         assert.equal(result.events.DomainPrice.returnValues.namehash, domains.paid.namehash);
         result = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
@@ -91,7 +91,7 @@ contract('ENSSubdomainRegistry', function () {
 
     it('should change paid domain price', async () => {
         let newPrice = domains.paid.price;
-        let result = await ENSSubdomainRegistry.methods.setDomainPrice(domains.paid.namehash, newPrice).send({from: accountsArr[0]});       
+        let result = await ENSSubdomainRegistry.methods.updateDomainPrice(domains.paid.namehash, newPrice).send({from: accountsArr[0]});       
         assert.equal(result.events.DomainPrice.returnValues.price, newPrice, "Wrong price at event");
         assert.equal(result.events.DomainPrice.returnValues.namehash, domains.paid.namehash, "Wrong namehash at event");
         result = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
