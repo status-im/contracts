@@ -12,7 +12,17 @@ class ContractSettings {
     }
 
     process(){
+        this._setTokenPricePlugin();
         this._processContracts();
+    }
+
+    _setTokenPricePlugin(){	
+        for(let token in this.tokens){	
+            if(this.tokens[token].pricePlugin !== undefined){	
+                let PricePlugin = require(this.tokens[token].pricePlugin);	
+                this.tokens[token].pricePlugin = new PricePlugin(this.tokens[token]);	
+            }	
+        }	
     }
 
     getToken(token){

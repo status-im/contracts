@@ -96,6 +96,14 @@ class MessageProcessor {
         }
     }
 
+    _getFactor(input, contract, gasToken){	
+        if(contract.allowedFunctions[input.functionName].isToken){	
+            return this.web3.utils.toBN(this.settings.getToken(gasToken).pricePlugin.getFactor());	
+        } else {	
+            return this.web3.utils.toBN(1);	
+        }	
+    }	
+    
     async getBalance(token, input, gasToken){
         // Determining balances of token used
         if(token.symbol == "ETH"){

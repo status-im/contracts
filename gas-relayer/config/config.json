@@ -22,14 +22,28 @@
         }
     },
 
+    "heartbeat": {
+        "enabled": true,
+        "symKey": "0xd0d905c1c62b810b787141430417caf2b3f54cffadb395b7bb39fdeb8f17266b"
+    },
+    
     "tokens": {
         "0x0000000000000000000000000000000000000000": {
             "name": "Ethereum",
-            "symbol": "ETH"
+            "symbol": "ETH",
+            "minAccepted":{
+                "value": 1,
+                "currency": "USD"
+            }
         },
         "0xD10e6dAe987Dcc0B3ADaA375C9f59690a4C97a27": {
             "name": "Status Network Token",
-            "symbol": "SNT"
+            "symbol": "SNT",
+            "minAccepted":{
+                "value": 1,
+                "currency": "USD"
+            },
+            "pricePlugin": "../plugins/token-utils.js"	
         }
     },
 

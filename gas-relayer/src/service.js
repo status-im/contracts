@@ -31,12 +31,14 @@ events.on('web3:connected', connURL => {
 });
 
 
+// Setting up Whisper options
+const shhOptions = {
+  ttl: config.node.whisper.ttl,
+  minPow: config.node.whisper.minPow,
+};
+
 events.on('setup:complete', (settings) => {
-  // Setting up Whisper options
-  const shhOptions = {
-    ttl: config.node.whisper.ttl,
-    minPow: config.node.whisper.minPow,
-  };
+  
 
   let kId;
   let symKId;
@@ -58,6 +60,35 @@ events.on('setup:complete', (settings) => {
       shhOptions.topics = [contract];
       events.emit('server:listen', shhOptions, settings);
     }
+
+
+
+    if(config.heartbeat.enabled){
+      let heartbeatSymKeyId;
+      web3.shh.addSymKey(config.heartbeat.symKey)
+        .then(heartbeatSymKeyId => { 
+
+            // TODO: define minPriceAccepted
+            let heartbeatPayload = {
+              'minPriceAccepted': 0
+            }
+
+            setInterval(() => {
+                web3.shh.post({ 
+                  symKeyID: heartbeatSymKeyId, 
+                  sig: keyId,
+                  ttl: config.node.whisper.ttl, 
+                  powTarget:config.node.whisper.minPow, 
+                  powTime: config.node.whisper.powTime,
+                  // TODO: topic must be a combination of heartbeat + token
+                  topic: web3.utils.toHex("relay-heartbeat").slice(0, 10),
+                  payload: web3.utils.toHex(JSON.stringify(heartbeatPayload))
+              }).catch(console.error);
+            }, 1000);
+      });
+    }
+
+
   });
 });
 
