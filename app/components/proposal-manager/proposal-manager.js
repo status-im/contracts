@@ -2,22 +2,26 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import ERC20Token from 'Embark/contracts/ERC20Token';
 import ProposalCuration from 'Embark/contracts/ProposalCuration';
 import SNT from 'Embark/contracts/SNT';
-import React, { Component, Fragment } from 'react';
+import React, { PureComponent, Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, Alert } from 'react-bootstrap';
 import web3 from "Embark/web3";
 import { withFormik } from 'formik';
 import FieldGroup from '../standard/FieldGroup';
 
-//TODO make innerform and wrap 
-class InnerForm extends Component {
+const { setSubmitPrice } = ProposalCuration.methods;
+const setPrice = (address = web3.eth.defaultAccount, allowed = true, stakeValue = 1) => {
+  setSubmitPrice(address, allowed, stakeValue)
+    .send()
+    .then(res => { console.log(res) })
+    .catch(err => { console.log(err) })
+}
+
+class InnerForm extends PureComponent {
 
   constructor(props) {
     super(props);
     this.state = {
       submitPrice: "Loading...",
-      url: "",
-      title: "",
-      description: "",
       canSubmit: true
     };
   }
@@ -92,7 +96,7 @@ class InnerForm extends Component {
       <Fragment>
         {!canSubmit &&
          <Alert bsStyle="warning">
-           Account not allowed to submit proposals <Button>Click to enable (Admin only)</Button>
+           Account not allowed to submit proposals <Button onClick={(e) => setPrice()}>Click to enable (Admin only)</Button>
          </Alert>
         }
         <h2>Add proposal</h2>
@@ -160,6 +164,7 @@ const ProposalManager = withFormik({
           })
           .catch(err => {
             setSubmitting(false);
+            //TODO show error
             console.log('Storage saveText Error: ', err.message)
           });
       })
