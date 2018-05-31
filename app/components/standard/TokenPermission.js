@@ -43,14 +43,18 @@ class TokenHandle extends PureComponent {
     const { approved } = this.state;
     const { methods: { approve }, spender } = this.props;
     const isApproved = !!Number(approved);
+    let amountToApprove = isApproved ? 0 : unlimitedAllowance;
+    console.log("approve(\""+spender+"\",\"" +amountToApprove +"\")")
       approve(
         spender,
-        isApproved ? 0 : unlimitedAllowance
+        amountToApprove
       )
         .send()
         .then(approval => {
           const { events: { Approval: { returnValues: { _value } } } } = approval
           this.setState({ ...this.state, approved: _value })
+        }).catch(err => {
+          console.log("Approve failed: " + err);
         })
   }
 
