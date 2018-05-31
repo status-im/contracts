@@ -93,10 +93,10 @@ const RegisterSubDomain = withFormik({
       zeroBytes32,
       zeroBytes32
     );
-    toSend.estimateGas().then(gasEstimated => {
+    toSend.estimateGas({from: web3.eth.defaultAccount }).then(gasEstimated => {
       console.log("Register would work. :D Gas estimated: "+gasEstimated)
       console.log("Trying: register(\""+subdomainHash+"\",\""+domainNameHash+"\",\""+resolveToAddr+"\",\""+zeroBytes32+"\",\""+zeroBytes32+"\")")
-      toSend.send({gas: gasEstimated+1000}).then(txId => {
+      toSend.send({from: web3.eth.defaultAccount, gas: gasEstimated+10000}).then(txId => {
         if(txId.status == "0x1" || txId.status == "0x01"){
           console.log("Register send success. :)")
         } else {

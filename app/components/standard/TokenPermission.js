@@ -25,14 +25,14 @@ class TokenHandle extends PureComponent {
   }
 
   getBalance = () => {
-    this.props.methods.balanceOf(getDefaultAccount())
+    this.props.methods.balanceOf(web3.eth.defaultAccount)
            .call()
            .then(balance => { this.setState({ ...this.state, balance }) });
   }
 
   getAllowance = () => {
     const { methods, spender } = this.props;
-    methods.allowance(getDefaultAccount(), spender)
+    methods.allowance(web3.eth.defaultAccount, spender)
            .call()
            .then(approved => {
              this.setState({ ...this.state, approved })
@@ -49,7 +49,7 @@ class TokenHandle extends PureComponent {
         spender,
         amountToApprove
       )
-        .send()
+        .send({ from: web3.eth.defaultAccount})
         .then(approval => {
           const { events: { Approval: { returnValues: { _value } } } } = approval
           this.setState({ ...this.state, approved: _value })

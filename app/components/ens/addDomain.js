@@ -19,7 +19,7 @@ const getAndIsOwner = async domainName => {
   return registryIsOwner(address);
 }
 const fetchDomain = delay(getDomain);
-const setPrice = (domainFn, hashedDomain, price) => domainFn(hashedDomain, price || 0).send();
+const setPrice = (domainFn, hashedDomain, price) => domainFn(hashedDomain, price || 0).send({from: web3.eth.defaultAccount});
 
 const InnerForm = ({
   values,
