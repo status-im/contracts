@@ -7,15 +7,9 @@ import { Form, FormGroup, FormControl, HelpBlock, Button, Alert } from 'react-bo
 import web3 from "Embark/web3";
 import { withFormik } from 'formik';
 import FieldGroup from '../standard/FieldGroup';
+import TokenPermissions from '../standard/TokenPermission'
 
 const { setSubmitPrice } = ProposalCuration.methods;
-const setPrice = (address = web3.eth.defaultAccount, allowed = true, stakeValue = 1) => {
-  setSubmitPrice(address, allowed, stakeValue)
-    .send()
-    .then(res => { console.log(res) })
-    .catch(err => { console.log(err) })
-}
-
 class InnerForm extends PureComponent {
 
   constructor(props) {
@@ -51,43 +45,15 @@ class InnerForm extends PureComponent {
     });
   }
 
-  async handleClick(){
-    let description = {
-      "url": this.state.url,
-      "title": this.state.title,
-      "description": this.state.description
-    };
-
-    EmbarkJS.Storage.saveText(JSON.stringify(description))
-            .then(async (hash) => {
-              let hexHash = web3.utils.toHex(hash);
-
-              let receipt = await SNT.methods.approve(
-                ProposalCuration.options.address,
-                this.state.submitPrice)
-                                     .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
-
-              console.log(receipt);
-
-              receipt = await ProposalCuration.methods.submitProposal(
-                "0x00",
-                "0x0000000000000000000000000000000000000000",
-                0,
-                "0x00",
-                hexHash
-              )
-                                              .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
-
-              console.log(receipt);
-            })
-            .catch((err) => {
-              if(err){
-                // TODO show error
-                console.log("Storage saveText Error => " + err.message);
-              }
-            });
+  setPrice = (address = web3.eth.defaultAccount, allowed = true, stakeValue = 1) => {
+    setSubmitPrice(address, allowed, stakeValue)
+      .send()
+      .then(res => {
+        this.setState({ ...state, canSubmit: true });
+        console.log(res);
+      })
+      .catch(err => { console.log(err) })
   }
-
 
   render() {
     const { values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue } = this.props;
@@ -96,12 +62,12 @@ class InnerForm extends PureComponent {
       <Fragment>
         {!canSubmit &&
          <Alert bsStyle="warning">
-           Account not allowed to submit proposals <Button onClick={(e) => setPrice()}>Click to enable (Admin only)</Button>
+           Account not allowed to submit proposals <Button onClick={(e) => this.setPrice()}>Click to enable (Admin only)</Button>
          </Alert>
         }
+        <TokenPermissions methods={SNT.methods} spender={ProposalCuration._address} symbol='SNT' />
+        <hr/>
         <h2>Add proposal</h2>
-        <p>Execute this on the console if proposal submit is not allowed</p>
-        <code>await ProposalCuration.methods.setSubmitPrice(web3.eth.defaultAccount, true, 1).send();</code>
         <h3>Price: {this.state.submitPrice}</h3>
         <Form onSubmit={handleSubmit}>
           <FieldGroup
