@@ -6,7 +6,6 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
-import ENSSubdomainRegistryUI from './components/enssubdomainregistry';
 import ENSSubManagement from './components/ensSubManagement'
 
 import './dapp.css';
@@ -43,10 +42,7 @@ class App extends React.Component {
         <Tab eventKey={2} title="ERC20Token">
           <ERC20TokenUI />
         </Tab>
-        <Tab eventKey={3} title="ENSSubdomainRegistry">
-          <ENSSubdomainRegistryUI />
-        </Tab>
-        <Tab eventKey={4} title="ENS Management">
+        <Tab eventKey={3} title="ENS Management">
           <ENSSubManagement />
         </Tab>
       </Tabs>
