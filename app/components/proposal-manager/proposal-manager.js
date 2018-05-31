@@ -85,74 +85,85 @@ class InnerForm extends Component {
   }
 
 
-  render(){
+  render() {
     const { values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue } = this.props;
     const { canSubmit } = this.state;
     return (
       <Fragment>
-      {canSubmit &&
-       <Alert bsStyle="warning">
-         Account not allowed to submit proposals
-       </Alert>
-      }
-      <h2>Add proposal</h2>
-      <p>Execute this on the console if proposal submit is not allowed</p>
-      <code>await ProposalCuration.methods.setSubmitPrice(web3.eth.defaultAccount, true, 1).send();</code>
-      <h3>Price: {this.state.submitPrice}</h3>
-      <Form>
-        <FormGroup>
-          <label>
-            Title:
-            <FormControl
-              type="text"
-              defaultValue={this.state.title}
-              onChange={(e) => this.setState({title: e.target.value }) } />
-          </label>
-        </FormGroup>
-        <FieldGroup
-          id="title"
-          name="title"
-          type="test"
-          label="Title"
-          onChange={handleChange}
-          onBlur={handleBlur}
-          value={values.title}
-        />
-        <FormGroup>
-          <label>
-            Description:
-            <FormControl
-              type="text"
-              defaultValue={this.state.description}
-              onChange={(e) => this.setState({description: e.target.value }) } />
-          </label>
-        </FormGroup>
-        <FormGroup>
-          <label>
-            URL:
-            <FormControl
-              type="text"
-              defaultValue={this.state.url}
-              onChange={(e) => this.setState({url: e.target.value }) } />
-          </label>
-        </FormGroup>
-        {
-          this.state.canSubmit ?
-          <FormGroup>
-            <Button onClick={(e) => this.handleClick(e)}>Submit</Button>
-          </FormGroup>
-          : ''
+        {!canSubmit &&
+         <Alert bsStyle="warning">
+           Account not allowed to submit proposals <Button>Click to enable (Admin only)</Button>
+         </Alert>
         }
-      </Form>
+        <h2>Add proposal</h2>
+        <p>Execute this on the console if proposal submit is not allowed</p>
+        <code>await ProposalCuration.methods.setSubmitPrice(web3.eth.defaultAccount, true, 1).send();</code>
+        <h3>Price: {this.state.submitPrice}</h3>
+        <Form onSubmit={handleSubmit}>
+          <FieldGroup
+            id="title"
+            name="title"
+            type="text"
+            label="Title"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            value={values.title}
+          />
+          <FieldGroup
+            id="description"
+            name="description"
+            type="text"
+            label="Description"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            value={values.description}
+          />
+          <FieldGroup
+            id="url"
+            name="url"
+            type="text"
+            label="URL"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            value={values.url}
+          />
+          <Button type="submit" disabled={!canSubmit || isSubmitting}>{isSubmitting ? 'Submission in progress' : 'Submit'}</Button>
+        </Form>
       </Fragment>
     )
   }
 }
 
 const ProposalManager = withFormik({
-  mapPropsToValues: props => ({ title: '' }),
+  mapPropsToValues: props => ({ title: '', description: '', url: '' }),
   validate(values) {},
-  handleSubmit(values, { setSubmitting}){}
+  handleSubmit(values, { setSubmitting}){
+    const { title, description, url } = values;
+    const { saveText } = EmbarkJS.Storage;
+    const { toHex } = web3.utils;
+    const { submitProposal } = ProposalCuration.methods;
+    saveText(JSON.stringify(description))
+      .then(hash => {
+        const hexHash = toHex(hash);
+        //TODO create toggle for address approval
+        submitProposal(
+          "0x00",
+          "0x0000000000000000000000000000000000000000",
+          0,
+          "0x00",
+          hexHash
+        )
+          .send({from: web3.eth.defaultAccount, gasLimit: 1000000})
+          .then(res => {
+            setSubmitting(false);
+            console.log(res);
+          })
+          .catch(err => {
+            setSubmitting(false);
+            console.log('Storage saveText Error: ', err.message)
+          });
+      })
+  }
 })(InnerForm)
 
 export default ProposalManager;
