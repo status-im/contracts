@@ -78,22 +78,42 @@ const RegisterSubDomain = withFormik({
     if (address && !web3.utils.isAddress(address)) errors.address = 'Not a valid address';
     if (!subDomain) errors.subDomain = 'Required';
     return errors;
-  },
+  }, 
   handleSubmit(values, { setSubmitting }) {
     const { subDomain, domainName, address } = values;
     const { methods: { register } } = ENSSubdomainRegistry;
-    register(
-      soliditySha3(subDomain),
-      hash(domainName),
-      address || zeroAddress,
+    let subdomainHash = soliditySha3(subDomain);
+    let domainNameHash = hash(domainName);
+    let resolveToAddr = address || zeroAddress;
+    
+    let toSend = register(
+      subdomainHash,
+      domainNameHash,
+      resolveToAddr,
       zeroBytes32,
       zeroBytes32
-    )
-      .send()
-      .then(res => {
+    );
+    toSend.estimateGas().then(gasEstimated => {
+      console.log("Register would work. :D Gas estimated: "+gasEstimated)
+      console.log("Trying: register(\""+subdomainHash+"\",\""+domainNameHash+"\",\""+resolveToAddr+"\",\""+zeroBytes32+"\",\""+zeroBytes32+"\")")
+      toSend.send({gas: gasEstimated+1000}).then(txId => {
+        if(txId.status == "0x1" || txId.status == "0x01"){
+          console.log("Register send success. :)")
+        } else {
+          console.log("Register send errored. :( Out of gas? ")
+        }
+        console.dir(txId)
+      }).catch(err => {
+        console.log("Register send errored. :( Out of gas?")
+        console.dir(err)
+      }).finally(() => {
         setSubmitting(false);
-        console.log(res)
       });
+    }).catch(err => {
+      console.log("Register would error. :/ Already Registered? Have Token Balance? Is Allowance set?")
+      console.dir(err)
+      setSubmitting(false);
+    });
   }
 })(InnerForm)
 
