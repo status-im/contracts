@@ -8,6 +8,7 @@ import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
 import ProposalManager from './components/proposal-manager/proposal-manager'
 import VotingDapp from './components/voting-dapp/voting-dapp';
+import SNTUI from './components/snt-ui';
 
 import SNT from  'Embark/contracts/SNT';
 window['SNT'] = SNT;
@@ -45,13 +46,16 @@ class App extends React.Component {
           <Tab eventKey={0} title="VotingDapp">
               <VotingDapp />
           </Tab>
-          <Tab eventKey={3} title="ProposalManager">
+          <Tab eventKey={1} title="ProposalManager">
             <ProposalManager />
           </Tab>
-          <Tab eventKey={1} title="TestToken">
+          <Tab eventKey={2} title="SNT Token">
+              <SNTUI />
+          </Tab>
+          <Tab eventKey={3} title="TestToken">
               <TestTokenUI />
           </Tab>
-          <Tab eventKey={2} title="ERC20Token">
+          <Tab eventKey={4} title="ERC20Token">
               <ERC20TokenUI />
           </Tab>
         </Tabs>
