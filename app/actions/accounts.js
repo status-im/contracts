@@ -9,7 +9,6 @@ export const fetchAndDispatchAccountsWithBalances = (web3, dispatch) => {
         const balance = await web3.eth.getBalance(address, 'latest')
         return { address, balance }
       })
-      console.log('accounts page', Promise.all(accounts), accounts.length)
       Promise.all(accounts).then(accounts => {
         dispatch(receiveAccounts(defaultAccount, accounts))
       })
