@@ -66,7 +66,7 @@ contract ProposalManager is Controlled {
         p.txHash = _txHash;
 
         p.blockStart = block.number + 0; //will be replaced by configurations
-        p.voteBlockEnd = p.blockStart + 10000; //dummy value
+        p.voteBlockEnd = p.blockStart + 10; //dummy value
         emit ProposalSet(_topic, proposalId, _txHash);
     }
 
@@ -150,6 +150,21 @@ contract ProposalManager is Controlled {
         Proposal storage p = proposals[_proposalId];
         return (p.topic, p.txHash, p.result == Vote.Approve, p.voteMap[msg.sender]);
     } 
+
+    function getProposalData(uint _proposalId)
+        external
+        view
+        returns (
+            bytes32 topic,
+            bytes32 txHash,
+            uint blockStart,
+            uint voteBlockEnd,
+            Vote result
+        )
+    {
+        Proposal storage p = proposals[_proposalId];
+        return (p.topic, p.txHash, p.blockStart, p.voteBlockEnd, p.result);
+    }
 
     
     function offchainTabulateVoteResult(uint256 _proposalId) 

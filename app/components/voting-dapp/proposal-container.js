@@ -1,7 +1,6 @@
 import web3 from "Embark/web3"
 import EmbarkJS from 'Embark/EmbarkJS';
 import React, {Component, Fragment} from 'react';
-import ProposalForm from './proposal-form';
 import Proposal from './proposal';
 import ProposalList from './proposal-list';
 import Paginator from './paginator';

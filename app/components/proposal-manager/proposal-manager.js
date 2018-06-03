@@ -108,11 +108,17 @@ const ProposalManager = withFormik({
   mapPropsToValues: props => ({ title: '', description: '', url: '' }),
   validate(values) {},
   handleSubmit(values, { setSubmitting}){
-    const { title, description, url } = values;
-    const { saveText } = EmbarkJS.Storage;
+
+    let dataObj =  { 
+      title: values.title,
+      description: values.description,
+      url: values.url
+    };
+    
     const { toHex } = web3.utils;
     const { submitProposal } = ProposalCuration.methods;
-    saveText(JSON.stringify(description))
+
+    EmbarkJS.Storage.saveText(JSON.stringify(dataObj))
       .then(hash => {
         const hexHash = toHex(hash);
         //TODO create toggle for address approval

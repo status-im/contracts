@@ -1,8 +1,9 @@
+import web3 from "Embark/web3"
 import React from 'react';
 import $ from 'jquery';
 import { Button, Alert } from 'react-bootstrap';
 import EmbarkJS from 'Embark/EmbarkJS';
-import ProposalForm from './proposal-form';
+import Voting from './voting';
 
 class Proposal extends React.Component {
 
@@ -57,7 +58,7 @@ class Proposal extends React.Component {
             <h3>{ this.state.title }</h3>
             <p>{ this.state.description }</p>
             <a href={ this.state.url } target="_blank">{ this.state.url }</a>
-            <ProposalForm proposalId={this.props.data.id}  />
+            <Voting proposalId={this.props.data.id}  />
         </div>);
     }
 
