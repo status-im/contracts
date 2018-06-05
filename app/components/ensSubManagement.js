@@ -1,6 +1,7 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import PublicResolver from 'Embark/contracts/PublicResolver';
 import TestToken from 'Embark/contracts/TestToken';
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
@@ -8,6 +9,7 @@ import AddDomain from './ens/addDomain';
 import RegisterSubDomain from './ens/registerSubDomain';
 import TokenPermissions from './standard/TokenPermission';
 import SetupENS from './ens/setupENS';
+import { hash } from 'eth-ens-namehash';
 
 const FieldGroup = ({ id, label, help, ...props }) => (
   <FormGroup controlId={id}>
@@ -37,6 +39,10 @@ const ENSSubManagement = (props) => (
 setTimeout(() => ENSRegistry.getPastEvents(
   'allEvents',
   {},
-  (err, res) => { console.log(err, res) }), 2000)
+  (err, res) => {
+    PublicResolver.methods.addr(hash('bobby.stateofus.eth')).call().then(res =>{
+      console.log('addr', res);
+    });
+    console.log(err, res) }), 2000)
 
 export default ENSSubManagement;
