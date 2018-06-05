@@ -6,7 +6,8 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
-import ENSSubManagement from './components/ensSubManagement'
+import ENSSubManagement from './components/ensSubManagement';
+import NameLookup from './components/ens/nameLookup';
 
 import './dapp.css';
 
@@ -44,6 +45,9 @@ class App extends React.Component {
         </Tab>
         <Tab eventKey={3} title="ENS Management">
           <ENSSubManagement />
+        </Tab>
+        <Tab eventKey={4} title="Name Lookup">
+          <NameLookup />
         </Tab>
       </Tabs>
     </div>);
