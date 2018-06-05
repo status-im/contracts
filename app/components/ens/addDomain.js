@@ -69,21 +69,6 @@ const AddDomain = withFormik({
     const { methods: { domains, setDomainPrice, updateDomainPrice } } = ENSSubdomainRegistry
     const { sha3 } = window.web3.utils
     const hashedDomain = hash(domainName)
-    const debugTable =  await ['eth', 'stateofus', 'stateofus.eth', 'freedomain', 'freedomain.eth', domainName]
-        .map(async str => {
-          const result = {};
-          result['domainName'] = str;
-          result['sha3Result'] = await getDomain(sha3(str), domains);
-          result['sha3State'] = result.sha3Result.state
-          result['sha3Price'] = result.sha3Result.price
-          result['nameHashResult'] = await getDomain(hash(str), domains);
-          result['nameHashState'] = result['nameHashResult'].state
-          result['nameHashPrice'] = result['nameHashResult'].price
-          result['sha3String'] = sha3(str);
-          result['nameHashString'] = hash(str);
-          return result;
-        })
-    Promise.all(debugTable).then(v => { console.table(v) });
     const { state } = await getDomain(hashedDomain, domains);
     setPrice(
       !!Number(state) ? updateDomainPrice : setDomainPrice,
