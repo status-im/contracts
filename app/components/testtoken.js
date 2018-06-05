@@ -26,9 +26,8 @@ class TestTokenUI extends React.Component {
         TestToken.methods.mint(value).send({from: web3.eth.defaultAccount});
       } else {
         TestToken.mint(value);
-        this._addToLog("#blockchain", "TestToken.mint(" + value + ")");
       }
-      this._addToLog(TestToken.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
+      console.log(TestToken.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
     }
     
     render(){
