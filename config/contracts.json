@@ -16,12 +16,31 @@
       },
       "TestToken": {
         "deploy": false
+      },
+      "SafeMath": {
+        "deploy": false
+      }, 
+      "FailTest": {
+        "deploy": false
       }
     }
   },
   "development": {
     "contracts": {
       "TestToken": {
+        "deploy": true  
+      }  
+    }
+  },
+  "testnet": {
+    
+    "contracts": {
+      "TestToken": {
+        "gasPrice" : 15000000000,   
+        "deploy": true  
+      },
+      "FailTest": {
+        "gasPrice" : 15000000000,
         "deploy": true
       }  
     }
