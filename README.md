@@ -2,9 +2,8 @@
 Requires https://github.com/creationix/nvm
 Usage: 
  ```
- nvm install node
- nvm use node
  nvm install v8.9.4
+ nvm use v8.9.4
  npm install -g embark
  git clone https://github.com/status-im/contracts.git
  cd contracts
