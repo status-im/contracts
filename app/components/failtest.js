@@ -3,16 +3,6 @@ import FailTest from 'Embark/contracts/FailTest';
 import React from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
 
-const CASES = [
-    { value: '0', label: "SUCCESS"},
-    { value: '1', label: "FAIL_1" },
-    { value: '2', label: "FAIL_2" },
-    { value: '3', label: "FAIL_3" },
-    { value: '4', label: "FAIL_4" },
-    { value: '5', label: "FAIL_5" },
-    { value: '6', label: "FAIL_6" }
-]
-
 class FailTestUI extends React.Component {
 
     constructor(props) {
@@ -68,7 +58,7 @@ class FailTestUI extends React.Component {
         e.preventDefault();
         var input = this.state.stringToInput;
         var testcase = this.state.testcaseSelected;
-        console.log("SimpleSend: testMethod("+testcase+","+input+")");
+        console.log("Send: testMethod("+testcase+","+input+") & gas: "+gasLimit);
         var r;
         if (EmbarkJS.isNewWeb3()) {
           r = FailTest.methods.testMethod(testcase,input).send({ gas: gasLimit }).then(console.log);
@@ -107,7 +97,6 @@ class FailTestUI extends React.Component {
       }
     
     render(){
-        var cases = CASES;
       return (<React.Fragment>
           <h3> Test Calls</h3>
           <Form inline>
@@ -137,13 +126,14 @@ class FailTestUI extends React.Component {
                     <option value="4">Fail by Require with Msg</option>
                     <option value="5">Fail by Revert with Msg</option>
                     <option value="6">Fail by Assert</option>
+                    <option value="7">Fail by Infinite Loop</option>
                 </FormControl>
             </FormGroup>
             <FormGroup>
                 <Button bsStyle="primary" onClick={(e) => this.estimateGas(e)}>eth.estimateGas</Button>
                 <Button bsStyle="primary" onClick={(e) => this.testCall(e)}>Call</Button>
                 <Button bsStyle="primary" onClick={(e) => this.testSimpleSend(e)}>Simple Send</Button>
-                <Button bsStyle="primary" onClick={(e) => this.testSend(e, 21001)}>Low Gas Send</Button>
+                <Button bsStyle="primary" onClick={(e) => this.testSend(e, "30000" )}>Low Gas Send</Button>
             </FormGroup>
           </Form>
 

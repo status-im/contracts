@@ -5,7 +5,8 @@ contract FailTest {
     event Calling(address indexed sender, uint256 testcase, string input);
     event Start(uint256 testcase);
     event End(uint256 testcase);
-
+    event WasteGas();
+    
     string public dataStored = "Initialized";
 
     function testMethod(uint256 _case, string input) external returns (string someReturn) {
@@ -25,10 +26,14 @@ contract FailTest {
             revert("C String 03");
         } else if(_case == 6) {
             assert(false);
+        } else if(_case == 7) {
+            while(true) {
+                emit WasteGas();
+            }
         }
      
         emit End(_case);
-    
+
     }
 
 }
