@@ -1,0 +1,15 @@
+{
+  "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d": {
+    "contracts": {
+      "0x43941c37d42f14ec6c2d28b974d2e44769cbf0834c3d3db90b1f0de894048e92": {
+        "name": "TestToken",
+        "address": "0x8fD350fd2c8A8404C9D3439696cd233c851688F5"
+      },
+      "0x86ff31d507010f461accb385a4a6d7c093a94195d8f6f3b30004994abd530f66": {
+        "name": "FailTest",
+        "address": "0x4a5Ac9941A2AF362F5175c567230f773796a2ED5"
+      }
+    },
+    "name": "testnet"
+  }
+}
