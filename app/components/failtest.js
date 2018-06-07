@@ -10,7 +10,8 @@ class FailTestUI extends React.Component {
       this.state = {
         stringToInput: "",
         testcaseSelected: '0',
-        dataStorage: ""
+        dataStorage: "",
+        gasPrice: "15000000000"
       }      
          
     }
@@ -19,6 +20,10 @@ class FailTestUI extends React.Component {
       this.setState({stringToInput: e.target.value});
     }
     
+    handleGasPriceChange(e){
+        this.setState({gasPrice: e.target.value });
+    }
+
     updateCase (e) {
         console.log(e)
 		this.setState({
@@ -44,10 +49,11 @@ class FailTestUI extends React.Component {
         e.preventDefault();
         var input = this.state.stringToInput;
         var testcase = this.state.testcaseSelected;
+        var userGasPrice = this.state.gasPrice;
         console.log("SimpleSend: testMethod("+testcase+","+input+")");
         var r;
         if (EmbarkJS.isNewWeb3()) {
-          r = FailTest.methods.testMethod(testcase,input).send().then(console.log);
+          r = FailTest.methods.testMethod(testcase,input).send({gasPrice: userGasPrice}).then(console.log);
         } else {
           r = FailTest.testMethod(testcase,input).then(console.log);
         }
@@ -58,10 +64,11 @@ class FailTestUI extends React.Component {
         e.preventDefault();
         var input = this.state.stringToInput;
         var testcase = this.state.testcaseSelected;
+        var userGasPrice = this.state.gasPrice;
         console.log("Send: testMethod("+testcase+","+input+") & gas: "+gasLimit);
         var r;
         if (EmbarkJS.isNewWeb3()) {
-          r = FailTest.methods.testMethod(testcase,input).send({ gas: gasLimit }).then(console.log);
+          r = FailTest.methods.testMethod(testcase,input).send({ gasPrice: userGasPrice, gas: gasLimit }).then(console.log);
         } else {
              r = "test not implemented"
         }
@@ -100,6 +107,16 @@ class FailTestUI extends React.Component {
       return (<React.Fragment>
           <h3> Test Calls</h3>
           <Form inline>
+          
+            <FormGroup>
+                <label>
+                    GasPrice (wei):
+                </label>
+                <FormControl
+                    type="string"
+                    defaultValue={this.state.gasPrice}
+                    onChange={(e) => this.handleGasPriceChange(e)} />
+            </FormGroup>
             <FormGroup>
                 <label>
                     Data To Store:
