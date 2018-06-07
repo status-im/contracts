@@ -23,12 +23,15 @@ const addressStyle = {
   fontSize: '18px',
   fontWeight: 400,
   margin: '3% 0 3% 0',
-  cursor: 'copy'
+  cursor: 'copy',
+  textAlign: 'center',
+  wordWrap: 'break-word'
 }
 
 const backButton = {
   fontSize: '40px',
-  color: theme.accent
+  color: theme.accent,
+  cursor: 'pointer'
 }
 
 class DisplayAddress extends PureComponent {
@@ -36,7 +39,7 @@ class DisplayAddress extends PureComponent {
 
   render() {
     const { copied } = this.state
-    const { domainName, address, setStatus } = this.props
+    const { domainName, address, statusAccount, setStatus } = this.props
     const markCopied = () => { this.setState({ copied: !copied }) }
     const validAddress = address != nullAddress;
     return (
@@ -46,6 +49,9 @@ class DisplayAddress extends PureComponent {
            <Info.Action title="Click to copy"><b>{domainName.toUpperCase()}</b> Resolves To:</Info.Action>
            <CopyToClipboard text={address} onCopy={markCopied}>
              <div style={addressStyle}>{address}</div>
+           </CopyToClipboard>
+           <CopyToClipboard text={statusAccount} onCopy={markCopied}>
+             <div style={addressStyle}>{statusAccount}</div>
            </CopyToClipboard>
            {copied &&
             <Info background={theme.positive} style={copiedText}>
@@ -85,19 +91,23 @@ const InnerForm = ({
         Get Address
       </Button>
     </form>
-     : <DisplayAddress domainName={values.domainName} address={status} setStatus={setStatus}/>}
+     : <DisplayAddress
+         domainName={values.domainName}
+         address={status.address}
+         statusAccount={status.statusAccount}
+         setStatus={setStatus}/>}
   </Card>
 )
 
 const NameLookup = withFormik({
   mapPropsToValues: props => ({ domainName: '' }),
-  handleSubmit(values, { setSubmitting, setStatus }) {
+  async handleSubmit(values, { status, setSubmitting, setStatus }) {
     const { domainName } = values;
-    PublicResolver.methods.addr(hash(formatName(domainName)))
-                  .call()
-                  .then(res =>{
-                    setStatus(res)
-                  });
+    const { addr, text } = PublicResolver.methods;
+    const lookupHash = hash(formatName(domainName));
+    const address = await addr(lookupHash).call();
+    const statusAccount = await text(lookupHash, 'statusAccount').call();
+    setStatus({ address, statusAccount });
   }
 })(InnerForm)
 

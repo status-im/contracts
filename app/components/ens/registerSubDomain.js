@@ -56,10 +56,20 @@ const InnerForm = ({
       disabled
       value={values.price ? `${Number(values.price).toLocaleString()} SNT` : ''} />
     <FieldGroup
+      id="statusAddress"
+      name="statusAddress"
+      type="text"
+      label="Status messenger address domain resolves to"
+      onChange={handleChange}
+      onBlur={handleBlur}
+      value={values.statusAddress}
+      error={errors.statusAddress}
+    />
+    <FieldGroup
       id="address"
       name="address"
       type="text"
-      label="Address domain resolves to"
+      label="Address domain resolves to (optional)"
       onChange={handleChange}
       onBlur={handleBlur}
       value={values.address}
@@ -78,20 +88,21 @@ const RegisterSubDomain = withFormik({
     if (address && !web3.utils.isAddress(address)) errors.address = 'Not a valid address';
     if (!subDomain) errors.subDomain = 'Required';
     return errors;
-  }, 
+  },
   handleSubmit(values, { setSubmitting }) {
-    const { subDomain, domainName, address } = values;
+    const { subDomain, domainName, address, statusAddress } = values;
     const { methods: { register } } = ENSSubdomainRegistry;
-    let subdomainHash = soliditySha3(subDomain);
-    let domainNameHash = hash(domainName);
-    let resolveToAddr = address || zeroAddress;
-    
-    let toSend = register(
+    const subdomainHash = soliditySha3(subDomain);
+    const domainNameHash = hash(domainName);
+    const resolveToAddr = address || zeroAddress;
+
+    const toSend = register(
       subdomainHash,
       domainNameHash,
       resolveToAddr,
       zeroBytes32,
-      zeroBytes32
+      zeroBytes32,
+      statusAddress || zeroBytes32
     );
     toSend.estimateGas().then(gasEstimated => {
       console.log("Register would work. :D Gas estimated: "+gasEstimated)
