@@ -3,21 +3,17 @@ const web3Utils = require('web3-utils');
 const namehash = require('eth-ens-namehash');
 const ens = embark.require('Embark/contracts/ENSRegistry');
 
+let accountsArr;
+
 config({
   contracts: {
     "ENSRegistry": { },
   }
+}, (err, accounts) => {
+  accountsArr = accounts;
 });
 
 contract('ENS', function () {
-    let accountsArr;
-
-    before(function(done) {
-        web3.eth.getAccounts().then((accounts) => {
-          accountsArr = accounts; 
-          done();
-        });
-      });
 
     it('should allow ownership transfers', async () => {
         let result = await ens.methods.setOwner(utils.zeroBytes32, accountsArr[1]).send({from: accountsArr[0]});       

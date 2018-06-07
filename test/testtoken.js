@@ -1,20 +1,16 @@
 const TestToken = embark.require('Embark/contracts/TestToken');
 
+var accountsArr;
+
 config({
   contracts: {
     "TestToken": {}
   }
+}, (err, accounts) => {
+  accountsArr = accounts;
 });
 
 describe("TestToken", async function() {
-  var accountsArr;
-
-  before(function(done) {
-    web3.eth.getAccounts().then(function(accounts) {
-      accountsArr = accounts
-      done() 
-    });
-  });
 
   it("should increase totalSupply in mint", async function() {
     let initialSupply = await TestToken.methods.totalSupply().call();

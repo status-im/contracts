@@ -6,9 +6,7 @@ let accountsArr;
 config({
   contracts: {
     "TestToken": {},
-    // from caller
     "Contract": {"instanceOf": "TestToken"},
-    //contractsConfig["ERC20Receiver"] = {};
     "ERC20Receiver": {}
   }
 }, (err, accounts) => {
