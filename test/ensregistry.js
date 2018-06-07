@@ -1,20 +1,21 @@
 const utils = require('../utils/testUtils.js');
 const web3Utils = require('web3-utils');
 const namehash = require('eth-ens-namehash');
+const ens = embark.require('Embark/contracts/ENSRegistry');
+
+config({
+  contracts: {
+    "ENSRegistry": { },
+  }
+});
 
 contract('ENS', function () {
-    this.timeout(0);
-    let ens;
     let accountsArr;
 
     before(function(done) {
-        var contractsConfig = {
-          "ENSRegistry": { },
-        };
-        EmbarkSpec.deployAll(contractsConfig, function(accounts) { 
-          ens = ENSRegistry;
+        web3.eth.getAccounts().then((accounts) => {
           accountsArr = accounts; 
-          done()
+          done();
         });
       });
 

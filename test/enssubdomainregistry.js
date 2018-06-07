@@ -1,9 +1,55 @@
 const utils = require('../utils/testUtils.js');
 const web3Utils = require('web3-utils');
 const namehash = require('eth-ens-namehash');
+const ens = embark.require('Embark/contracts/ENSRegistry');
+const ENSSubdomainRegistry = embark.require('Embark/contracts/ENSSubdomainRegistry');
+const PublicResolver = embark.require('Embark/contracts/PublicResolver');
+const TestToken = embark.require('Embark/contracts/TestToken');
+const UpdatedENSSubdomainRegistry = embark.require('Embark/contracts/UpdatedENSSubdomainRegistry');
+
+let accountsArr;
+
+config({
+  contracts: {
+    "TestToken": {
+    },
+    "ENSRegistry": {
+      "onDeploy": [
+        "ENSRegistry.methods.setSubnodeOwner('0x0000000000000000000000000000000000000000000000000000000000000000', '0x4f5b812789fc606be1b3b16908db13fc7a9adf7ca72641f84d75b47069d3d7f0', web3.eth.defaultAccount).send()"
+      ]
+    },
+    "PublicResolver": {
+      "args": [
+        "$ENSRegistry"
+      ]
+    },
+    "ENSSubdomainRegistry": {
+      "args": [
+        "$TestToken",
+        "$ENSRegistry",
+        "$PublicResolver",
+        "0x0"
+      ],
+      "onDeploy": [
+        "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0xbd99f8d5e7f81d2d7c1da34b67a2bb3a94dd8c9b0ab40ddc077621b98405983b', ENSSubdomainRegistry.address).send()",
+        "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0x7b4768a525e733422bf968587a91b4036e5176d36f44a9fb5b29d0bca03ab3a3', ENSSubdomainRegistry.address).send()"
+      ]
+    },
+    "UpdatedENSSubdomainRegistry": {
+      "instanceOf" : "ENSSubdomainRegistry",
+      "args": [
+        "$TestToken",
+        "$ENSRegistry",
+        "$PublicResolver",
+        "$ENSSubdomainRegistry"
+      ]
+    }
+  }
+}, (err, accounts) => {
+  accountsArr = accounts;
+});
 
 contract('ENSSubdomainRegistry', function () {
-    this.timeout(0);
     let domains = {
         free : {
             name: 'freedomain.eth',
@@ -16,56 +62,14 @@ contract('ENSSubdomainRegistry', function () {
             namehash: namehash.hash('stateofus.eth')
         }
     }
-    let ens;
-    let accountsArr;
 
     before(function(done) {
-        var contractsConfig = {
-            "TestToken": {
-            
-            },
-            "ENSRegistry": {
-                "onDeploy": [
-                    "ENSRegistry.methods.setSubnodeOwner('0x0000000000000000000000000000000000000000000000000000000000000000', '0x4f5b812789fc606be1b3b16908db13fc7a9adf7ca72641f84d75b47069d3d7f0', web3.eth.defaultAccount).send()"
-                ]
-            },
-            "PublicResolver": {
-                "args": [
-                    "$ENSRegistry"
-                ]
-            },
-            "ENSSubdomainRegistry": {
-                "args": [
-                    "$TestToken", 
-                    "$ENSRegistry",
-                    "$PublicResolver",
-                    "0x0"
-                ], 
-                "onDeploy": [
-                    "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0xbd99f8d5e7f81d2d7c1da34b67a2bb3a94dd8c9b0ab40ddc077621b98405983b', ENSSubdomainRegistry.address).send()",
-                    "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0x7b4768a525e733422bf968587a91b4036e5176d36f44a9fb5b29d0bca03ab3a3', ENSSubdomainRegistry.address).send()"
-                ]
-            },
-            "UpdatedENSSubdomainRegistry": {
-                "instanceOf" : "ENSSubdomainRegistry",
-                "args": [
-                    "$TestToken", 
-                    "$ENSRegistry",
-                    "$PublicResolver",
-                    "$ENSSubdomainRegistry"
-                ]
-            }
-
-        };
-        EmbarkSpec.deployAll(contractsConfig, async (accounts) => { 
-          ens = ENSRegistry;
-          accountsArr = accounts; 
-          await utils.increaseTime(1 * utils.timeUnits.days) //time cannot start zero
-          done()
-        });
+      utils.increaseTime(1 * utils.timeUnits.days).then(() => {
+        done()
       });
+    });
 
-      it('should add free domain', async () => {
+    it('should add free domain', async () => {
         let result = await ENSSubdomainRegistry.methods.setDomainPrice(domains.free.namehash, 0).send({from: accountsArr[0]});       
         assert.equal(result.events.DomainPrice.returnValues.price, domains.free.price);
         assert.equal(result.events.DomainPrice.returnValues.namehash, domains.free.namehash);
@@ -210,7 +214,7 @@ contract('ENSSubdomainRegistry', function () {
         let registrant = accountsArr[6];
         let subdomain = 'frank';
         let usernameHash = namehash.hash(subdomain + '.' + domains.free.name);
-        
+
         await ENSSubdomainRegistry.methods.register(
             web3Utils.sha3(subdomain), 
             domains.free.namehash,

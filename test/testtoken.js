@@ -1,15 +1,16 @@
-const ERC20Token = require('./erc20token');
+const TestToken = embark.require('Embark/contracts/TestToken');
+
+config({
+  contracts: {
+    "TestToken": {}
+  }
+});
 
 describe("TestToken", async function() {
-  this.timeout(0);
   var accountsArr;
 
   before(function(done) {
-    var contractsConfig = {
-      "TestToken": {
-      }
-    };
-    EmbarkSpec.deployAll(contractsConfig, async function(accounts) { 
+    web3.eth.getAccounts().then(function(accounts) {
       accountsArr = accounts
       done() 
     });
@@ -28,12 +29,5 @@ describe("TestToken", async function() {
     let result = await TestToken.methods.balanceOf(accountsArr[0]).call();
     assert.equal(result, +initialBalance+100);
   });
-  var erc20tokenConfig = {
-    "Contract": { "instanceOf" : "TestToken" }
-  }
-  ERC20Token.Test(erc20tokenConfig, async function (accounts, TestToken) {
-    for(i=0;i<accounts.length;i++){
-      await TestToken.methods.mint(7 * 10 ^ 18).send({from: accounts[i]})
-    }
-  });
+
 });
