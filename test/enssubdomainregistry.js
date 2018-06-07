@@ -112,6 +112,7 @@ contract('ENSSubdomainRegistry', function () {
             domains.free.namehash,
             utils.zeroAddress,
             utils.zeroBytes32,
+            utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});     
 
@@ -136,6 +137,7 @@ contract('ENSSubdomainRegistry', function () {
             domains.free.namehash,
             registrant,
             utils.zeroBytes32,
+            utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});
  
@@ -152,6 +154,33 @@ contract('ENSSubdomainRegistry', function () {
         assert.equal(result[1], utils.zeroBytes32, "Unexpected resolved pubkey[1]");
     });
 
+    it('should register free status contact code only resolver-defined subdomain', async () => {
+      let registrant = accountsArr[2];
+      let subdomain = 'bob2';
+      let usernameHash = namehash.hash(subdomain + '.' + domains.free.name);
+      let contactCode = '0x04dbb31252d9bddb4e4d362c7b9c80cba74732280737af97971f42ccbdc716f3f3efb1db366880e52d09b1bfd59842e833f3004088892b7d14b9ce9e957cea9a82';
+      let result = await ENSSubdomainRegistry.methods.register(
+          web3Utils.sha3(subdomain),
+          domains.free.namehash,
+          registrant,
+          utils.zeroBytes32,
+          utils.zeroBytes32,
+          contactCode
+      ).send({from: registrant});
+
+      result = await ens.methods.owner(usernameHash).call()
+      assert.equal(result, registrant, "Owner not set");
+      result = await ens.methods.resolver(usernameHash).call()
+      assert.equal(result, PublicResolver.address, "PublicResolver not set");
+      result = await PublicResolver.methods.text(usernameHash, "statusAccount").call()
+      assert.equal(result, contactCode, "Resolved contact code not set");
+      result = await PublicResolver.methods.pubkey(usernameHash).call()
+      assert.equal(result[0], utils.zeroBytes32, "Unexpected resolved pubkey[0]");
+      assert.equal(result[1], utils.zeroBytes32, "Unexpected resolved pubkey[1]");
+  });
+
+
+
     it('should register free pubkey only resolver-defined subdomain', async () => {
         let subdomain = 'carlos';
         let registrant = accountsArr[3];
@@ -162,7 +191,8 @@ contract('ENSSubdomainRegistry', function () {
             domains.free.namehash,
             utils.zeroAddress,
             pubkey[0],
-            pubkey[1]
+            pubkey[1],
+            utils.zeroBytes32
         ).send({from: registrant});  
 
         //TODO: check events
@@ -190,7 +220,8 @@ contract('ENSSubdomainRegistry', function () {
             domains.free.namehash,
             registrant,
             pubkey[0],
-            pubkey[1]
+            pubkey[1],
+            utils.zeroBytes32
         ).send({from: registrant});    
      
         //TODO: check events
@@ -215,6 +246,7 @@ contract('ENSSubdomainRegistry', function () {
             web3Utils.sha3(subdomain), 
             domains.free.namehash,
             utils.zeroAddress,
+            utils.zeroBytes32,
             utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});  
@@ -257,6 +289,7 @@ contract('ENSSubdomainRegistry', function () {
             domains.paid.namehash,
             utils.zeroAddress,
             utils.zeroBytes32,
+            utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});       
 
@@ -289,6 +322,7 @@ contract('ENSSubdomainRegistry', function () {
             labelHash, 
             domains.paid.namehash,
             utils.zeroAddress,
+            utils.zeroBytes32,
             utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});  
@@ -330,6 +364,7 @@ contract('ENSSubdomainRegistry', function () {
             domains.paid.namehash,
             utils.zeroAddress,
             utils.zeroBytes32,
+            utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});       
         await ens.methods.setOwner(usernameHash, newOwner).send({from: registrant});
@@ -370,6 +405,7 @@ contract('ENSSubdomainRegistry', function () {
             labelHash, 
             domains.paid.namehash,
             utils.zeroAddress,
+            utils.zeroBytes32,
             utils.zeroBytes32,
             utils.zeroBytes32
         ).send({from: registrant});       
