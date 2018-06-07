@@ -5,6 +5,7 @@ import { Tabs, Tab } from 'react-bootstrap';
 import EmbarkJS from 'Embark/EmbarkJS';
 import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
+import FailTestUI from './components/failtest';
 
 import './dapp.css';
 
@@ -36,7 +37,10 @@ class App extends React.Component {
       <div>
         <TopNavbar />
         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-          <Tab eventKey={1} title="TestToken">
+          <Tab eventKey={1} title="FailTest">
+              <FailTestUI />
+          </Tab>
+          <Tab eventKey={2} title="TestToken">
               <TestTokenUI />
           </Tab>
         </Tabs>
