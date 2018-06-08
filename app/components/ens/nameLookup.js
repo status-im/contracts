@@ -1,5 +1,6 @@
 import React, { Fragment, PureComponent } from 'react';
 import { Button, Field, TextInput, Card, Info, Text } from '../../ui/components'
+import { IconCheck } from '../../ui/icons'
 import theme from '../../ui/theme'
 import { withFormik } from 'formik';
 import PublicResolver from 'Embark/contracts/PublicResolver';
@@ -9,10 +10,6 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 const nullAddress = '0x0000000000000000000000000000000000000000'
 const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
 
-const copiedText = {
-  color: 'white',
-  textAlign: 'center'
-}
 const cardStyle = {
   width: '75%',
   marginLeft: '15%',
@@ -22,10 +19,8 @@ const cardStyle = {
 const addressStyle = {
   fontSize: '18px',
   fontWeight: 400,
-  margin: '3% 0 3% 0',
   cursor: 'copy',
-  textAlign: 'center',
-  wordWrap: 'break-word'
+  wordWrap: 'break-word',
 }
 
 const backButton = {
@@ -40,23 +35,23 @@ class DisplayAddress extends PureComponent {
   render() {
     const { copied } = this.state
     const { domainName, address, statusAccount, setStatus } = this.props
-    const markCopied = () => { this.setState({ copied: !copied }) }
+    const markCopied = (v) => { this.setState({ copied: v }) }
     const validAddress = address != nullAddress;
+    const isCopied = address => address == copied;
+    const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
     return (
       <Fragment>
         {validAddress ?
-         <div>
+         <div style={{ display: 'flex', flexDirection: 'column' }}>
            <Info.Action title="Click to copy"><b>{domainName.toUpperCase()}</b> Resolves To:</Info.Action>
+           {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
            <CopyToClipboard text={address} onCopy={markCopied}>
              <div style={addressStyle}>{address}</div>
            </CopyToClipboard>
+           {statusAccount && <Text style={{ marginTop: '1em' }}>Status Address {renderCopied(statusAccount)}</Text>}
            <CopyToClipboard text={statusAccount} onCopy={markCopied}>
-             <div style={addressStyle}>{statusAccount}</div>
+             <div style={{ ...addressStyle, color: isCopied ? theme.primary : null }}>{statusAccount}</div>
            </CopyToClipboard>
-           {copied &&
-            <Info background={theme.positive} style={copiedText}>
-              <span>COPIED</span>
-            </Info>}
          </div>
          :
          <Info.Action title="No address is associated with this domain">{domainName.toUpperCase()}</Info.Action>}
@@ -78,7 +73,7 @@ const InnerForm = ({
   setStatus
 }) => (
   <Card style={cardStyle}>
-    {!status ? <form onSubmit={handleSubmit}>
+    {!status ? <form onSubmit={handleSubmit} style={{ marginTop: '3em' }}>
       <Field label="Enter Domain or Status Name" wide>
         <TextInput
           value={values.domainName}
