@@ -44,4 +44,4 @@ class App extends React.Component {
   }
 }
 
-ReactDOM.render(<App></App>, document.getElementById('app'));
+export default App;
