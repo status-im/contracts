@@ -1,14 +1,14 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
-import React, { Fragment } from 'react';
-import { Button, Input } from 'react-bootstrap';
+import React from 'react';
+import { Button } from 'react-bootstrap';
 import { withFormik } from 'formik';
-import { hash } from 'eth-ens-namehash'
-import { zeroAddress, zeroBytes32 } from './utils'
-import FieldGroup from '../standard/FieldGroup'
+import { hash } from 'eth-ens-namehash';
+import { zeroAddress, zeroBytes32 } from './utils';
+import FieldGroup from '../standard/FieldGroup';
 
-const { soliditySha3, sha3 } = web3.utils;
+const { soliditySha3 } = web3.utils;
 
 const InnerForm = ({
   values,
@@ -18,7 +18,7 @@ const InnerForm = ({
   handleBlur,
   handleSubmit,
   isSubmitting,
-  setFieldValue
+  setFieldValue,
 }) => (
   <form onSubmit={handleSubmit}>
     <FieldGroup
@@ -40,11 +40,14 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.domainName}
       button={
-        <Button style={{ marginTop: '5px' }} onClick={() => {
+        <Button
+          style={{ marginTop: '5px' }}
+          onClick={() => {
             ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
                                 .call()
-                                .then(res => { setFieldValue('price', res); })
-        }}>
+                                .then((res) => { setFieldValue('price', res); });
+          }}
+        >
           Get Price
         </Button>
       }
@@ -64,12 +67,13 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.statusAddress}
       error={errors.statusAddress}
+      wide='true'
     />
     <FieldGroup
       id="address"
       name="address"
       type="text"
-      label="Address domain resolves to (optional)"
+      label="Ethereum address domain resolves to (optional)"
       onChange={handleChange}
       onBlur={handleBlur}
       value={values.address}
@@ -126,6 +130,6 @@ const RegisterSubDomain = withFormik({
       setSubmitting(false);
     });
   }
-})(InnerForm)
+})(InnerForm);
 
 export default RegisterSubDomain;
