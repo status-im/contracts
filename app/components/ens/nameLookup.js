@@ -10,8 +10,10 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import RegisterSubDomain from '../ens/registerSubDomain';
 const { getPrice } = ENSSubdomainRegistry.methods;
 
+const invalidSuffix = '0000000000000000000000000000000000000000'
 const nullAddress = '0x0000000000000000000000000000000000000000'
 const validAddress = address => address != nullAddress;
+const validStatusAddress = address => !address.includes(invalidSuffix);
 const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
 const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join('.');
 const hashedDomain = domainName => hash(getDomain(domainName));
@@ -48,12 +50,18 @@ class Register extends PureComponent {
   render() {
     const { domainName, setStatus } = this.props;
     const { domainPrice } = this.state;
+    const formattedDomain = formatName(domainName);
+    const formattedDomainArray = formattedDomain.split('.')
     return (
       <Fragment>
         <Info.Action title="No address is associated with this domain">
-          {formatName(domainName.toUpperCase())} can be registered for {domainPrice} SNT
+          {formattedDomain.toUpperCase()} can be registered for {domainPrice} SNT
         </Info.Action>
-        <RegisterSubDomain />
+        <RegisterSubDomain
+          subDomain={formattedDomainArray[0]}
+          domainName={formattedDomainArray.slice(1).join('.')}
+          domainPrice={domainPrice}
+          registeredCallbackFn={(address, statusAccount) => this.setState({ registered: { address, statusAccount } })} />
         <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
       </Fragment>
     )
@@ -73,15 +81,15 @@ class DisplayAddress extends PureComponent {
       <Fragment>
       {validAddress(address) ?
        <div style={{ display: 'flex', flexDirection: 'column' }}>
-         <Info.Action title="Click to copy"><b>{domainName.toUpperCase()}</b> Resolves To:</Info.Action>
+         <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b> Resolves To:</Info.Action>
          {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
          <CopyToClipboard text={address} onCopy={markCopied}>
            <div style={addressStyle}>{address}</div>
          </CopyToClipboard>
-         {statusAccount && <Text style={{ marginTop: '1em' }}>Status Address {renderCopied(statusAccount)}</Text>}
-         <CopyToClipboard text={statusAccount} onCopy={markCopied}>
+         {validStatusAddress(statusAccount) && <Text style={{ marginTop: '1em' }}>Status Address {renderCopied(statusAccount)}</Text>}
+        {validStatusAddress(statusAccount) && <CopyToClipboard text={statusAccount} onCopy={markCopied}>
            <div style={{ ...addressStyle, color: isCopied ? theme.primary : null }}>{statusAccount}</div>
-         </CopyToClipboard>
+         </CopyToClipboard>}
        </div>
 :
        <Info.Action title="No address is associated with this domain">

@@ -19,9 +19,12 @@ const InnerForm = ({
   handleSubmit,
   isSubmitting,
   setFieldValue,
+  subDomain,
+  domainName,
+  domainPrice,
 }) => (
   <form onSubmit={handleSubmit}>
-    <FieldGroup
+    {!subDomain && <FieldGroup
       id="subDomain"
       name="subDomain"
       type="text"
@@ -30,8 +33,8 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.subDomain}
       error={errors.subDomain}
-    />
-    <FieldGroup
+    />}
+    {!domainName && <FieldGroup
       id="domainName"
       name="domainName"
       type="text"
@@ -51,13 +54,13 @@ const InnerForm = ({
           Get Price
         </Button>
       }
-    />
-    <FieldGroup
+    />}
+    {!domainPrice && <FieldGroup
       id="price"
       name="price"
       label="Domain Price"
       disabled
-      value={values.price ? `${Number(values.price).toLocaleString()} SNT` : ''} />
+      value={values.price ? `${Number(values.price).toLocaleString()} SNT` : ''} />}
     <FieldGroup
       id="statusAddress"
       name="statusAddress"
@@ -67,7 +70,7 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.statusAddress}
       error={errors.statusAddress}
-      wide='true'
+      wide="true"
     />
     <FieldGroup
       id="address"
@@ -86,19 +89,22 @@ const InnerForm = ({
 
 const RegisterSubDomain = withFormik({
   mapPropsToValues: props => ({ subDomain: '', domainName: '', price: '' }),
-  validate(values) {
+  validate(values, props) {
     const errors = {};
-    const { address, subDomain } = values;
+    const { address } = values;
+    const { subDomain } = props || values;
     if (address && !web3.utils.isAddress(address)) errors.address = 'Not a valid address';
     if (!subDomain) errors.subDomain = 'Required';
     return errors;
   },
-  handleSubmit(values, { setSubmitting }) {
-    const { subDomain, domainName, address, statusAddress } = values;
+  handleSubmit(values, { setSubmitting, props }) {
+    const { address, statusAddress } = values;
+    const { subDomain, domainName, registeredCallbackFn } = props || values;
     const { methods: { register } } = ENSSubdomainRegistry;
     const subdomainHash = soliditySha3(subDomain);
     const domainNameHash = hash(domainName);
     const resolveToAddr = address || zeroAddress;
+    const resolveToStatusAddr = statusAddress || zeroBytes32;
 
     const toSend = register(
       subdomainHash,
@@ -106,7 +112,7 @@ const RegisterSubDomain = withFormik({
       resolveToAddr,
       zeroBytes32,
       zeroBytes32,
-      statusAddress || zeroBytes32
+      resolveToStatusAddr,
     );
     toSend.estimateGas().then(gasEstimated => {
       console.log("Register would work. :D Gas estimated: "+gasEstimated)
@@ -122,6 +128,7 @@ const RegisterSubDomain = withFormik({
         console.log("Register send errored. :( Out of gas?")
         console.dir(err)
       }).finally(() => {
+        registeredCallbackFn(resolveToAddr, resolveToStatusAddr);
         setSubmitting(false);
       });
     }).catch(err => {
