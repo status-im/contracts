@@ -37,6 +37,31 @@ const backButton = {
   cursor: 'pointer'
 }
 
+class RenderAddresses extends PureComponent {
+  state = { copied: false }
+
+  render() {
+    const { domainName, address, statusAccount } = this.props
+    const { copied } = this.state
+    const markCopied = (v) => { this.setState({ copied: v }) }
+    const isCopied = address => address == copied;
+    const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b> Resolves To:</Info.Action>
+        {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
+        <CopyToClipboard text={address} onCopy={markCopied}>
+          <div style={addressStyle}>{address}</div>
+        </CopyToClipboard>
+        {validStatusAddress(statusAccount) && <Text style={{ marginTop: '1em' }}>Status Address {renderCopied(statusAccount)}</Text>}
+        {validStatusAddress(statusAccount) && <CopyToClipboard text={statusAccount} onCopy={markCopied}>
+          <div style={{ ...addressStyle, color: isCopied ? theme.primary : null }}>{statusAccount}</div>
+        </CopyToClipboard>}
+      </div>
+    )
+  }
+}
+
 class Register extends PureComponent {
   state = { domainPrice: null };
 
@@ -49,57 +74,40 @@ class Register extends PureComponent {
 
   render() {
     const { domainName, setStatus } = this.props;
-    const { domainPrice } = this.state;
+    const { domainPrice, registered } = this.state;
     const formattedDomain = formatName(domainName);
     const formattedDomainArray = formattedDomain.split('.')
     return (
       <Fragment>
-        <Info.Action title="No address is associated with this domain">
-          {formattedDomain.toUpperCase()} can be registered for {domainPrice} SNT
-        </Info.Action>
-        <RegisterSubDomain
-          subDomain={formattedDomainArray[0]}
-          domainName={formattedDomainArray.slice(1).join('.')}
-          domainPrice={domainPrice}
-          registeredCallbackFn={(address, statusAccount) => this.setState({ registered: { address, statusAccount } })} />
+        {!registered ?
+         <Fragment>
+           <Info.Action title="No address is associated with this domain">
+             {formattedDomain.toUpperCase()} can be registered for {domainPrice} SNT
+           </Info.Action>
+           <RegisterSubDomain
+             subDomain={formattedDomainArray[0]}
+             domainName={formattedDomainArray.slice(1).join('.')}
+             domainPrice={domainPrice}
+             registeredCallbackFn={(address, statusAccount) => this.setState({ registered: { address, statusAccount } })} />
+         </Fragment> :
+         <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
         <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
       </Fragment>
     )
   }
 }
 
-class DisplayAddress extends PureComponent {
-  state = { copied: false }
-
-  render() {
-    const { copied } = this.state
-    const { domainName, address, statusAccount, setStatus } = this.props
-    const markCopied = (v) => { this.setState({ copied: v }) }
-    const isCopied = address => address == copied;
-    const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
-    return (
-      <Fragment>
-      {validAddress(address) ?
-       <div style={{ display: 'flex', flexDirection: 'column' }}>
-         <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b> Resolves To:</Info.Action>
-         {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
-         <CopyToClipboard text={address} onCopy={markCopied}>
-           <div style={addressStyle}>{address}</div>
-         </CopyToClipboard>
-         {validStatusAddress(statusAccount) && <Text style={{ marginTop: '1em' }}>Status Address {renderCopied(statusAccount)}</Text>}
-        {validStatusAddress(statusAccount) && <CopyToClipboard text={statusAccount} onCopy={markCopied}>
-           <div style={{ ...addressStyle, color: isCopied ? theme.primary : null }}>{statusAccount}</div>
-         </CopyToClipboard>}
-       </div>
-:
-       <Info.Action title="No address is associated with this domain">
-         {domainName.toUpperCase()}
-       </Info.Action>}
-      <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
-      </Fragment>
-    )
-  }
-}
+const DisplayAddress = ({ domainName, address, statusAccount, setStatus }) => (
+  <Fragment>
+    {validAddress(address) ?
+     <RenderAddresses {...this.props} />
+     :
+     <Info.Action title="No address is associated with this domain">
+       {domainName.toUpperCase()}
+     </Info.Action>}
+    <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
+  </Fragment>
+)
 
 const InnerForm = ({
   values,

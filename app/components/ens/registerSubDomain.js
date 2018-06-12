@@ -128,7 +128,8 @@ const RegisterSubDomain = withFormik({
         console.log("Register send errored. :( Out of gas?")
         console.dir(err)
       }).finally(() => {
-        registeredCallbackFn(resolveToAddr, resolveToStatusAddr);
+        // REQUIRED UNTIL THIS ISSUES IS RESOLVED: https://github.com/jaredpalmer/formik/issues/597
+        setTimeout(() => { registeredCallbackFn(resolveToAddr, resolveToStatusAddr); }, 200);
         setSubmitting(false);
       });
     }).catch(err => {
