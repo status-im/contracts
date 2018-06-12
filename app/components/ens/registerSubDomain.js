@@ -1,8 +1,7 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
-import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import React from 'react';
-import { Button } from 'react-bootstrap';
+import { Button } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32 } from './utils';
@@ -44,6 +43,7 @@ const InnerForm = ({
       value={values.domainName}
       button={
         <Button
+          mode="strong"
           style={{ marginTop: '5px' }}
           onClick={() => {
             ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
@@ -81,11 +81,11 @@ const InnerForm = ({
       onBlur={handleBlur}
       value={values.address}
       error={errors.address}
-      button={<Button style={{ marginTop: '5px' }} onClick={() => setFieldValue('address', web3.eth.defaultAccount)}>Use My Primary Address</Button>}
+      button={<Button mode="strong" style={{ padding: '5px 15px 5px 15px', marginTop: '5px' }} onClick={() => setFieldValue('address', web3.eth.defaultAccount)}>Use My Primary Address</Button>}
     />
-    <Button bsStyle="primary" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
+    <Button wide mode="strong" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
   </form>
-)
+);
 
 const RegisterSubDomain = withFormik({
   mapPropsToValues: props => ({ subDomain: '', domainName: '', price: '' }),

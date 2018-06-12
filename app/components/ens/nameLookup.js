@@ -21,7 +21,8 @@ const hashedDomain = domainName => hash(getDomain(domainName));
 const cardStyle = {
   width: '75%',
   marginLeft: '15%',
-  padding: '30px'
+  padding: '30px',
+  height: '425px'
 }
 
 const addressStyle = {
@@ -82,7 +83,7 @@ class Register extends PureComponent {
         {!registered ?
          <Fragment>
            <Info.Action title="No address is associated with this domain">
-             {formattedDomain.toUpperCase()} can be registered for {domainPrice} SNT
+             <span style={{ color: theme.accent }}>{formattedDomain.toUpperCase()}</span> can be registered for {domainPrice} SNT
            </Info.Action>
            <RegisterSubDomain
              subDomain={formattedDomainArray[0]}
@@ -97,15 +98,15 @@ class Register extends PureComponent {
   }
 }
 
-const DisplayAddress = ({ domainName, address, statusAccount, setStatus }) => (
+const DisplayAddress = (props) => (
   <Fragment>
-    {validAddress(address) ?
-     <RenderAddresses {...this.props} />
+    {validAddress(props.address) ?
+     <RenderAddresses {...props} />
      :
      <Info.Action title="No address is associated with this domain">
-       {domainName.toUpperCase()}
+       {props.domainName.toUpperCase()}
      </Info.Action>}
-    <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
+    <div style={backButton} onClick={() => props.setStatus(null)}>&larr;</div>
   </Fragment>
 )
 
@@ -132,7 +133,7 @@ const InnerForm = ({
            required />
        </Field>
        <Button mode="strong" type="submit" wide>
-         Get Address
+         Lookup Address
        </Button>
      </form>
      : validAddress(status.address) ?

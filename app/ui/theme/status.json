@@ -16,6 +16,8 @@
     "Aqua Blue": "#F7FBFD"
   },
   "Blue": {
+    "Main": "#4360DF",
+    "Light": "#95A8F8",
     "Lochmara": "#028BCF",
     "Danube": "#7FADDC",
     "Spindle": "#B3CFEA",
@@ -55,15 +57,15 @@
     "White": "#FFFFFF"
   },
   "Status Brand": {
-    "Primary": "=Purple.Indigo",
+    "Primary": "=Blue.Main",
     "Secondary": "=Sea.Turquoise",
     "Black Ash": "=Grey.Black Ash",
     "Gradient Start": "=Eagle.Cerulean",
     "Gradient End": "=Eagle.Opal"
   },
   "Status UI": {
-    "gradientStart": "=Eagle.Cerulean",
-    "gradientEnd": "=Eagle.Opal",
+    "gradientStart": "=Blue.Main",
+    "gradientEnd": "=Blue.Light",
     "gradientStartActive": "=Eagle.Dark Cerulean",
     "gradientEndActive": "=Eagle.Dark Opal",
     "gradientText": "=White.White",
@@ -86,7 +88,7 @@
     "textDimmed": "=Grey.Black Ash",
     "textSecondary": "=Grey.Dim Grey",
     "textTertiary": "=Grey.Light Grey",
-    "accent": "=Eagle.Dark Turquoise",
+    "accent": "=Blue.Main",
     "positive": "=Green.Spring Green",
     "positiveText": "=White.White",
     "negative": "=Red.Salmon Red",
