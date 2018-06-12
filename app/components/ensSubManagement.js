@@ -34,10 +34,5 @@ const ENSSubManagement = (props) => (
     <SetupENS ENSRegistry={ENSRegistry} />
   </Fragment>
 )
-setTimeout(() => ENSRegistry.getPastEvents(
-  'allEvents',
-  {},
-  (err, res) => {
-    console.log(err, res) }), 2000)
 
 export default ENSSubManagement;

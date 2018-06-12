@@ -19,8 +19,7 @@ const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join(
 const hashedDomain = domainName => hash(getDomain(domainName));
 
 const cardStyle = {
-  width: '75%',
-  marginLeft: '15%',
+  width: '100%',
   padding: '30px',
   height: '425px'
 }

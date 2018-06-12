@@ -6,9 +6,12 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
+import TestToken from 'Embark/contracts/TestToken';
 import ENSSubManagement from './components/ensSubManagement';
+import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import NameLookup from './components/ens/nameLookup';
-import AdminMode from './components/AdminMode'
+import AdminMode from './components/AdminMode';
+import TokenPermissions from './components/standard/TokenPermission';
 
 import './dapp.css';
 
@@ -44,6 +47,11 @@ class App extends React.Component {
          <Fragment>
            <NameLookup />
            <div style={{ textAlign: 'center', marginTop: '10%' }}>
+             <TokenPermissions
+               symbol='SNT'
+               spender={ENSSubdomainRegistry._address}
+               methods={TestToken.methods} />
+             <hr/>
              <Toggle onChange={() => { this.setState({ admin: !admin })}} />
              <br/>
              <span>Admin Mode</span>

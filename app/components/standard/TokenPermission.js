@@ -62,7 +62,7 @@ class TokenHandle extends PureComponent {
     const { symbol } = this.props;
     const { balance, approved } = this.state;
     return (
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '10px', paddingLeft: '60px' }}>
         <Toggle
           checked={!!Number(approved)}
           name={symbol}
