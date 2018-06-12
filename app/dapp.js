@@ -1,21 +1,22 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import ReactDOM from 'react-dom';
 import { Tabs, Tab } from 'react-bootstrap';
-
+import Toggle from 'react-toggle';
 import EmbarkJS from 'Embark/EmbarkJS';
 import TopNavbar from './components/topnavbar';
 import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
 import ENSSubManagement from './components/ensSubManagement';
 import NameLookup from './components/ens/nameLookup';
+import AdminMode from './components/AdminMode'
 
 import './dapp.css';
 
 class App extends React.Component {
-
   constructor(props) {
-    super(props);
+    super(props)
   }
+  state = { admin: false };
 
   componentDidMount(){
     __embarkContext.execWhenReady(() => {
@@ -32,25 +33,24 @@ class App extends React.Component {
     </React.Fragment>;
   }
 
-  render(){
+  render() {
+    const { admin } = this.state;
     return (
-    <div>
-      <TopNavbar />
-      <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-        <Tab eventKey={1} title="TestToken">
-          <TestTokenUI />
-        </Tab>
-        <Tab eventKey={2} title="ERC20Token">
-          <ERC20TokenUI />
-        </Tab>
-        <Tab eventKey={3} title="ENS Management">
-          <ENSSubManagement />
-        </Tab>
-        <Tab eventKey={4} title="Name Lookup">
-          <NameLookup />
-        </Tab>
-      </Tabs>
-    </div>);
+      <div>
+        <div style={{ display: admin ? 'block' : 'none' }} >
+          <AdminMode style={{ display: admin ? 'block' : 'none' }}/>
+        </div>
+        {!admin &&
+         <Fragment>
+           <NameLookup />
+           <div style={{ textAlign: 'center', marginTop: '10%' }}>
+             <Toggle onChange={() => { this.setState({ admin: !admin })}} />
+             <br/>
+             <span>Admin Mode</span>
+           </div>
+         </Fragment>}
+      </div>
+    );
   }
 }
 
