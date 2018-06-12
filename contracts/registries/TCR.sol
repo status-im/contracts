@@ -33,6 +33,7 @@ contract TCR is Controlled {
     }
 
     struct Challenge {
+        bool resolved; 
         uint256 rewardPool;
         address challenger;
         uint256 stake;
@@ -99,6 +100,8 @@ contract TCR is Controlled {
         external 
     {
         require(proposalManager.getProposalFinalResult(_proposalId) == RESULT_APPROVE);
+        require(proposals[_proposalId].challengeID == 0 || challenges[proposals[_proposalId].challengeID].resolved);
+
         uint256 refundValue = proposals[_proposalId].unstakedAmount;
         address refundAddress = proposals[_proposalId].owner;
         delete proposals[_proposalId];
@@ -117,7 +120,7 @@ contract TCR is Controlled {
         require(token.transferFrom(msg.sender, address(this), submitPrice));
 
         // Prevent multiple challenges
-        require(p.challengeID == 0 || proposalManager.getProposalFinalResult(p.challengeID) == RESULT_APPROVE);
+        require(p.challengeID == 0 || challenges[p.challengeID].resolved);
 
         challengeID = proposalManager.addProposal(topic,keccak256(abi.encodePacked(0, 0, 0x00)));
 
@@ -125,15 +128,88 @@ contract TCR is Controlled {
             challenger: msg.sender,
             rewardPool: ((100 - 50) * submitPrice) / 100,   // TODO: 50% goes to whoever submits the challenge
             stake: submitPrice,
-            totalTokens: 0
+            totalTokens: 0,
+            resolved: false
         });
 
         p.challengeID = challengeID;
         p.unstakedAmount -= submitPrice;
     }
 
-    // TODO: function processProposal(uint256 _propID) public
-    // TODO: function claimVoterReward(uint _challengeID, uint _salt) public {
+    function processProposal(uint256 _proposalId) public {
+        if (canBeWhitelisted(_proposalId)) {
+          whitelistApplication(_proposalId);
+        } else if (challengeCanBeResolved(_proposalId)) {
+          resolveChallenge(_proposalId);
+        } else {
+          revert();
+        }
+    }
+
+    function canBeWhitelisted(uint256 _proposalId) view public returns (bool) {
+        uint challengeID = proposals[_proposalId].challengeID;
+
+        if (
+            proposals[_proposalId].applicationExpiry < now &&
+            !isWhitelisted(_proposalId) &&
+            (challengeID == 0 || challenges[challengeID].resolved == true)
+        ) { return true; }
+
+        return false;
+    }
+
+    function isWhitelisted(uint256 _proposalId) view public returns (bool whitelisted) {
+        return proposals[_proposalId].whitelisted;
+    }
+
+    function whitelistApplication(uint256 _proposalId) private {
+        proposals[_proposalId].whitelisted = true;
+    }
+
+    function challengeCanBeResolved(uint256 _proposalId) view public returns (bool) {
+        uint challengeID = proposals[_proposalId].challengeID;
+        require(challengeID > 0 && !challenges[challengeID].resolved);
+        return proposalManager.isVotingAvailable(challengeID) == false;
+    }
+
+    function resolveChallenge(uint256 _proposalId) private {
+        uint challengeID = proposals[_proposalId].challengeID;
+        challenges[challengeID].resolved = true;
+
+        uint reward = determineReward(challengeID);
+
+
+        uint8 votingResult = proposalManager.getProposalFinalResult(_proposalId);
+        
+        challenges[challengeID].totalTokens =
+            proposalManager.getProposalResultsByVote(_proposalId, votingResult);
+
+        if (votingResult == RESULT_APPROVE) { // TODO:
+            whitelistApplication(_proposalId);
+            proposals[_proposalId].unstakedAmount += reward;
+        } else {
+            resetListing(_proposalId);
+            require(token.transfer(challenges[challengeID].challenger, reward));
+        }
+    }
+
+    function resetListing(uint256 _proposalId) private {
+        Proposal storage p = proposals[_proposalId];
+        address owner = p.owner;
+        uint unstakedAmount = p.unstakedAmount;
+        delete proposals[_proposalId];
+        if (unstakedAmount > 0){
+            require(token.transfer(owner, unstakedAmount));
+        }
+    }
+
+    function determineReward(uint _challengeID) public view returns (uint) {
+        require(_challengeID > 0 && challenges[_challengeID].resolved);
+        require(proposalManager.isVotingAvailable(_challengeID) == false);
+        return 1; // TODO:
+    }
+
+    // TODO: function claimReward(uint _challengeID) public
 
     function setSubmitPrice(address _who, bool _allowedSubmitter, uint256 _stakeValue) 
         external

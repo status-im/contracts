@@ -99,6 +99,14 @@ contract ProposalManager is Controlled {
         proposal.lastTabulationTimestamp = block.timestamp;
     }
 
+    function getProposalResultsByVote(uint _proposalId, uint8 vote) 
+        public 
+        view 
+        returns (uint256){
+        Proposal memory proposal = proposals[_proposalId];
+        return proposals[_proposalId].results[vote];
+    }
+
     function finalResult(uint _proposalId)
         public
     {
@@ -141,6 +149,11 @@ contract ProposalManager is Controlled {
     {
         Proposal memory p = proposals[_proposalId];
         return (p.topic, p.txHash, p.result == Vote.Approve);
+    }
+
+    function isVotingAvailable(uint _proposalId) public view returns (bool){
+        Proposal memory p = proposals[_proposalId];
+        return p.voteBlockEnd > now && p.result == Vote.Null;
     } 
     
     function offchainTabulateVoteResult(uint256 _proposalId) 
