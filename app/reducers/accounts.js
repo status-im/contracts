@@ -31,7 +31,7 @@ export default function(state = { loading: true, accounts: [] }, action) {
   }
   case types.ADD_TO_SNT_TOKEN_BALANCE: {
     const currentAccount = { ...getCurrentAccount({accounts: state}) }
-    currentAccount.SNTTokenBalance = Number(currentAccount.SNTTokenBalance) + Number(action.payload.amount)
+    currentAccount.SNTBalance = Number(currentAccount.SNTBalance) + Number(action.payload.amount)
     const accounts = [ ...state.accounts ]
     const idx = accounts.findIndex(a => a.address === currentAccount.address)
     accounts[idx] = currentAccount
@@ -42,7 +42,7 @@ export default function(state = { loading: true, accounts: [] }, action) {
   }
   case types.SUBTRACT_FROM_SNT_TOKEN_BALANCE: {
     const currentAccount = { ...getCurrentAccount({accounts: state}) }
-    currentAccount.SNTTokenBalance = Number(currentAccount.SNTTokenBalance) - Number(action.payload.amount)
+    currentAccount.SNTBalance = Number(currentAccount.SNTBalance) - Number(action.payload.amount)
     const accounts = [ ...state.accounts ]
     const idx = accounts.findIndex(a => a.address === currentAccount.address)
     accounts[idx] = currentAccount

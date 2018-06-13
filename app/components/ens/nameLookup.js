@@ -10,6 +10,8 @@ import PublicResolver from 'Embark/contracts/PublicResolver';
 import { hash } from 'eth-ens-namehash';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import RegisterSubDomain from '../ens/registerSubDomain';
+import StatusLogo from '../../ui/icons/components/StatusLogo'
+import EnsLogo from '../../ui/icons/logos/ens.png';
 const { getPrice } = ENSSubdomainRegistry.methods;
 
 const invalidSuffix = '0000000000000000000000000000000000000000'
@@ -137,7 +139,11 @@ const InnerForm = ({
   status,
   setStatus
 }) => (
-  <Card style={cardStyle}>
+  <Card border="None" width="100%" height="auto">
+    <span style={{ display: 'flex', justifyContent: 'space-evenly', marginBottom: '10px' }}>
+    <StatusLogo />
+    <img  style={{ maxWidth: '150px', alignSelf: 'center' }} src={EnsLogo} alt="Ens Logo"/>
+    </span>
     {!status
      ? <form onSubmit={handleSubmit} style={{ marginTop: '3em' }}>
        <Field label="Enter Domain or Status Name" wide>
