@@ -1,4 +1,6 @@
 import React, { Fragment, PureComponent } from 'react';
+import { connect } from 'react-redux';
+import { actions as accountActions } from '../../reducers/accounts';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import { Button, Field, TextInput, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
@@ -72,6 +74,13 @@ class Register extends PureComponent {
       .then((res) => { this.setState({ domainPrice: res })});
   }
 
+  onRegistered = (address, statusAccount) => {
+    const { domainPrice } = this.state;
+    const { subtractFromBalance } = this.props;
+    subtractFromBalance(domainPrice);
+    this.setState({ registered: { address, statusAccount } });
+  }
+
   render() {
     const { domainName, setStatus } = this.props;
     const { domainPrice, registered } = this.state;
@@ -88,7 +97,7 @@ class Register extends PureComponent {
              subDomain={formattedDomainArray[0]}
              domainName={formattedDomainArray.slice(1).join('.')}
              domainPrice={domainPrice}
-             registeredCallbackFn={(address, statusAccount) => this.setState({ registered: { address, statusAccount } })} />
+             registeredCallbackFn={this.onRegistered} />
          </Fragment> :
          <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
         <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
@@ -96,6 +105,14 @@ class Register extends PureComponent {
     )
   }
 }
+
+const mapDispatchToProps = dispatch => ({
+  subtractFromBalance(amount) {
+    dispatch(accountActions.subtractfromSntTokenBalance(amount));
+  },
+});
+
+const ConnectedRegister = connect(null, mapDispatchToProps)(Register);
 
 const DisplayAddress = (props) => (
   <Fragment>
@@ -141,7 +158,7 @@ const InnerForm = ({
        address={status.address}
        statusAccount={status.statusAccount}
        setStatus={setStatus} /> :
-     <Register
+     <ConnectedRegister
        setStatus={setStatus}
        domainName={values.domainName}  />
     }

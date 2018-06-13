@@ -55,7 +55,6 @@ class TokenHandle extends PureComponent {
   render() {
     const { symbol, account, isLoading } = this.props;
     const { approved } = this.state;
-    console.log('account:', this.props)
     return (
       <Fragment>
       {!isLoading && !!account && <div style={{ display: 'flex', justifyContent: 'center', margin: '10px', paddingLeft: '60px' }}>
