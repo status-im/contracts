@@ -10,24 +10,18 @@ import "react-toggle/style.css";
 const unlimitedAllowance = new BigNumber(2).pow(256).sub(1);
 const getDefaultAccount = () => web3.eth.defaultAccount;
 const SUPPORTED_TOKENS = ['SNT'];
+const BALANCE_KEYS = { 'SNT': 'SNTBalance' };
 
 class TokenHandle extends PureComponent {
   constructor(props){
     super(props);
-    this.state = { balance: 0, approved: 0 };
+    this.state = { approved: 0 };
   }
 
   componentDidMount() {
-    setTimeout(() => {
-      this.getBalance();
+    __embarkContext.execWhenReady(() => {
       this.getAllowance();
-    }, 1000)
-  }
-
-  getBalance = () => {
-    this.props.methods.balanceOf(getDefaultAccount())
-           .call()
-           .then(balance => { this.setState({ ...this.state, balance }) });
+    });
   }
 
   getAllowance = () => {
@@ -45,30 +39,33 @@ class TokenHandle extends PureComponent {
     const isApproved = !!Number(approved);
     let amountToApprove = isApproved ? 0 : unlimitedAllowance;
     console.log("approve(\""+spender+"\",\"" +amountToApprove +"\")")
-      approve(
-        spender,
-        amountToApprove
-      )
-        .send()
-        .then(approval => {
-          const { events: { Approval: { returnValues: { _value } } } } = approval
-          this.setState({ ...this.state, approved: _value })
-        }).catch(err => {
-          console.log("Approve failed: " + err);
-        })
+    approve(
+      spender,
+      amountToApprove
+    )
+           .send()
+           .then(approval => {
+             const { events: { Approval: { returnValues: { _value } } } } = approval
+             this.setState({ ...this.state, approved: _value })
+           }).catch(err => {
+             console.log("Approve failed: " + err);
+           })
   }
 
   render() {
-    const { symbol } = this.props;
-    const { balance, approved } = this.state;
+    const { symbol, account, isLoading } = this.props;
+    const { approved } = this.state;
+    console.log('account:', this.props)
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '10px', paddingLeft: '60px' }}>
+      <Fragment>
+      {!isLoading && !!account && <div style={{ display: 'flex', justifyContent: 'center', margin: '10px', paddingLeft: '60px' }}>
         <Toggle
           checked={!!Number(approved)}
           name={symbol}
           onChange={this.toggleApproved} />
-        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(balance).toLocaleString()} ${symbol.toUpperCase()}`}</label>
-      </div>
+        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(account[BALANCE_KEYS[symbol]]).toLocaleString()} ${symbol.toUpperCase()}`}</label>
+      </div>}
+      </Fragment>
     )
   }
 }

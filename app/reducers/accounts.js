@@ -4,12 +4,12 @@ import { createSelector } from 'reselect'
 export const types = createTypes([
   'RECEIVE_ACCOUNTS',
   'UPDATE_DEFAULT_ACCOUNT',
-  'ADD_TO_ERC20_TOKEN_BALANCE'
+  'ADD_TO_SNT_TOKEN_BALANCE'
 ], 'ACCOUNTS')
 export const actions = {
   receiveAccounts: actionCreator(types.RECEIVE_ACCOUNTS, 'defaultAccount','accounts'),
   updateDefaultAccount: actionCreator(types.UPDATE_DEFAULT_ACCOUNT, 'defaultAccount'),
-  addToErc20TokenBalance: actionCreator(types.ADD_TO_ERC20_TOKEN_BALANCE, 'amount')
+  addToSntTokenBalance: actionCreator(types.ADD_TO_SNT_TOKEN_BALANCE, 'amount')
 }
 
 export default function(state = { loading: true, accounts: [] }, action) {
@@ -27,9 +27,9 @@ export default function(state = { loading: true, accounts: [] }, action) {
     const { defaultAccount } = action.payload
     return { ...state, defaultAccount }
   }
-  case types.ADD_TO_ERC20_TOKEN_BALANCE: {
+  case types.ADD_TO_SNT_TOKEN_BALANCE: {
     const currentAccount = { ...getCurrentAccount({accounts: state}) }
-    currentAccount.ERC20TokenBalance = Number(currentAccount.ERC20TokenBalance) + Number(action.payload.amount)
+    currentAccount.SNTTokenBalance = Number(currentAccount.SNTTokenBalance) + Number(action.payload.amount)
     const accounts = [ ...state.accounts ]
     const idx = accounts.findIndex(a => a.address === currentAccount.address)
     accounts[idx] = currentAccount

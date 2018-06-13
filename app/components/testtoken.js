@@ -57,7 +57,7 @@ class TestTokenUI extends React.Component {
 
 const mapDispatchToProps = dispatch => ({
   addToBalance(amount) {
-    dispatch(accountActions.addToErc20TokenBalance(amount));
+    dispatch(accountActions.addToSntTokenBalance(amount));
   },
 });
 

@@ -11,7 +11,7 @@ import ENSSubManagement from './components/ensSubManagement';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import NameLookup from './components/ens/nameLookup';
 import AdminMode from './components/AdminMode';
-import TokenPermissions from './components/standard/TokenPermission';
+import TokenPermissions from './components/standard/TokenPermissionConnect';
 
 import './dapp.css';
 

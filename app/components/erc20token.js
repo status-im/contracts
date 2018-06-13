@@ -76,7 +76,7 @@ class ERC20TokenUI extends React.Component {
         <h3> Read your account token balance </h3>
         <Form inline>
           <FormGroup>
-            {!isLoading && <HelpBlock>Your test token balance is <span className="accountBalance">{account.ERC20TokenBalance}</span></HelpBlock>}
+            {!isLoading && <HelpBlock>Your test token balance is <span className="accountBalance">{account.SNTBalance}</span></HelpBlock>}
           </FormGroup>
         </Form>
         
