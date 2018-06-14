@@ -197,8 +197,29 @@ describe("TCR", function () {
 
     });
 
-    it("SNT holders should be able to delist a proposal when it doesn't have enough stake", function(){
+    it("SNT holders should be able to delist a proposal when it doesn't have enough stake", async function(){
+        let receipt;
+        
+        // Boilerplate
+        receipt = await TCR.methods.updatePeriods(10, 10).send();
+        let submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
+       
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
+        receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
 
+        // Test
+        submitPrice += 10;
+        receipt = await TCR.methods.setSubmitPrice(utils.zeroAddress, true, submitPrice).send();
+
+        receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});
+        receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
+
+        assert.equal(!!receipt.events.ProposalDelisted, true, "ProposalDelisted not triggered");
+        proposal = await TCR.methods.proposals(proposalId).call();
+
+        assert.equal(proposal.owner, utils.zeroAddress, "Proposal wasn't deleted");
     });
 
 
