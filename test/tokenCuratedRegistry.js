@@ -47,12 +47,16 @@ describe("TCR", function () {
     let accounts;
     
     before(function(done) {
+        
         web3.eth.getAccounts().then((acc) => { 
             accounts = acc; 
             return SNT.methods.generateTokens(accounts[0], 1000000000).send()
         }).then((receipt) => { 
             return SNT.methods.generateTokens(accounts[1], 1000000000).send()
         }).then((receipt) => {
+            return TCR.methods.proposalManager().call();
+        }).then((address) => {
+            ProposalManager.options.address = address; 
             done(); 
         });
     });
@@ -77,8 +81,6 @@ describe("TCR", function () {
         receipt = await SNT.methods.approve(TCR.options.address, 1).send();
         assert.equal(!!receipt.events.Approval, true, "Approval not triggered when amount to set is 1");
 
-        TCR.options.jsonInterface = TCR.options.jsonInterface.concat(ProposalManager.options.jsonInterface.filter(x => x.type == 'event'));
-
         const proposalData = "0x00112244";
 
         try {
@@ -95,9 +97,9 @@ describe("TCR", function () {
         assert.equal(!!receipt.events.Approval, true, "Approval not triggered when setting new submitPrice");
 
         receipt = await TCR.methods.submitProposal(proposalData, submitPrice).send();
-        assert.equal(!!receipt.events.ProposalSet, true, "ProposalSet not triggered");
+        assert.equal(!!receipt.events.ProposalSubmitted, true, "ProposalSubmitted not triggered");
         
-        proposalId = receipt.events.ProposalSet.returnValues.proposalId;
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
         proposal = await TCR.methods.proposals(proposalId).call();
 
         assert.equal(proposal.data, proposalData, "Proposal data is incorrect");
@@ -114,7 +116,7 @@ describe("TCR", function () {
         const submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
         receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
         receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
-        proposalId = receipt.events.ProposalSet.returnValues.proposalId;
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
 
         proposal = await TCR.methods.proposals(proposalId).call();
         const increaseAmount = 10;
@@ -150,12 +152,12 @@ describe("TCR", function () {
     it("should be able to whitelist a unvoted proposal after period ends", async function(){
         let receipt;
         
-        receipt = await TCR.methods.updateVotingPeriod(10).send();
+        receipt = await TCR.methods.updatePeriods(10, 10).send();
 
         const submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
         receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
         receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
-        proposalId = receipt.events.ProposalSet.returnValues.proposalId;
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
 
         let canBeWhiteListed = await TCR.methods.canBeWhitelisted(proposalId).call();
         assert.equal(canBeWhiteListed, false, "Proposal can not be whitelisted now");
@@ -171,33 +173,33 @@ describe("TCR", function () {
 
 
     
-    it("shouldn't be able to whitelist a proposal that has votes", async function(){
+    it("shouldn't be able to whitelist a proposal that has been challenged", async function(){
         let receipt;
-        ProposalManager.options.address = await TCR.methods.proposalManager().call();
- 
-        receipt = await TCR.methods.updateVotingPeriod(10).send();
+        
+        // Boilerplate
+        receipt = await TCR.methods.updatePeriods(10, 10).send();
         const submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
+       
         receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
         receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
-        proposalId = receipt.events.ProposalSet.returnValues.proposalId;
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
 
-        receipt = await ProposalManager.methods.voteProposal(proposalId, 2).send();
-        
+        // Test
+        receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});
+        receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
+        assert.equal(!!receipt.events.ProposalChallenged, true, "ProposalChallenged not triggered");
+
         await utils.mineBlocks(11);
 
         canBeWhiteListed = await TCR.methods.canBeWhitelisted(proposalId).call();
         assert.equal(canBeWhiteListed, false, "Proposal cannot be whitelisted");
 
-        try {
-            receipt = await TCR.methods.processProposal(proposalId).send();
-            assert.fail('should have reverted before');
-        } catch(error) {
-            utils.assertJump(error);
-        }
     });
 
-    it("shouldn't be able to whitelist a proposal that has a challenge", async function(){
+    it("SNT holders should be able to delist a proposal when it doesn't have enough stake", function(){
 
-    })
+    });
+
 
 });

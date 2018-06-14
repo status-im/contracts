@@ -49,6 +49,7 @@ contract ProposalManager is Controlled {
     {
         trustNet = _trustNet;
         token = _token;
+        proposals.length++;
         
     }
 
@@ -62,6 +63,7 @@ contract ProposalManager is Controlled {
         returns (uint proposalId)
     {
         proposalId = proposals.length++;
+        
         Proposal storage p = proposals[proposalId];
         
         p.topic = _topic;

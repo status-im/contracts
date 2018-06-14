@@ -17,7 +17,9 @@ contract TCR is Controlled {
     mapping (address => SubmitPrice) submitAllowances;
 
     bytes32 topic;
+
     uint votingPeriod;
+    uint applicationExpiryPeriod;
 
     struct SubmitPrice {
         bool allowedSubmitter;
@@ -30,6 +32,7 @@ contract TCR is Controlled {
         uint256 balance;
         uint256 challengeID;
         bytes data;
+        uint256 applicationExpiry;
     }
 
     struct Challenge {
@@ -41,6 +44,7 @@ contract TCR is Controlled {
         mapping(address => bool) tokenClaims;
     }
 
+    uint256 nonce;
     mapping(uint256 => Proposal) public proposals; 
     mapping(uint => Challenge) public challenges;
 
@@ -54,8 +58,12 @@ contract TCR is Controlled {
         token = _token;
         proposalManager = new ProposalManager(_token, _trustNet);
         topic = _topic;
-        votingPeriod = 1000;
+
+        votingPeriod = 100;
+        applicationExpiryPeriod = 100;
     }
+
+    event ProposalSubmitted(uint indexed proposalId);
 
     function submitProposal(
         bytes _data,
@@ -69,14 +77,17 @@ contract TCR is Controlled {
         require(token.allowance(msg.sender, address(this)) >= submitPrice);
         require(token.transferFrom(msg.sender, address(this), _depositAmount));
 
-        proposalId = proposalManager.addProposal(topic, keccak256(abi.encodePacked(0, 0, 0x00)), 0, votingPeriod);
-                
+        proposalId = nonce++;
+
         proposals[proposalId] = Proposal(
             false,
             msg.sender,
             _depositAmount,
             0,
-            _data);
+            _data,
+            block.number + applicationExpiryPeriod);
+
+        emit ProposalSubmitted(proposalId);
     }
 
     function increaseBalance(uint256 _proposalId, uint _amount) external {
@@ -99,7 +110,7 @@ contract TCR is Controlled {
     function withdrawProposal(uint256 _proposalId) 
         external 
     {
-        require(proposalManager.getProposalFinalResult(_proposalId) == RESULT_APPROVE);
+        require(proposals[_proposalId].whitelisted == true);
         require(proposals[_proposalId].challengeID == 0 || challenges[proposals[_proposalId].challengeID].resolved);
 
         uint256 refundValue = proposals[_proposalId].balance;
@@ -110,20 +121,23 @@ contract TCR is Controlled {
         }
     }
 
+    event ProposalDelisted(uint256 indexed proposalId);
+    event ProposalChallenged(uint256 indexed proposalId);
+
     function challenge(uint256 _proposalId) external returns (uint challengeID) {
         Proposal storage p = proposals[_proposalId];
 
-        require(p.whitelisted == true && proposalManager.getProposalFinalResult(_proposalId) == RESULT_APPROVE);
+        require(proposalExists(_proposalId));
         
         uint256 submitPrice = getSubmitPrice(msg.sender);
 
         if(p.balance < submitPrice){
             resetListing(_proposalId);
-            // TODO: event
+            emit ProposalDelisted(_proposalId);
             return 0;
         }
 
-
+        require(p.owner != msg.sender);
         require(token.allowance(msg.sender, address(this)) >= submitPrice);
         require(token.transferFrom(msg.sender, address(this), submitPrice));
 
@@ -142,6 +156,8 @@ contract TCR is Controlled {
 
         p.challengeID = challengeID;
         p.balance -= submitPrice;
+
+        emit ProposalChallenged(_proposalId);
     }
 
     function processProposal(uint256 _proposalId) public {
@@ -157,10 +173,8 @@ contract TCR is Controlled {
     function canBeWhitelisted(uint256 _proposalId) view public returns (bool) {
         uint challengeID = proposals[_proposalId].challengeID;
         
-        if (
-            !proposalManager.isVotingAvailable(_proposalId) &&
-            !proposalManager.hasVotesRecorded(_proposalId) &&
-            proposalManager.getProposalFinalResult(_proposalId) == RESULT_NULL &&
+        if (proposalExists(_proposalId) && 
+            proposals[_proposalId].applicationExpiry < block.number && 
             !isWhitelisted(_proposalId) &&
             (challengeID == 0 || challenges[challengeID].resolved == true)
         ) { return true; }
@@ -190,6 +204,12 @@ contract TCR is Controlled {
         challenges[challengeID].resolved = true;
 
         uint reward = determineReward(challengeID);
+
+/*
+            !proposalManager.isVotingAvailable(_proposalId) &&
+            !proposalManager.hasVotesRecorded(_proposalId) &&
+            proposalManager.getProposalFinalResult(_proposalId) == RESULT_NULL &&*/
+
 
 
         uint8 votingResult = proposalManager.getProposalFinalResult(_proposalId);
@@ -255,9 +275,14 @@ contract TCR is Controlled {
         }
     }
 
-    function updateVotingPeriod(uint length)
+    function updatePeriods(uint _applicationExpiryPeriod, uint _votingPeriod)
         public
         onlyController {
-        votingPeriod = length;
+        votingPeriod = _votingPeriod;
+        applicationExpiryPeriod = _applicationExpiryPeriod;
+    }
+
+    function proposalExists(uint256 _proposalId) view public returns (bool exists) {
+        return proposals[_proposalId].applicationExpiry > 0;
     }
 }
