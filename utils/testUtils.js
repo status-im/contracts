@@ -205,6 +205,32 @@ function isException(error) {
     return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
 }
 
+exports.mineBlock = async () => {
+    return new Promise(function(resolve, reject) {
+          web3.currentProvider.sendAsync(
+            {
+              jsonrpc: '2.0',
+              method: 'evm_mine',
+              params: [],
+              id: new Date().getSeconds()
+            }, (error) => {
+              if (error) {
+                console.log(error);
+                return reject(err);
+              }
+              resolve();
+            }
+          )
+        }
+      );
+}
+
+exports.mineBlocks = async (n) => {
+    for(let i = 0; i < n; i++)
+        await exports.mineBlock(n);
+}
+
+
 exports.increaseTime = async (amount) => {
     return new Promise(function(resolve, reject) {
       web3.currentProvider.sendAsync(

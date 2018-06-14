@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.23;
 
 import "../common/Controlled.sol";
 import "../token/MiniMeTokenInterface.sol";
@@ -17,6 +17,7 @@ contract TCR is Controlled {
     mapping (address => SubmitPrice) submitAllowances;
 
     bytes32 topic;
+    uint votingPeriod;
 
     struct SubmitPrice {
         bool allowedSubmitter;
@@ -24,12 +25,11 @@ contract TCR is Controlled {
     }
 
     struct Proposal {
-        uint256 applicationExpiry;
         bool whitelisted;
         address owner;
-        uint256 unstakedAmount;
-        bytes data;
+        uint256 balance;
         uint256 challengeID;
+        bytes data;
     }
 
     struct Challenge {
@@ -41,7 +41,7 @@ contract TCR is Controlled {
         mapping(address => bool) tokenClaims;
     }
 
-    mapping (uint256 => Proposal) public proposals; 
+    mapping(uint256 => Proposal) public proposals; 
     mapping(uint => Challenge) public challenges;
 
     constructor(
@@ -54,55 +54,55 @@ contract TCR is Controlled {
         token = _token;
         proposalManager = new ProposalManager(_token, _trustNet);
         topic = _topic;
+        votingPeriod = 1000;
     }
 
     function submitProposal(
-        bytes32 _listingHash,
         bytes _data,
-        uint _amountToStake
+        uint256 _depositAmount
     )
         external
         returns (uint256 proposalId) 
     {
         uint256 submitPrice = getSubmitPrice(msg.sender);
-        require(token.allowance(msg.sender, address(this)) >= submitPrice);
-        require(token.transferFrom(msg.sender, address(this), _amountToStake));
 
-        proposalId = proposalManager.addProposal(topic,keccak256(abi.encodePacked(0,0,0x00)));
+        require(token.allowance(msg.sender, address(this)) >= submitPrice);
+        require(token.transferFrom(msg.sender, address(this), _depositAmount));
+
+        proposalId = proposalManager.addProposal(topic, keccak256(abi.encodePacked(0, 0, 0x00)), 0, votingPeriod);
                 
         proposals[proposalId] = Proposal(
-            1000, // TODO: Determine if we're going to use proposal manager expiration time
             false,
             msg.sender,
-            _amountToStake,
-            _data,
-            0);
+            _depositAmount,
+            0,
+            _data);
     }
 
-    function increaseStake(uint256 _proposalId, uint _amount) external {
+    function increaseBalance(uint256 _proposalId, uint _amount) external {
         Proposal storage p = proposals[_proposalId];
         require(p.owner == msg.sender);
         require(token.transferFrom(msg.sender, this, _amount));
-        p.unstakedAmount += _amount;
+        p.balance += _amount;
     }
 
-    function reduceStake(uint256 _proposalId, uint _amount) external {
+    function reduceBalance(uint256 _proposalId, uint _amount) external {
         Proposal storage p = proposals[_proposalId];
         require(p.owner == msg.sender);
-        require(_amount <= p.unstakedAmount);
+        require(_amount <= p.balance);
         uint256 submitPrice = getSubmitPrice(msg.sender);
-        p.unstakedAmount -= _amount;
-        require(p.unstakedAmount >= submitPrice);
+        p.balance -= _amount;
+        require(p.balance >= submitPrice);
         require(token.transfer(msg.sender, _amount));
     }
 
-    function withdrawStake(uint256 _proposalId) 
+    function withdrawProposal(uint256 _proposalId) 
         external 
     {
         require(proposalManager.getProposalFinalResult(_proposalId) == RESULT_APPROVE);
         require(proposals[_proposalId].challengeID == 0 || challenges[proposals[_proposalId].challengeID].resolved);
 
-        uint256 refundValue = proposals[_proposalId].unstakedAmount;
+        uint256 refundValue = proposals[_proposalId].balance;
         address refundAddress = proposals[_proposalId].owner;
         delete proposals[_proposalId];
         if (refundValue > 0) {
@@ -116,13 +116,21 @@ contract TCR is Controlled {
         require(p.whitelisted == true && proposalManager.getProposalFinalResult(_proposalId) == RESULT_APPROVE);
         
         uint256 submitPrice = getSubmitPrice(msg.sender);
+
+        if(p.balance < submitPrice){
+            resetListing(_proposalId);
+            // TODO: event
+            return 0;
+        }
+
+
         require(token.allowance(msg.sender, address(this)) >= submitPrice);
         require(token.transferFrom(msg.sender, address(this), submitPrice));
 
         // Prevent multiple challenges
         require(p.challengeID == 0 || challenges[p.challengeID].resolved);
 
-        challengeID = proposalManager.addProposal(topic,keccak256(abi.encodePacked(0, 0, 0x00)));
+        challengeID = proposalManager.addProposal(topic,keccak256(abi.encodePacked(0, 0, 0x00)), 0, votingPeriod);
 
         challenges[challengeID] = Challenge({
             challenger: msg.sender,
@@ -133,7 +141,7 @@ contract TCR is Controlled {
         });
 
         p.challengeID = challengeID;
-        p.unstakedAmount -= submitPrice;
+        p.balance -= submitPrice;
     }
 
     function processProposal(uint256 _proposalId) public {
@@ -148,9 +156,11 @@ contract TCR is Controlled {
 
     function canBeWhitelisted(uint256 _proposalId) view public returns (bool) {
         uint challengeID = proposals[_proposalId].challengeID;
-
+        
         if (
-            proposals[_proposalId].applicationExpiry < now &&
+            !proposalManager.isVotingAvailable(_proposalId) &&
+            !proposalManager.hasVotesRecorded(_proposalId) &&
+            proposalManager.getProposalFinalResult(_proposalId) == RESULT_NULL &&
             !isWhitelisted(_proposalId) &&
             (challengeID == 0 || challenges[challengeID].resolved == true)
         ) { return true; }
@@ -162,8 +172,11 @@ contract TCR is Controlled {
         return proposals[_proposalId].whitelisted;
     }
 
+    event ProposalWhitelisted(uint256 proposalId);
+
     function whitelistApplication(uint256 _proposalId) private {
         proposals[_proposalId].whitelisted = true;
+        emit ProposalWhitelisted(_proposalId);
     }
 
     function challengeCanBeResolved(uint256 _proposalId) view public returns (bool) {
@@ -186,7 +199,7 @@ contract TCR is Controlled {
 
         if (votingResult == RESULT_APPROVE) { // TODO:
             whitelistApplication(_proposalId);
-            proposals[_proposalId].unstakedAmount += reward;
+            proposals[_proposalId].balance += reward;
         } else {
             resetListing(_proposalId);
             require(token.transfer(challenges[challengeID].challenger, reward));
@@ -196,10 +209,10 @@ contract TCR is Controlled {
     function resetListing(uint256 _proposalId) private {
         Proposal storage p = proposals[_proposalId];
         address owner = p.owner;
-        uint unstakedAmount = p.unstakedAmount;
+        uint balance = p.balance;
         delete proposals[_proposalId];
-        if (unstakedAmount > 0){
-            require(token.transfer(owner, unstakedAmount));
+        if (balance > 0){
+            require(token.transfer(owner, balance));
         }
     }
 
@@ -207,16 +220,22 @@ contract TCR is Controlled {
         require(_challengeID > 0 && challenges[_challengeID].resolved);
         require(proposalManager.isVotingAvailable(_challengeID) == false);
         return 1; // TODO:
+
+// Determine reward must check the staked amount the proposal has
+
     }
 
     // TODO: function claimReward(uint _challengeID) public
+
+    event SubmitPriceUpdated(address who, uint256 stakeValue);
 
     function setSubmitPrice(address _who, bool _allowedSubmitter, uint256 _stakeValue) 
         external
         onlyController
     {
-        if (_allowedSubmitter) {
+        if (_allowedSubmitter || _who == address(0)) {
             submitAllowances[_who] = SubmitPrice(_allowedSubmitter, _stakeValue);
+            emit SubmitPriceUpdated(_who, _stakeValue);
         } else {
             delete submitAllowances[_who];   
         }
@@ -234,5 +253,11 @@ contract TCR is Controlled {
             allowance = submitAllowances[address(0)];
             return allowance.stakePrice;
         }
+    }
+
+    function updateVotingPeriod(uint length)
+        public
+        onlyController {
+        votingPeriod = length;
     }
 }

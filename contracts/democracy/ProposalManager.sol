@@ -54,7 +54,9 @@ contract ProposalManager is Controlled {
 
     function addProposal(
         bytes32 _topic,
-        bytes32 _txHash
+        bytes32 _txHash,
+        uint blocksUntilVotingStart,
+        uint voteDuration
     )
         public
         returns (uint proposalId)
@@ -65,8 +67,8 @@ contract ProposalManager is Controlled {
         p.topic = _topic;
         p.txHash = _txHash;
 
-        p.blockStart = block.number + 1000; //will be replaced by configurations
-        p.voteBlockEnd = p.blockStart + 10000; //dummy value
+        p.blockStart = block.number + blocksUntilVotingStart; //will be replaced by configurations
+        p.voteBlockEnd = p.blockStart + voteDuration; //dummy value
         emit ProposalSet(_topic, proposalId, _txHash);
     }
 
@@ -77,6 +79,7 @@ contract ProposalManager is Controlled {
         require(block.number >= proposal.blockStart);
         require(block.number <= proposal.voteBlockEnd);
         proposal.voteMap[msg.sender] = _vote;
+        proposal.voters.push(msg.sender);
 
     }
 
@@ -125,7 +128,13 @@ contract ProposalManager is Controlled {
     }
 
 
-
+    function hasVotesRecorded(uint256 _proposalId)
+        external
+        view
+        returns (bool)
+    {
+        return proposals[_proposalId].voters.length > 0;
+    }
 
     function getProposalFinalResult(
         uint256 _proposalId
@@ -153,7 +162,7 @@ contract ProposalManager is Controlled {
 
     function isVotingAvailable(uint _proposalId) public view returns (bool){
         Proposal memory p = proposals[_proposalId];
-        return p.voteBlockEnd > now && p.result == Vote.Null;
+        return p.voteBlockEnd > block.number && p.result == Vote.Null;
     } 
     
     function offchainTabulateVoteResult(uint256 _proposalId) 
