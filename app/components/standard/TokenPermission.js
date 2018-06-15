@@ -4,6 +4,7 @@ import web3 from "Embark/web3"
 import Toggle from 'react-toggle';
 import { BigNumber } from './utils'
 import "react-toggle/style.css";
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 // We set an allowance to be "unlimited" by setting it to
 // it's maximum possible value -- namely, 2^256 - 1.
@@ -39,6 +40,7 @@ class TokenHandle extends PureComponent {
     const isApproved = !!Number(approved);
     let amountToApprove = isApproved ? 0 : unlimitedAllowance;
     console.log("approve(\""+spender+"\",\"" +amountToApprove +"\")")
+    this.setState({ updating: true });
     approve(
       spender,
       amountToApprove
@@ -46,24 +48,26 @@ class TokenHandle extends PureComponent {
            .send()
            .then(approval => {
              const { events: { Approval: { returnValues: { _value } } } } = approval
-             this.setState({ ...this.state, approved: _value })
+             this.setState({ ...this.state, approved: _value, updating: false })
            }).catch(err => {
              console.log("Approve failed: " + err);
+             this.setState({ updating: false });
            })
   }
 
   render() {
     const { symbol, account, isLoading } = this.props;
-    const { approved } = this.state;
+    const { approved, updating } = this.state;
     return (
       <Fragment>
-      {!isLoading && !!account && <div style={{ display: 'flex', justifyContent: 'center', margin: '10px', paddingLeft: '60px' }}>
+      {!updating && !isLoading && !!account && <div style={{ display: 'flex', justifyContent: 'center', margin: '10px', paddingLeft: '60px' }}>
         <Toggle
           checked={!!Number(approved)}
           name={symbol}
           onChange={this.toggleApproved} />
         <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(account[BALANCE_KEYS[symbol]]).toLocaleString()} ${symbol.toUpperCase()}`}</label>
       </div>}
+      {isLoading || updating && <CircularProgress />}
       </Fragment>
     )
   }
