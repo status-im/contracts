@@ -53,6 +53,10 @@ describe("TCR", function () {
             return SNT.methods.generateTokens(accounts[0], 1000000000).send()
         }).then((receipt) => { 
             return SNT.methods.generateTokens(accounts[1], 1000000000).send()
+        }).then((receipt) => { 
+            return SNT.methods.generateTokens(accounts[2], 500000000).send()
+        }).then((receipt) => { 
+            return SNT.methods.generateTokens(accounts[3], 500000000).send()
         }).then((receipt) => {
             return TCR.methods.proposalManager().call();
         }).then((address) => {
@@ -192,7 +196,7 @@ describe("TCR", function () {
 
         let account1BalanceB = parseInt(await SNT.methods.balanceOf(accounts[1]).call());
         let proposal = await TCR.methods.proposals(proposalId).call();
-        let challenge = await TCR.methods.challenges(proposal.challengeID).call();
+        let challenge = await TCR.methods.challenges(proposal.challengeId).call();
 
         assert(challenge.stake, submitPrice, "Stake does not match submitPrice");
 
@@ -310,6 +314,50 @@ describe("TCR", function () {
     });
 
     it("challenged proposal's owner and approval voters should earn stake if they win", async function(){
+        let receipt;
+
+        // Boilerplate
+        receipt = await TCR.methods.updatePeriods(10, 10).send();
+        const submitPrice = parseInt(await TCR.methods.getSubmitPrice(accounts[0]).call()); 
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
+        receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
+        receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});
+        let proposal = await TCR.methods.proposals(proposalId).call();
+        const proposalBalanceA = parseInt(proposal.balance);
+        receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
+        const challengeId = receipt.events.ProposalChallenged.returnValues.challengeId;
+        let challenge = await TCR.methods.challenges(challengeId).call();
+        const challengeStake = parseInt(challenge.stake);
+
+        // Test
+        receipt = await ProposalManager.methods.voteProposal(challengeId, 2).send({from: accounts[0]});
+        receipt = await ProposalManager.methods.voteProposal(challengeId, 2).send({from: accounts[2]});
+                
+        receipt = await ProposalManager.methods.voteProposal(challengeId, 2).send({from: accounts[3]});
+
+        await utils.mineBlocks(11);
+
+        // TODO: should each voter call tabulateVote?
+        receipt = await ProposalManager.methods.tabulateVote(challengeId, accounts[0]).send({from: accounts[0]});
+        receipt = await ProposalManager.methods.tabulateVote(challengeId, accounts[2]).send({from: accounts[2]});
+        receipt = await ProposalManager.methods.tabulateVote(challengeId, accounts[3]).send({from: accounts[3]});
+
+        receipt = await ProposalManager.methods.finalResult(challengeId).send();
+        assert(receipt.events.ProposalResult.returnValues.finalResult, 2, "Proposal should have been approved");
+        receipt = await TCR.methods.processProposal(proposalId).send();
+    
+        proposal = await TCR.methods.proposals(proposalId).call();
+
+        const proposalBalanceB = parseInt(proposal.balance);
+        assert(proposalBalanceB, proposalBalanceA + challengeStake - parseInt(challenge.rewardPool), "Proposal Balance did not increase");
+        
+        const account2BalanceA = parseInt(await SNT.methods.balanceOf(accounts[2]).call());
+        receipt = await TCR.methods.claimReward(proposalId).send({from: accounts[2]});
+        const account2BalanceB = parseInt(await SNT.methods.balanceOf(accounts[2]).call());
+
+        // TODO: calculate balance of account 2 to see if it increased by 8 (based on 30% for voters)
     });
 
     it("challenger and reject voters should earn stake if they win", async function(){

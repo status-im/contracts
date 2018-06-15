@@ -31,7 +31,7 @@ contract TCR is Controlled {
         bool whitelisted;
         address owner;
         uint256 balance;
-        uint256 challengeID;
+        uint256 challengeId;
         bytes data;
         uint256 applicationExpiry;
     }
@@ -54,8 +54,8 @@ contract TCR is Controlled {
     event ProposalChallenged(uint256 indexed proposalId, uint256 indexed challengeId);
     event ProposalWhitelisted(uint256 indexed proposalId);
     event SubmitPriceUpdated(address indexed who, uint256 stakeValue);
-    event ChallengeSucceeded(uint256 indexed proposalId, uint indexed challengeID, uint rewardPool, uint totalTokens);
-    event ChallengeFailed(uint256 indexed proposalId, uint indexed challengeID, uint rewardPool, uint totalTokens);
+    event ChallengeSucceeded(uint256 indexed proposalId, uint indexed challengeId, uint rewardPool, uint totalTokens);
+    event ChallengeFailed(uint256 indexed proposalId, uint indexed challengeId, uint rewardPool, uint totalTokens);
 
     constructor(
         MiniMeTokenInterface _token,
@@ -70,7 +70,7 @@ contract TCR is Controlled {
 
         votingPeriod = 100;
         applicationExpiryPeriod = 100;
-        rewardPercentage = 50;
+        rewardPercentage = 70;
     }
 
 
@@ -120,7 +120,7 @@ contract TCR is Controlled {
         external 
     {
         require(proposals[_proposalId].whitelisted == true);
-        require(proposals[_proposalId].challengeID == 0 || challenges[proposals[_proposalId].challengeID].resolved);
+        require(proposals[_proposalId].challengeId == 0 || challenges[proposals[_proposalId].challengeId].resolved);
 
         uint256 refundValue = proposals[_proposalId].balance;
         address refundAddress = proposals[_proposalId].owner;
@@ -131,7 +131,7 @@ contract TCR is Controlled {
     }
 
    
-    function challenge(uint256 _proposalId) external returns (uint challengeID) {
+    function challenge(uint256 _proposalId) external returns (uint challengeId) {
         Proposal storage p = proposals[_proposalId];
 
         require(proposalExists(_proposalId));
@@ -149,11 +149,11 @@ contract TCR is Controlled {
         require(token.transferFrom(msg.sender, address(this), submitPrice));
 
         // Prevent multiple challenges
-        require(p.challengeID == 0 || challenges[p.challengeID].resolved);
+        require(p.challengeId == 0 || challenges[p.challengeId].resolved);
 
-        challengeID = proposalManager.addProposal(topic, keccak256(abi.encodePacked(address(0), uint256(0), 0x00)), 0, votingPeriod);
+        challengeId = proposalManager.addProposal(topic, keccak256(abi.encodePacked(address(0), uint256(0), 0x00)), 0, votingPeriod);
 
-        challenges[challengeID] = Challenge({
+        challenges[challengeId] = Challenge({
             challenger: msg.sender,
             rewardPool: ((100 - rewardPercentage) * submitPrice) / 100,
             stake: submitPrice,
@@ -161,10 +161,10 @@ contract TCR is Controlled {
             resolved: false
         });
 
-        p.challengeID = challengeID;
+        p.challengeId = challengeId;
         p.balance -= submitPrice;
 
-        emit ProposalChallenged(_proposalId, challengeID);
+        emit ProposalChallenged(_proposalId, challengeId);
     }
 
     function processProposal(uint256 _proposalId) public {
@@ -178,12 +178,12 @@ contract TCR is Controlled {
     }
 
     function canBeWhitelisted(uint256 _proposalId) view public returns (bool) {
-        uint challengeID = proposals[_proposalId].challengeID;
+        uint challengeId = proposals[_proposalId].challengeId;
         
         if (proposalExists(_proposalId) &&
             proposals[_proposalId].applicationExpiry < block.number && 
             !isWhitelisted(_proposalId) &&
-            (challengeID == 0 || challenges[challengeID].resolved == true)
+            (challengeId == 0 || challenges[challengeId].resolved == true)
         ) {
             return true;
         }
@@ -203,30 +203,30 @@ contract TCR is Controlled {
     }
 
     function challengeCanBeResolved(uint256 _proposalId) view public returns (bool) {
-        uint challengeID = proposals[_proposalId].challengeID;
-        require(challengeID > 0 && !challenges[challengeID].resolved);
-        return proposalManager.isVotingAvailable(challengeID) == false;
+        uint challengeId = proposals[_proposalId].challengeId;
+        require(challengeId > 0 && !challenges[challengeId].resolved);
+        return proposalManager.isVotingAvailable(challengeId) == false;
     }
 
     function resolveChallenge(uint256 _proposalId) private {
-        uint challengeID = proposals[_proposalId].challengeID;
+        uint challengeId = proposals[_proposalId].challengeId;
 
-        Challenge storage challenge = challenges[challengeID];
+        Challenge storage challenge = challenges[challengeId];
         
-        uint reward = determineReward(challengeID);
-        uint8 votingResult = proposalManager.getProposalFinalResult(challengeID);
+        uint reward = determineReward(challengeId);
+        uint8 votingResult = proposalManager.getProposalFinalResult(challengeId);
         
         challenge.resolved = true;
-        challenge.winningTokens = proposalManager.getProposalResultsByVote(challengeID, votingResult);
+        challenge.winningTokens = proposalManager.getProposalResultsByVote(challengeId, votingResult);
 
         if (votingResult == RESULT_APPROVE || challenge.winningTokens == 0) {
             whitelistApplication(_proposalId);
             proposals[_proposalId].balance += reward;
-            emit ChallengeFailed(_proposalId, challengeID, challenge.rewardPool, challenge.winningTokens);
+            emit ChallengeFailed(_proposalId, challengeId, challenge.rewardPool, challenge.winningTokens);
         } else {
             resetListing(_proposalId);
-            emit ChallengeSucceeded(_proposalId, challengeID, challenge.rewardPool, challenge.winningTokens);
-            require(token.transfer(challenges[challengeID].challenger, reward));
+            emit ChallengeSucceeded(_proposalId, challengeId, challenge.rewardPool, challenge.winningTokens);
+            require(token.transfer(challenges[challengeId].challenger, reward));
         }
     }
 
@@ -240,46 +240,50 @@ contract TCR is Controlled {
         }
     }
 
-    function determineReward(uint _challengeID) public view returns (uint) {
-        require(_challengeID > 0 && !challenges[_challengeID].resolved);
-        require(proposalManager.isVotingAvailable(_challengeID) == false);
+    function determineReward(uint _challengeId) public view returns (uint) {
+        require(_challengeId > 0 && !challenges[_challengeId].resolved);
+        require(proposalManager.isVotingAvailable(_challengeId) == false);
 
         // Edge case, nobody voted, give all tokens to the challenger.
-        uint8 votingResult = proposalManager.getProposalFinalResult(_challengeID);
-        if (proposalManager.getProposalResultsByVote(_challengeID, votingResult) == 0) {
-            return 2 * challenges[_challengeID].stake;
+        uint8 votingResult = proposalManager.getProposalFinalResult(_challengeId);
+        if (proposalManager.getProposalResultsByVote(_challengeId, votingResult) == 0) {
+            return 2 * challenges[_challengeId].stake;
         }
 
-        return (2 * challenges[_challengeID].stake) - challenges[_challengeID].rewardPool;
+        return (2 * challenges[_challengeId].stake) - challenges[_challengeId].rewardPool;
     }
 
-    function claimReward(uint _challengeID) public {
-        require(challenges[_challengeID].tokenClaims[msg.sender] == false);
-        require(challenges[_challengeID].resolved == true);
+    function claimReward(uint _proposalId) public {
+        Proposal p = proposals[_proposalId];
+        uint challengeId = p.challengeId;
+
+        require(challenges[challengeId].tokenClaims[msg.sender] == false);
+        require(challenges[challengeId].resolved == true);
 
         uint reward;
         uint voterTokens;
-        
-        (reward, voterTokens) = voterReward(_challengeID);
 
-        challenges[_challengeID].winningTokens -= voterTokens;
-        challenges[_challengeID].rewardPool -= reward;
-        challenges[_challengeID].tokenClaims[msg.sender] = true;
+        (reward, voterTokens) = voterReward(challengeId);
+
+        challenges[challengeId].winningTokens -= voterTokens;
+        challenges[challengeId].rewardPool -= reward;
+        challenges[challengeId].tokenClaims[msg.sender] = true;
         require(token.transfer(msg.sender, reward));
     }
 
-    function voterReward(uint _challengeID)
+
+    function voterReward(uint _challengeId)
         public view returns (uint reward, uint votes) 
     {
 
         uint8 vote;
         uint256 voterTokens;
 
-        uint8 votingResult = proposalManager.getProposalFinalResult(_challengeID);
-        (vote, votes) = proposalManager.getVoteInfo(_challengeID);
+        uint8 votingResult = proposalManager.getProposalFinalResult(_challengeId);
+        (vote, votes) = proposalManager.getVoteInfo(_challengeId, msg.sender);
 
-        uint winningTokens = challenges[_challengeID].winningTokens;
-        uint rewardPool = challenges[_challengeID].rewardPool;
+        uint winningTokens = challenges[_challengeId].winningTokens;
+        uint rewardPool = challenges[_challengeId].rewardPool;
 
         if(vote == votingResult){
             voterTokens = votes;

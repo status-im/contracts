@@ -82,7 +82,6 @@ contract ProposalManager is Controlled {
         require(block.number <= proposal.voteBlockEnd);
         proposal.voteMap[msg.sender] = _vote;
         proposal.voters.push(msg.sender);
-
     }
 
     function tabulateVote(uint _proposalId, address _delegator) 
@@ -166,15 +165,15 @@ contract ProposalManager is Controlled {
         return p.voteBlockEnd > block.number && p.result == Vote.Null;
     }
 
-    function getVoteInfo(uint _proposalId)
+    function getVoteInfo(uint _proposalId, address voter)
         public 
         view 
         returns (uint8 vote, uint256 tokens)
     {
         Proposal storage p = proposals[_proposalId];
 
-        vote = uint8(p.voteMap[msg.sender]);
-        tokens = token.balanceOfAt(msg.sender, p.voteBlockEnd);
+        vote = uint8(p.voteMap[voter]);
+        tokens = token.balanceOfAt(voter, p.voteBlockEnd);
     }
     
     function offchainTabulateVoteResult(uint256 _proposalId) 
