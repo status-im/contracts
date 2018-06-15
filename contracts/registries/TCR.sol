@@ -51,7 +51,7 @@ contract TCR is Controlled {
 
     event ProposalSubmitted(uint indexed proposalId);
     event ProposalDelisted(uint256 indexed proposalId);
-    event ProposalChallenged(uint256 indexed proposalId);
+    event ProposalChallenged(uint256 indexed proposalId, uint256 indexed challengeId);
     event ProposalWhitelisted(uint256 indexed proposalId);
     event SubmitPriceUpdated(address indexed who, uint256 stakeValue);
     event ChallengeSucceeded(uint256 indexed proposalId, uint indexed challengeID, uint rewardPool, uint totalTokens);
@@ -164,7 +164,7 @@ contract TCR is Controlled {
         p.challengeID = challengeID;
         p.balance -= submitPrice;
 
-        emit ProposalChallenged(_proposalId);
+        emit ProposalChallenged(_proposalId, challengeID);
     }
 
     function processProposal(uint256 _proposalId) public {
@@ -214,12 +214,12 @@ contract TCR is Controlled {
         Challenge storage challenge = challenges[challengeID];
         
         uint reward = determineReward(challengeID);
-        uint8 votingResult = proposalManager.getProposalFinalResult(_proposalId);
+        uint8 votingResult = proposalManager.getProposalFinalResult(challengeID);
         
         challenge.resolved = true;
-        challenge.winningTokens = proposalManager.getProposalResultsByVote(_proposalId, votingResult);
+        challenge.winningTokens = proposalManager.getProposalResultsByVote(challengeID, votingResult);
 
-        if (votingResult == RESULT_APPROVE) {
+        if (votingResult == RESULT_APPROVE || challenge.winningTokens == 0) {
             whitelistApplication(_proposalId);
             proposals[_proposalId].balance += reward;
             emit ChallengeFailed(_proposalId, challengeID, challenge.rewardPool, challenge.winningTokens);

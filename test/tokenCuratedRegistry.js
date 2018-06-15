@@ -35,7 +35,7 @@ config({
     },
     "ProposalManager": { "deploy": false },
     "TCR": {
-        "args": ["$SNT", "$TrustNetwork", "0x01"],
+        "args": ["$SNT", "$TrustNetwork", "0x00"],
         "gasLimit": 4000000
     }
   }
@@ -176,17 +176,25 @@ describe("TCR", function () {
         
         // Boilerplate
         receipt = await TCR.methods.updatePeriods(10, 10).send();
-        const submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
+        const submitPrice = parseInt(await TCR.methods.getSubmitPrice(accounts[0]).call());
        
         receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
         receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
         proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
 
         // Test
+        let account1BalanceA = parseInt(await SNT.methods.balanceOf(accounts[1]).call());
+
         receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
         receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});
         receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
         assert.equal(!!receipt.events.ProposalChallenged, true, "ProposalChallenged not triggered");
+
+        let account1BalanceB = parseInt(await SNT.methods.balanceOf(accounts[1]).call());
+        let proposal = await TCR.methods.proposals(proposalId).call();
+        let challenge = await TCR.methods.challenges(proposal.challengeID).call();
+
+        assert(challenge.stake, submitPrice, "Stake does not match submitPrice");
 
         await utils.mineBlocks(11);
 
@@ -264,4 +272,47 @@ describe("TCR", function () {
 
     });
 
+    it("challenged proposal's owner should earn stake if no there are no votes", async function(){
+        let receipt;
+
+        // Boilerplate
+        receipt = await TCR.methods.updatePeriods(10, 10).send();
+        const submitPrice = parseInt(await TCR.methods.getSubmitPrice(accounts[0]).call()); 
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
+        receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
+        receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});
+        let proposal = await TCR.methods.proposals(proposalId).call();
+        const proposalBalanceA = parseInt(proposal.balance);
+        receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
+
+        // Test
+        const challengeId = receipt.events.ProposalChallenged.returnValues.challengeId;
+        let challenge = await TCR.methods.challenges(challengeId).call();
+        const challengeStake = parseInt(challenge.stake);
+
+        await utils.mineBlocks(11);
+
+        receipt = await ProposalManager.methods.tabulateVote(challengeId, accounts[0]).send();
+        
+        receipt = await ProposalManager.methods.finalResult(challengeId).send();
+        assert.equal(!!receipt.events.ProposalResult, true, "ProposalResult not triggered");
+
+        receipt = await TCR.methods.processProposal(proposalId).send();
+        assert.equal(!!receipt.events.ChallengeFailed, true, "ChallengeFailed not triggered");
+        assert.equal(!!receipt.events.ProposalWhitelisted, true, "ProposalWhitelisted not triggered");
+        
+        proposal = await TCR.methods.proposals(proposalId).call();
+        const proposalBalanceB = parseInt(proposal.balance);
+
+        assert.equal(proposalBalanceA + challengeStake, proposalBalanceB, "New proposal balance doesn't match");
+    });
+
+    it("challenged proposal's owner and approval voters should earn stake if they win", async function(){
+    });
+
+    it("challenger and reject voters should earn stake if they win", async function(){
+
+    });
 });
