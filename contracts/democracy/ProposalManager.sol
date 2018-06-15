@@ -164,7 +164,18 @@ contract ProposalManager is Controlled {
     function isVotingAvailable(uint _proposalId) public view returns (bool){
         Proposal memory p = proposals[_proposalId];
         return p.voteBlockEnd > block.number && p.result == Vote.Null;
-    } 
+    }
+
+    function getVoteInfo(uint _proposalId)
+        public 
+        view 
+        returns (uint8 vote, uint256 tokens)
+    {
+        Proposal storage p = proposals[_proposalId];
+
+        vote = uint8(p.voteMap[msg.sender]);
+        tokens = token.balanceOfAt(msg.sender, p.voteBlockEnd);
+    }
     
     function offchainTabulateVoteResult(uint256 _proposalId) 
         external

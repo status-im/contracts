@@ -151,7 +151,7 @@ contract TCR is Controlled {
         // Prevent multiple challenges
         require(p.challengeID == 0 || challenges[p.challengeID].resolved);
 
-        challengeID = proposalManager.addProposal(topic,keccak256(abi.encodePacked(0, 0, 0x00)), 0, votingPeriod);
+        challengeID = proposalManager.addProposal(topic, keccak256(abi.encodePacked(address(0), uint256(0), 0x00)), 0, votingPeriod);
 
         challenges[challengeID] = Challenge({
             challenger: msg.sender,
@@ -180,7 +180,7 @@ contract TCR is Controlled {
     function canBeWhitelisted(uint256 _proposalId) view public returns (bool) {
         uint challengeID = proposals[_proposalId].challengeID;
         
-        if (proposalExists(_proposalId) && 
+        if (proposalExists(_proposalId) &&
             proposals[_proposalId].applicationExpiry < block.number && 
             !isWhitelisted(_proposalId) &&
             (challengeID == 0 || challenges[challengeID].resolved == true)
@@ -253,16 +253,14 @@ contract TCR is Controlled {
         return (2 * challenges[_challengeID].stake) - challenges[_challengeID].rewardPool;
     }
 
-    function claimReward(uint _challengeID, uint _salt) public {
+    function claimReward(uint _challengeID) public {
         require(challenges[_challengeID].tokenClaims[msg.sender] == false);
         require(challenges[_challengeID].resolved == true);
 
+        uint reward;
+        uint voterTokens;
         
-        // uint voterTokens = voting.getNumPassingTokens(msg.sender, _challengeID, _salt);
-        // uint reward = voterReward(msg.sender, _challengeID, _salt);
-        //TODO: 
-        uint voterTokens = 1;
-        uint reward = 1;
+        (reward, voterTokens) = voterReward(_challengeID);
 
         challenges[_challengeID].winningTokens -= voterTokens;
         challenges[_challengeID].rewardPool -= reward;
@@ -270,17 +268,26 @@ contract TCR is Controlled {
         require(token.transfer(msg.sender, reward));
     }
 
-    function voterReward(address _voter, uint _challengeID)
-        public view returns (uint) 
+    function voterReward(uint _challengeID)
+        public view returns (uint reward, uint votes) 
     {
+
+        uint8 vote;
+        uint256 voterTokens;
+
+        uint8 votingResult = proposalManager.getProposalFinalResult(_challengeID);
+        (vote, votes) = proposalManager.getVoteInfo(_challengeID);
+
         uint winningTokens = challenges[_challengeID].winningTokens;
         uint rewardPool = challenges[_challengeID].rewardPool;
-        // uint voterTokens = voting.getNumPassingTokens(_voter, _challengeID, _salt);
-        
-        //TODO: 
-        uint voterTokens = 1;
 
-        return (voterTokens * rewardPool) / winningTokens;
+        if(vote == votingResult){
+            voterTokens = votes;
+        } else {
+            voterTokens = 0;
+        }
+
+        reward = (voterTokens * rewardPool) / winningTokens;
     }
     
 
