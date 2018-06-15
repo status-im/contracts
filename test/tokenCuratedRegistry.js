@@ -170,8 +170,6 @@ describe("TCR", function () {
         receipt = await TCR.methods.processProposal(proposalId).send();
         assert.equal(!!receipt.events.ProposalWhitelisted, true, "ProposalWhitelisted not triggered");
     });
-
-
     
     it("shouldn't be able to whitelist a proposal that has been challenged", async function(){
         let receipt;
@@ -209,7 +207,7 @@ describe("TCR", function () {
         proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
 
         // Test
-        submitPrice += 10;
+        submitPrice = parseInt(submitPrice) + 10;
         receipt = await TCR.methods.setSubmitPrice(utils.zeroAddress, true, submitPrice).send();
 
         receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
@@ -222,5 +220,48 @@ describe("TCR", function () {
         assert.equal(proposal.owner, utils.zeroAddress, "Proposal wasn't deleted");
     });
 
+    it("A whitelisted proposal can be challenged", async function(){
+        let receipt;
+        
+        // Boilerplate
+        receipt = await TCR.methods.updatePeriods(10, 10).send();
+        const submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
+
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
+        receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
+        await utils.mineBlocks(11);
+        canBeWhiteListed = await TCR.methods.canBeWhitelisted(proposalId).call();
+        receipt = await TCR.methods.processProposal(proposalId).send();
+
+        // Test
+        receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});
+        receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
+        assert.equal(!!receipt.events.ProposalChallenged, true, "ProposalChallenged not triggered");  
+    });
+
+    it("only should allow a single challenge", async function(){
+        let receipt;
+        
+        // Boilerplate
+        receipt = await TCR.methods.updatePeriods(10, 10).send();
+        const submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call(); 
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send();
+        receipt = await TCR.methods.submitProposal("0x12", submitPrice).send();
+        proposalId = receipt.events.ProposalSubmitted.returnValues.proposalId;
+        receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
+        receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});
+        receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
+
+        // Test
+        try {
+            receipt = await TCR.methods.challenge(proposalId).send({from: accounts[1]});
+            assert.fail('should have reverted before');
+        } catch(error) {
+            utils.assertJump(error);
+        }
+
+    });
 
 });

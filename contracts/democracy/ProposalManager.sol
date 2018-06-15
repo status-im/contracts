@@ -108,7 +108,6 @@ contract ProposalManager is Controlled {
         public 
         view 
         returns (uint256){
-        Proposal memory proposal = proposals[_proposalId];
         return proposals[_proposalId].results[vote];
     }
 

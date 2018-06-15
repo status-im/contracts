@@ -20,6 +20,7 @@ contract TCR is Controlled {
 
     uint votingPeriod;
     uint applicationExpiryPeriod;
+    uint rewardPercentage;
 
     struct SubmitPrice {
         bool allowedSubmitter;
@@ -40,13 +41,21 @@ contract TCR is Controlled {
         uint256 rewardPool;
         address challenger;
         uint256 stake;
-        uint256 totalTokens;
+        uint256 winningTokens;
         mapping(address => bool) tokenClaims;
     }
 
     uint256 nonce;
     mapping(uint256 => Proposal) public proposals; 
     mapping(uint => Challenge) public challenges;
+
+    event ProposalSubmitted(uint indexed proposalId);
+    event ProposalDelisted(uint256 indexed proposalId);
+    event ProposalChallenged(uint256 indexed proposalId);
+    event ProposalWhitelisted(uint256 indexed proposalId);
+    event SubmitPriceUpdated(address indexed who, uint256 stakeValue);
+    event ChallengeSucceeded(uint256 indexed proposalId, uint indexed challengeID, uint rewardPool, uint totalTokens);
+    event ChallengeFailed(uint256 indexed proposalId, uint indexed challengeID, uint rewardPool, uint totalTokens);
 
     constructor(
         MiniMeTokenInterface _token,
@@ -61,9 +70,9 @@ contract TCR is Controlled {
 
         votingPeriod = 100;
         applicationExpiryPeriod = 100;
+        rewardPercentage = 50;
     }
 
-    event ProposalSubmitted(uint indexed proposalId);
 
     function submitProposal(
         bytes _data,
@@ -121,9 +130,7 @@ contract TCR is Controlled {
         }
     }
 
-    event ProposalDelisted(uint256 indexed proposalId);
-    event ProposalChallenged(uint256 indexed proposalId);
-
+   
     function challenge(uint256 _proposalId) external returns (uint challengeID) {
         Proposal storage p = proposals[_proposalId];
 
@@ -148,9 +155,9 @@ contract TCR is Controlled {
 
         challenges[challengeID] = Challenge({
             challenger: msg.sender,
-            rewardPool: ((100 - 50) * submitPrice) / 100,   // TODO: 50% goes to whoever submits the challenge
+            rewardPool: ((100 - rewardPercentage) * submitPrice) / 100,
             stake: submitPrice,
-            totalTokens: 0,
+            winningTokens: 0,
             resolved: false
         });
 
@@ -162,11 +169,11 @@ contract TCR is Controlled {
 
     function processProposal(uint256 _proposalId) public {
         if (canBeWhitelisted(_proposalId)) {
-          whitelistApplication(_proposalId);
+            whitelistApplication(_proposalId);
         } else if (challengeCanBeResolved(_proposalId)) {
-          resolveChallenge(_proposalId);
+            resolveChallenge(_proposalId);
         } else {
-          revert();
+            revert();
         }
     }
 
@@ -177,7 +184,9 @@ contract TCR is Controlled {
             proposals[_proposalId].applicationExpiry < block.number && 
             !isWhitelisted(_proposalId) &&
             (challengeID == 0 || challenges[challengeID].resolved == true)
-        ) { return true; }
+        ) {
+            return true;
+        }
 
         return false;
     }
@@ -186,7 +195,7 @@ contract TCR is Controlled {
         return proposals[_proposalId].whitelisted;
     }
 
-    event ProposalWhitelisted(uint256 proposalId);
+    
 
     function whitelistApplication(uint256 _proposalId) private {
         proposals[_proposalId].whitelisted = true;
@@ -201,27 +210,22 @@ contract TCR is Controlled {
 
     function resolveChallenge(uint256 _proposalId) private {
         uint challengeID = proposals[_proposalId].challengeID;
-        challenges[challengeID].resolved = true;
 
+        Challenge storage challenge = challenges[challengeID];
+        
         uint reward = determineReward(challengeID);
-
-/*
-            !proposalManager.isVotingAvailable(_proposalId) &&
-            !proposalManager.hasVotesRecorded(_proposalId) &&
-            proposalManager.getProposalFinalResult(_proposalId) == RESULT_NULL &&*/
-
-
-
         uint8 votingResult = proposalManager.getProposalFinalResult(_proposalId);
         
-        challenges[challengeID].totalTokens =
-            proposalManager.getProposalResultsByVote(_proposalId, votingResult);
+        challenge.resolved = true;
+        challenge.winningTokens = proposalManager.getProposalResultsByVote(_proposalId, votingResult);
 
-        if (votingResult == RESULT_APPROVE) { // TODO:
+        if (votingResult == RESULT_APPROVE) {
             whitelistApplication(_proposalId);
             proposals[_proposalId].balance += reward;
+            emit ChallengeFailed(_proposalId, challengeID, challenge.rewardPool, challenge.winningTokens);
         } else {
             resetListing(_proposalId);
+            emit ChallengeSucceeded(_proposalId, challengeID, challenge.rewardPool, challenge.winningTokens);
             require(token.transfer(challenges[challengeID].challenger, reward));
         }
     }
@@ -237,17 +241,48 @@ contract TCR is Controlled {
     }
 
     function determineReward(uint _challengeID) public view returns (uint) {
-        require(_challengeID > 0 && challenges[_challengeID].resolved);
+        require(_challengeID > 0 && !challenges[_challengeID].resolved);
         require(proposalManager.isVotingAvailable(_challengeID) == false);
-        return 1; // TODO:
 
-// Determine reward must check the staked amount the proposal has
+        // Edge case, nobody voted, give all tokens to the challenger.
+        uint8 votingResult = proposalManager.getProposalFinalResult(_challengeID);
+        if (proposalManager.getProposalResultsByVote(_challengeID, votingResult) == 0) {
+            return 2 * challenges[_challengeID].stake;
+        }
 
+        return (2 * challenges[_challengeID].stake) - challenges[_challengeID].rewardPool;
     }
 
-    // TODO: function claimReward(uint _challengeID) public
+    function claimReward(uint _challengeID, uint _salt) public {
+        require(challenges[_challengeID].tokenClaims[msg.sender] == false);
+        require(challenges[_challengeID].resolved == true);
 
-    event SubmitPriceUpdated(address who, uint256 stakeValue);
+        
+        // uint voterTokens = voting.getNumPassingTokens(msg.sender, _challengeID, _salt);
+        // uint reward = voterReward(msg.sender, _challengeID, _salt);
+        //TODO: 
+        uint voterTokens = 1;
+        uint reward = 1;
+
+        challenges[_challengeID].winningTokens -= voterTokens;
+        challenges[_challengeID].rewardPool -= reward;
+        challenges[_challengeID].tokenClaims[msg.sender] = true;
+        require(token.transfer(msg.sender, reward));
+    }
+
+    function voterReward(address _voter, uint _challengeID)
+        public view returns (uint) 
+    {
+        uint winningTokens = challenges[_challengeID].winningTokens;
+        uint rewardPool = challenges[_challengeID].rewardPool;
+        // uint voterTokens = voting.getNumPassingTokens(_voter, _challengeID, _salt);
+        
+        //TODO: 
+        uint voterTokens = 1;
+
+        return (voterTokens * rewardPool) / winningTokens;
+    }
+    
 
     function setSubmitPrice(address _who, bool _allowedSubmitter, uint256 _stakeValue) 
         external
@@ -259,6 +294,12 @@ contract TCR is Controlled {
         } else {
             delete submitAllowances[_who];   
         }
+    }
+
+    function setRewardPercentage(uint percentage) external onlyController
+    {
+        require(percentage >= 0 && percentage <= 100);
+        rewardPercentage = percentage;
     }
 
     function getSubmitPrice(address _who)
