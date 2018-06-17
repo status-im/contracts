@@ -10,10 +10,8 @@ import "../democracy/ProposalManager.sol";
  @author Richard Ramos (Status Research & Development GmbH) 
  @dev TCR proposal using ideas from ProposalCuration and https://github.com/skmgoldin/tcr
         This contract allows the management of a list of Proposals using a voting
-        mechanism in order to publish and remove them. Main difference between this and
-        tcr is that this uses Status' democracy contracts and doesn't require a registry
-        for managing parameters, price can be set to specific addresses, and some events
-        where removed.
+        mechanism in order to publish and remove them. This uses Status' democracy contracts 
+        and doesn't require a registry for managing parameters, set price to specific addresses
  **/
 contract TCR is Controlled {
 
@@ -100,9 +98,9 @@ contract TCR is Controlled {
 
         // Default values
         proposalManager.setQuorum(60);
-        commitPeriodLength = 100;
-        applyStageLength = 100;
-        rewardPercentage = 70;
+        commitPeriodLength = 8640;
+        applyStageLength = 8640;
+        rewardPercentage = 50;
     }
 
     /**
