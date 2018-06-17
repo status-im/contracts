@@ -190,7 +190,7 @@ contract TCR is Controlled {
 
         // Touch and go
         if(p.balance < submitPrice){
-            resetListing(_proposalId);
+            removeProposal(_proposalId);
             emit ProposalDelisted(_proposalId);
             return 0;
         }
@@ -231,8 +231,8 @@ contract TCR is Controlled {
     }
 
     function canBeWhitelisted(uint256 _proposalId)
-        view
         public
+        view
         returns (bool)
     {
         uint challengeId = proposals[_proposalId].challengeId;
@@ -249,25 +249,33 @@ contract TCR is Controlled {
     }
 
     function isWhitelisted(uint256 _proposalId)
-        view
         public
+        view
         returns (bool whitelisted)
     {
         return proposals[_proposalId].whitelisted;
     }
     
-    function whitelistApplication(uint256 _proposalId) private {
+    function whitelistApplication(uint256 _proposalId)
+        private 
+    {
         proposals[_proposalId].whitelisted = true;
         emit ProposalWhitelisted(_proposalId);
     }
 
-    function challengeCanBeResolved(uint256 _proposalId) view public returns (bool) {
+    function challengeCanBeResolved(uint256 _proposalId)
+        public
+        view
+        returns (bool)
+    {
         uint challengeId = proposals[_proposalId].challengeId;
         require(challengeId > 0 && !challenges[challengeId].resolved);
         return proposalManager.isVotingAvailable(challengeId) == false;
     }
 
-    function resolveChallenge(uint256 _proposalId) private {
+    function resolveChallenge(uint256 _proposalId) 
+        private 
+    {
         uint challengeId = proposals[_proposalId].challengeId;
 
         Challenge storage c = challenges[challengeId];
@@ -283,13 +291,13 @@ contract TCR is Controlled {
             proposals[_proposalId].balance += reward;
             emit ChallengeFailed(_proposalId, challengeId, c.rewardPool, c.winningTokens);
         } else {
-            resetListing(_proposalId);
+            removeProposal(_proposalId);
             emit ChallengeSucceeded(_proposalId, challengeId, c.rewardPool, c.winningTokens);
             require(token.transfer(c.challenger, reward));
         }
     }
 
-    function resetListing(uint256 _proposalId)
+    function removeProposal(uint256 _proposalId)
         private
     {
         Proposal storage p = proposals[_proposalId];
@@ -406,7 +414,7 @@ contract TCR is Controlled {
         uint _applyStageLength,
         uint _commitPeriodLength
     )
-        public
+        external
         onlyController
     {
         commitPeriodLength = _commitPeriodLength;
