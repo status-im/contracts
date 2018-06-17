@@ -4,6 +4,16 @@ import "../common/Controlled.sol";
 import "../token/MiniMeTokenInterface.sol";
 import "../democracy/ProposalManager.sol";
 
+/**
+ @title Token Curated Registry
+ @author Richard Ramos (Status Research & Development GmbH) 
+ @dev TCR proposal using ideas from ProposalCuration and https://github.com/skmgoldin/tcr
+        This contract allows the management of a list of Proposals using a voting
+        mechanism in order to publish and remove them. Main difference between this and
+        tcr is that this uses Status' democracy contracts and doesn't require a registry
+        for managing parameters, price can be set to specific addresses, and some events
+        where removed.
+ **/
 contract TCR is Controlled {
 
     uint256 public constant RESULT_NULL = 0;
@@ -18,9 +28,14 @@ contract TCR is Controlled {
 
     bytes32 topic;
 
-    uint votingPeriod;
-    uint applicationExpiryPeriod;
-    uint rewardPercentage;
+    // Number of blocks where voting a challenged proposal is allowed
+    uint public votingPeriod;
+    
+    // Number of blocks until a unchalleged proposal can be whitelisted
+    uint public applicationExpiryPeriod;
+    
+    // Percentage of the stake a proposal owner or challenger earns depending on challenge outcome
+    uint public rewardPercentage;
 
     struct SubmitPrice {
         bool allowedSubmitter;
@@ -57,6 +72,12 @@ contract TCR is Controlled {
     event ChallengeSucceeded(uint256 indexed proposalId, uint indexed challengeId, uint rewardPool, uint totalTokens);
     event ChallengeFailed(uint256 indexed proposalId, uint indexed challengeId, uint rewardPool, uint totalTokens);
 
+    /**
+     @notice Constructor of TCR
+     @param _token Address of Status Network Token (or any ERC20 compatible token)
+     @param _trustNet Address of a TrustNetworkInterface contract
+     @param _topic Topic to be used for the ProposalManager
+     **/
     constructor(
         MiniMeTokenInterface _token,
         TrustNetworkInterface _trustNet,
@@ -68,12 +89,19 @@ contract TCR is Controlled {
         proposalManager = new ProposalManager(_token, _trustNet);
         topic = _topic;
 
+        // Default values
         votingPeriod = 100;
         applicationExpiryPeriod = 100;
         rewardPercentage = 70;
     }
 
-
+    /**
+     @notice Submit a proposal to registry
+     @param _data Data that represents a proposal (ie. IPFS Hash, etc)
+     @param _depositAmount amount of tokens used as balance for challenges 
+                             and publishing price. Must be greater or equal 
+                             to submission price
+     **/
     function submitProposal(
         bytes _data,
         uint256 _depositAmount
@@ -99,14 +127,24 @@ contract TCR is Controlled {
         emit ProposalSubmitted(proposalId);
     }
 
-    function increaseBalance(uint256 _proposalId, uint _amount) external {
+    function increaseBalance(
+        uint256 _proposalId,
+        uint _amount
+    ) 
+        external
+    {
         Proposal storage p = proposals[_proposalId];
         require(p.owner == msg.sender);
         require(token.transferFrom(msg.sender, this, _amount));
         p.balance += _amount;
     }
 
-    function reduceBalance(uint256 _proposalId, uint _amount) external {
+    function reduceBalance(
+        uint256 _proposalId,
+        uint _amount
+    )
+        external
+    {
         Proposal storage p = proposals[_proposalId];
         require(p.owner == msg.sender);
         require(_amount <= p.balance);
@@ -116,7 +154,9 @@ contract TCR is Controlled {
         require(token.transfer(msg.sender, _amount));
     }
 
-    function withdrawProposal(uint256 _proposalId) 
+    function withdrawProposal(
+        uint256 _proposalId
+    ) 
         external 
     {
         require(proposals[_proposalId].whitelisted == true);
@@ -129,8 +169,7 @@ contract TCR is Controlled {
             require(token.transfer(refundAddress, refundValue));
         }
     }
-
-   
+    
     function challenge(uint256 _proposalId) external returns (uint challengeId) {
         Proposal storage p = proposals[_proposalId];
 
@@ -194,9 +233,7 @@ contract TCR is Controlled {
     function isWhitelisted(uint256 _proposalId) view public returns (bool whitelisted) {
         return proposals[_proposalId].whitelisted;
     }
-
     
-
     function whitelistApplication(uint256 _proposalId) private {
         proposals[_proposalId].whitelisted = true;
         emit ProposalWhitelisted(_proposalId);
@@ -271,7 +308,6 @@ contract TCR is Controlled {
         require(token.transfer(msg.sender, reward));
     }
 
-
     function voterReward(uint _challengeId)
         public view returns (uint reward, uint votes) 
     {
@@ -294,25 +330,6 @@ contract TCR is Controlled {
         reward = (voterTokens * rewardPool) / winningTokens;
     }
     
-
-    function setSubmitPrice(address _who, bool _allowedSubmitter, uint256 _stakeValue) 
-        external
-        onlyController
-    {
-        if (_allowedSubmitter || _who == address(0)) {
-            submitAllowances[_who] = SubmitPrice(_allowedSubmitter, _stakeValue);
-            emit SubmitPriceUpdated(_who, _stakeValue);
-        } else {
-            delete submitAllowances[_who];   
-        }
-    }
-
-    function setRewardPercentage(uint percentage) external onlyController
-    {
-        require(percentage >= 0 && percentage <= 100);
-        rewardPercentage = percentage;
-    }
-
     function getSubmitPrice(address _who)
         public 
         view 
@@ -326,15 +343,47 @@ contract TCR is Controlled {
             return allowance.stakePrice;
         }
     }
-
-    function updatePeriods(uint _applicationExpiryPeriod, uint _votingPeriod)
+    
+    function proposalExists(uint256 _proposalId) view public returns (bool exists) {
+        return proposals[_proposalId].applicationExpiry > 0;
+    }
+    
+    // CONTRACT MANAGEMENT
+    
+    function setSubmitPrice(
+        address _who,
+        bool _allowedSubmitter,
+        uint256 _stakeValue
+    ) 
+        external
+        onlyController
+    {
+        if (_allowedSubmitter || _who == address(0)) {
+            submitAllowances[_who] = SubmitPrice(_allowedSubmitter, _stakeValue);
+            emit SubmitPriceUpdated(_who, _stakeValue);
+        } else {
+            delete submitAllowances[_who];   
+        }
+    }
+    
+    function updatePeriods(
+        uint _applicationExpiryPeriod,
+        uint _votingPeriod
+    )
         public
-        onlyController {
+        onlyController
+    {
         votingPeriod = _votingPeriod;
         applicationExpiryPeriod = _applicationExpiryPeriod;
     }
-
-    function proposalExists(uint256 _proposalId) view public returns (bool exists) {
-        return proposals[_proposalId].applicationExpiry > 0;
+    
+    function setRewardPercentage(
+        uint percentage
+    )
+        external
+        onlyController
+    {
+        require(percentage <= 100);
+        rewardPercentage = percentage;
     }
 }
