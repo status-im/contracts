@@ -19,6 +19,8 @@ contract ProposalManager is Controlled {
     uint256 public tabulationBlockDelay;
     Proposal[] public proposals;
     
+    uint public quorumPercentage; 
+
     struct Proposal {
         bytes32 topic; 
         bytes32 txHash;
@@ -50,6 +52,8 @@ contract ProposalManager is Controlled {
         trustNet = _trustNet;
         token = _token;
         proposals.length++;
+
+        quorumPercentage = 50;
         
     }
 
@@ -118,7 +122,9 @@ contract ProposalManager is Controlled {
         require(proposal.result == Vote.Null);
         uint256 totalTokens = token.totalSupplyAt(proposal.voteBlockEnd);
         uint256 approvals = proposal.results[uint8(Vote.Approve)];
-        uint256 approvalQuorum = (totalTokens / 2);
+
+        uint256 approvalQuorum = (totalTokens * quorumPercentage / 100);
+
         if(approvals >= approvalQuorum) {
             proposal.result = Vote.Approve;
         } else {
@@ -127,6 +133,12 @@ contract ProposalManager is Controlled {
         emit ProposalResult(_proposalId, uint8(proposal.result));
     }
 
+    function setQuorum(uint _percentage)
+        public 
+        onlyController {
+        require(_percentage > 0 && _percentage <= 100);
+        quorumPercentage = _percentage;
+    }
 
     function hasVotesRecorded(uint256 _proposalId)
         external
@@ -182,7 +194,6 @@ contract ProposalManager is Controlled {
         returns (uint256[] votes) 
     {
         Proposal memory proposal = proposals[_proposalId];
-        address[] memory voters = proposal.voters;
         uint256 len = proposal.voters.length;
         votes = new uint256[](4);
         for(uint256 i = 0; i < len; i++) {

@@ -35,7 +35,7 @@ config({
     },
     "ProposalManager": { "deploy": false },
     "TCR": {
-        "args": ["$SNT", "$TrustNetwork", "0x00"],
+        "args": ["$SNT", "$TrustNetwork"],
         "gasLimit": 4000000
     }
   }
