@@ -6,6 +6,7 @@ import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32 } from './utils';
 import FieldGroup from '../standard/FieldGroup';
+import LinearProgress from '@material-ui/core/LinearProgress';
 
 const { soliditySha3 } = web3.utils;
 
@@ -23,7 +24,8 @@ const InnerForm = ({
   domainPrice,
 }) => (
   <form onSubmit={handleSubmit}>
-    {!subDomain && <FieldGroup
+    {!subDomain &&
+    <FieldGroup
       id="subDomain"
       name="subDomain"
       type="text"
@@ -33,7 +35,8 @@ const InnerForm = ({
       value={values.subDomain}
       error={errors.subDomain}
     />}
-    {!domainName && <FieldGroup
+    {!domainName &&
+    <FieldGroup
       id="domainName"
       name="domainName"
       type="text"
@@ -46,16 +49,17 @@ const InnerForm = ({
           mode="strong"
           style={{ marginTop: '5px' }}
           onClick={() => {
-            ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
-                                .call()
-                                .then((res) => { setFieldValue('price', res); });
+              ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
+                                  .call()
+                                  .then((res) => { setFieldValue('price', res); });
           }}
         >
           Get Price
         </Button>
       }
     />}
-    {!domainPrice && <FieldGroup
+    {!domainPrice &&
+    <FieldGroup
       id="price"
       name="price"
       label="Domain Price"
@@ -83,7 +87,7 @@ const InnerForm = ({
       error={errors.address}
       button={<Button mode="strong" style={{ padding: '5px 15px 5px 15px', marginTop: '5px' }} onClick={() => setFieldValue('address', web3.eth.defaultAccount)}>Use My Primary Address</Button>}
     />
-    <Button wide mode="strong" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
+    {!isSubmitting ? <Button wide mode="strong" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button> : <LinearProgress />}
   </form>
 );
 
