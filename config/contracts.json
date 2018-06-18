@@ -15,10 +15,10 @@
         "args": [ ]
       },
       "ENSRegistry": {
-        "deploy": false
+        "deploy": true
       },
       "PublicResolver": {
-        "deploy": false
+        "deploy": true
       },
       "ENSSubdomainRegistry": {
         "args": [
@@ -78,6 +78,9 @@
       },
       "PublicResolver": {
         "address": "0x5FfC014343cd971B7eb70732021E26C35B744cc4"
+      },
+      "ENSSubdomainRegistry": {
+        "address": "0x149651FF48AEDBe84ab2551D2CaA48538449CEA5"
       }
     }
   },
