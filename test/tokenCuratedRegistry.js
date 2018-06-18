@@ -71,7 +71,7 @@ describe("TCR", function () {
         submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
 
         const newPrice = 100;
-        receipt = await TCR.methods.setSubmitPrice(utils.zeroAddress, true, newPrice).send();
+        receipt = await TCR.methods.setSubmitPrice(utils.zeroAddress, false, newPrice).send();
   
         submitPrice = await TCR.methods.getSubmitPrice(accounts[0]).call();
         assert.equal(newPrice, submitPrice, "Prices doesn't match");
@@ -220,7 +220,7 @@ describe("TCR", function () {
 
         // Test
         submitPrice = parseInt(submitPrice) + 10;
-        receipt = await TCR.methods.setSubmitPrice(utils.zeroAddress, true, submitPrice).send();
+        receipt = await TCR.methods.setSubmitPrice(utils.zeroAddress, false, submitPrice).send();
 
         receipt = await SNT.methods.approve(TCR.options.address, 0).send({from: accounts[1]});
         receipt = await SNT.methods.approve(TCR.options.address, submitPrice).send({from: accounts[1]});

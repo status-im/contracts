@@ -28,7 +28,7 @@ contract TCR is Controlled {
     MiniMeTokenInterface public token;
 
     struct SubmitPrice {
-        bool allowedSubmitter;
+        bool priceSet;
         uint256 stakePrice;
     }
 
@@ -135,6 +135,11 @@ contract TCR is Controlled {
         emit ProposalSubmitted(proposalId);
     }
 
+    /**
+     @notice Increase proposal balance
+     @param _proposalId Id of the proposal to increase balance
+     @param _amount Amount of tokens to add to balance
+     **/
     function increaseBalance(
         uint256 _proposalId,
         uint _amount
@@ -147,6 +152,11 @@ contract TCR is Controlled {
         p.balance += _amount;
     }
 
+    /**
+     @notice Reduce proposal balance. Must be grater than submitPrice
+     @param _proposalId Id of the proposal to increase balance
+     @param _amount Amount of tokens to add to balance
+     **/
     function reduceBalance(
         uint256 _proposalId,
         uint _amount
@@ -162,6 +172,12 @@ contract TCR is Controlled {
         require(token.transfer(msg.sender, _amount));
     }
 
+    /**
+     @notice Withdraw proposal from TCR.
+     @dev To withdraw a proposal, it must be whitelisted and unchallenged.
+          It will refund the balance to the proposal owner
+     @param _proposalId Id of the proposal to increase balance
+     **/
     function withdrawProposal(uint256 _proposalId) 
         external 
     {
@@ -374,7 +390,7 @@ contract TCR is Controlled {
         returns (uint256 price)
     {
         SubmitPrice memory allowance = submitAllowances[_who];
-        if(allowance.allowedSubmitter){
+        if(allowance.priceSet){
             return allowance.stakePrice;
         } else {
             allowance = submitAllowances[address(0)];
@@ -392,22 +408,34 @@ contract TCR is Controlled {
     
     // TCR Parameter Management
     
+    /**
+     @notice Set proposal submission price for everyone, specific addresses
+             or delete submission price if update is false
+     @param _who Address to set price, use address(0) for everyone
+     @param _remove Remove the price info for an address 
+     **/
     function setSubmitPrice(
         address _who,
-        bool _allowedSubmitter,
+        bool _remove,
         uint256 _stakeValue
     ) 
         external
         onlyController
     {
-        if (_allowedSubmitter || _who == address(0)) {
-            submitAllowances[_who] = SubmitPrice(_allowedSubmitter, _stakeValue);
-            emit SubmitPriceUpdated(_who, _stakeValue);
-        } else {
+        if(_remove){
+            require(_who != address(0));
             delete submitAllowances[_who];   
+        } else {
+            submitAllowances[_who] = SubmitPrice(true, _stakeValue);
+            emit SubmitPriceUpdated(_who, _stakeValue);
         }
     }
     
+    /**
+     @notice Update whitelisting and voting period in block numbers
+     @param _applyStageLength Number of blocks before a proposal can be whitelisted
+     @param _commitPeriodLength Number of blocks where voting is allowed in a challenged proposal
+     **/
     function updatePeriods(
         uint _applyStageLength,
         uint _commitPeriodLength
@@ -419,6 +447,11 @@ contract TCR is Controlled {
         applyStageLength = _applyStageLength;
     }
     
+    /**
+     @notice Set porcentage of the reward that goes to the owner or challenger of a proposal
+     @dev This percentage is used to determine the reward that goes to whoever wins the challenge
+          being the rest of the proportion given to the voters
+     **/
     function setRewardPercentage(uint _percentage)
         external
         onlyController
@@ -427,6 +460,11 @@ contract TCR is Controlled {
         rewardPercentage = _percentage;
     }
 
+    /**
+     @notice Set majority percentage required
+     @dev In case simple majority is not desired. The percentage may be changed
+     @param _percentage Percentage required: 0 < N <= 100
+     **/
     function setRequiredMajority(uint _percentage)
         external
         onlyController
