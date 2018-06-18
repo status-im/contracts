@@ -106,9 +106,10 @@ contract TCR is Controlled {
     /**
      @notice Submit a proposal to registry
      @param _data Data that represents a proposal (ie. IPFS Hash, etc)
-     @param _depositAmount amount of tokens used as balance for challenges 
+     @param _depositAmount Amount of tokens used as balance for challenges 
                              and publishing price. Must be greater or equal 
                              to submission price
+    @return Proposal Id
      **/
     function submitProposal(
         bytes _data,
@@ -184,14 +185,15 @@ contract TCR is Controlled {
         require(proposals[_proposalId].whitelisted == true);
         require(proposals[_proposalId].challengeId == 0 || challenges[proposals[_proposalId].challengeId].resolved);
 
-        uint256 refundValue = proposals[_proposalId].balance;
-        address refundAddress = proposals[_proposalId].owner;
-        delete proposals[_proposalId];
-        if (refundValue > 0) {
-            require(token.transfer(refundAddress, refundValue));
-        }
+        removeProposal(_proposalId);
     }
     
+    /**
+     @notice Challenge an existing unchallenged proposal
+     @dev This will also remove a proposal that doesn't have enough balance to cover the submission price
+     @param _proposalId Id
+     @return challenge Id
+     */
     function challenge(uint256 _proposalId) 
         external 
         returns (uint challengeId) 
@@ -232,11 +234,16 @@ contract TCR is Controlled {
         emit ProposalChallenged(_proposalId, challengeId);
     }
 
+    /**
+     @notice Process any proposal change or revert if there are no changes pending
+     @dev Will whitelist a proposal or resolve a pending challenge
+     @param _proposalId Id of the proposal
+     */
     function processProposal(uint256 _proposalId)
         public
     {
         if (canBeWhitelisted(_proposalId)) {
-            whitelistApplication(_proposalId);
+            whitelistProposal(_proposalId);
         } else if (challengeCanBeResolved(_proposalId)) {
             resolveChallenge(_proposalId);
         } else {
@@ -244,6 +251,12 @@ contract TCR is Controlled {
         }
     }
 
+    /**
+     @notice Determine if a proposal can be whitelisted
+     @dev Call this function before invoking updateProposal to save gas
+     @param _proposalId Id of the proposal to verify
+     @return Boolean that indicates if a proposal can be whitelisted or not
+     */
     function canBeWhitelisted(uint256 _proposalId)
         public
         view
@@ -262,6 +275,12 @@ contract TCR is Controlled {
         return false;
     }
 
+    /**
+     @notice Determine if a proposal is whitelisted or not
+     @dev A proposal is whitelisted if it reaches the apply length unchallenged or if it survives a challenge
+     @param _proposalId Id of the proposal
+     @return Boolean to indicate if it is whitelisted
+    */
     function isWhitelisted(uint256 _proposalId)
         public
         view
@@ -270,13 +289,24 @@ contract TCR is Controlled {
         return proposals[_proposalId].whitelisted;
     }
     
-    function whitelistApplication(uint256 _proposalId)
+    /**
+     @dev Whitelist a proposal
+     @param _proposalId Id of the proposal to whitelist
+     */
+    function whitelistProposal(uint256 _proposalId)
         private 
     {
         proposals[_proposalId].whitelisted = true;
         emit ProposalWhitelisted(_proposalId);
     }
 
+    /**
+     @notice Determine if a proposal challenge can be resolved.
+     @dev Call this function before invoking updateProposal to save gas
+     @dev Will revert if proposal is unchallenged
+     @param _proposalId Id of the proposal to verify
+     @return Boolean that indicates if a proposal challenge can be solved or not
+     */
     function challengeCanBeResolved(uint256 _proposalId)
         public
         view
@@ -287,6 +317,11 @@ contract TCR is Controlled {
         return proposalManager.isVotingAvailable(challengeId) == false;
     }
 
+    /**
+     @dev Resolve a proposal challenge after voting is complete. 
+          Also calculate rewards and transfer tokens
+     @param _proposalId Id of the challenged proposal
+     */
     function resolveChallenge(uint256 _proposalId) 
         private 
     {
@@ -301,7 +336,7 @@ contract TCR is Controlled {
         c.winningTokens = proposalManager.getProposalResultsByVote(challengeId, votingResult);
 
         if (votingResult == RESULT_APPROVE || c.winningTokens == 0) {
-            whitelistApplication(_proposalId);
+            whitelistProposal(_proposalId);
             proposals[_proposalId].balance += reward;
             emit ChallengeFailed(_proposalId, challengeId, c.rewardPool, c.winningTokens);
         } else {
@@ -311,6 +346,10 @@ contract TCR is Controlled {
         }
     }
 
+    /**
+     @dev Remove a proposal from listing and refund balance to owner
+     @param _proposalId Proposal to be removed
+     */
     function removeProposal(uint256 _proposalId)
         private
     {
@@ -323,6 +362,12 @@ contract TCR is Controlled {
         }
     }
 
+    /**
+     @notice Determine reward earned by the proposal owner or challenger after voting ends
+     @dev Requires voting process to conclude
+     @param _challengeId Id of the challenge to verify rewards
+     @return Reward amount 
+     */
     function determineReward(uint _challengeId) 
         public
         view
@@ -340,28 +385,35 @@ contract TCR is Controlled {
         return (2 * challenges[_challengeId].stake) - challenges[_challengeId].rewardPool;
     }
 
-    function claimReward(uint _proposalId) 
+    /**
+     @notice Claim reward from a challenge after it ends. Will transfer token proportion
+     @dev Only invoke this function if you voted for a challenge and the option selected was the final result
+     @param _challengeId Id of the challenge
+     */
+    function claimReward(uint _challengeId) 
         public 
     {
-        Proposal storage p = proposals[_proposalId];
-        uint challengeId = p.challengeId;
-
-        require(challenges[challengeId].tokenClaims[msg.sender] == false);
-        require(challenges[challengeId].resolved == true);
+        require(challenges[_challengeId].tokenClaims[msg.sender] == false);
+        require(challenges[_challengeId].resolved == true);
 
         uint reward;
         uint voterTokens;
 
-        (reward, voterTokens) = voterReward(challengeId);
+        (reward, voterTokens) = getVoterReward(_challengeId);
 
-        challenges[challengeId].winningTokens -= voterTokens;
-        challenges[challengeId].rewardPool -= reward;
-        challenges[challengeId].tokenClaims[msg.sender] = true;
+        challenges[_challengeId].winningTokens -= voterTokens;
+        challenges[_challengeId].rewardPool -= reward;
+        challenges[_challengeId].tokenClaims[msg.sender] = true;
         
         require(token.transfer(msg.sender, reward));
     }
 
-    function voterReward(uint _challengeId)
+    /**
+     @notice Get voter reward and votes for a specific challenge
+     @param _challengeId Id of the challenge
+     @return Reward amount and number of votes
+     */
+    function getVoterReward(uint _challengeId)
         public
         view
         returns (uint reward, uint votes) 
@@ -384,6 +436,11 @@ contract TCR is Controlled {
         reward = (voterTokens * rewardPool) / winningTokens;
     }
     
+    /**
+     @notice Get submission price to submit proposal or challenge
+     @param _who Get price for address (normally msg.sender)
+     @return price of the submission
+     */
     function getSubmitPrice(address _who)
         public 
         view 
@@ -398,6 +455,11 @@ contract TCR is Controlled {
         }
     }
     
+    /**
+     * @notice Determine if a proposal exists
+     * @param _proposalId Id of the proposal to look for
+     * @return Boolean that indicates if a proposal exists or not
+     */
     function proposalExists(uint256 _proposalId) 
         view
         public

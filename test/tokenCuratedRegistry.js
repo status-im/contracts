@@ -354,7 +354,7 @@ describe("TCR", function () {
         assert(proposalBalanceB, proposalBalanceA + challengeStake - parseInt(challenge.rewardPool), "Proposal Balance did not increase");
         
         const account2BalanceA = parseInt(await SNT.methods.balanceOf(accounts[2]).call());
-        receipt = await TCR.methods.claimReward(proposalId).send({from: accounts[2]});
+        receipt = await TCR.methods.claimReward(challengeId).send({from: accounts[2]});
         const account2BalanceB = parseInt(await SNT.methods.balanceOf(accounts[2]).call());
 
         // TODO: calculate balance of account 2 to see if it increased by 8 (based on 30% for voters)
