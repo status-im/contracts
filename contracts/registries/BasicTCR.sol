@@ -9,7 +9,7 @@ import "../democracy/ProposalManager.sol";
  @title Token Curated Registry
  @author Richard Ramos (Status Research & Development GmbH) 
  @dev TCR proposal using ideas from ProposalCuration and https://github.com/skmgoldin/tcr
-        This contract allows the management of a list of Proposals using a voting
+        This contract allows the management of a list of items using a voting
         mechanism in order to publish and remove them. This uses Status' democracy contracts 
         and doesn't require a registry for managing parameters, set price to specific addresses
  **/
@@ -32,7 +32,7 @@ contract BasicTCR is Controlled {
         uint256 stakePrice;
     }
 
-    struct Proposal {
+    struct Item {
         bool whitelisted;
         address owner;
         uint256 balance;
@@ -52,35 +52,35 @@ contract BasicTCR is Controlled {
 
     uint256 nonce;
 
-    mapping(uint256 => Proposal) public proposals; 
+    mapping(uint256 => Item) public items; 
 
     mapping(uint => Challenge) public challenges;
 
     // Submission prices by address
     mapping (address => SubmitPrice) submitAllowances;
 
-    // Number of blocks where voting a challenged proposal is allowed
+    // Number of blocks where voting a challenged item is allowed
     uint public commitPeriodLength;
 
-    // Number of blocks until a unchalleged proposal can be whitelisted
+    // Number of blocks until a unchalleged item can be whitelisted
     uint public applyStageLength;
     
-    // Percentage of the stake a proposal owner or challenger earns depending on challenge outcome
+    // Percentage of the stake a item owner or challenger earns depending on challenge outcome
     uint public rewardPercentage;
 
-    event ProposalSubmitted(uint indexed proposalId);
+    event ItemSubmitted(uint indexed itemId);
     
-    event ProposalDelisted(uint256 indexed proposalId);
+    event ItemDelisted(uint256 indexed itemId);
     
-    event ProposalChallenged(uint256 indexed proposalId, uint256 indexed challengeId);
+    event ItemChallenged(uint256 indexed itemId, uint256 indexed challengeId);
     
-    event ProposalWhitelisted(uint256 indexed proposalId);
+    event ItemWhitelisted(uint256 indexed itemId);
     
     event SubmitPriceUpdated(address indexed who, uint256 stakeValue);
     
-    event ChallengeSucceeded(uint256 indexed proposalId, uint indexed challengeId, uint rewardPool, uint totalTokens);
+    event ChallengeSucceeded(uint256 indexed itemId, uint indexed challengeId, uint rewardPool, uint totalTokens);
     
-    event ChallengeFailed(uint256 indexed proposalId, uint indexed challengeId, uint rewardPool, uint totalTokens);
+    event ChallengeFailed(uint256 indexed itemId, uint indexed challengeId, uint rewardPool, uint totalTokens);
 
     /**
      @notice Constructor of TCR
@@ -104,28 +104,28 @@ contract BasicTCR is Controlled {
     }
 
     /**
-     @notice Submit a proposal to registry
-     @param _data Data that represents a proposal (ie. IPFS Hash, etc)
+     @notice Submit an item to registry
+     @param _data Data that represents an item (ie. IPFS Hash, etc)
      @param _depositAmount Amount of tokens used as balance for challenges 
                              and publishing price. Must be greater or equal 
                              to submission price
-    @return Proposal Id
+    @return Item Id
      **/
-    function submitProposal(
+    function submitItem(
         bytes _data,
         uint256 _depositAmount
     )
         external
-        returns (uint256 proposalId) 
+        returns (uint256 itemId) 
     {
         uint256 submitPrice = getSubmitPrice(msg.sender);
 
         require(token.allowance(msg.sender, address(this)) >= submitPrice);
         require(token.transferFrom(msg.sender, address(this), _depositAmount));
 
-        proposalId = nonce++;
+        itemId = nonce++;
 
-        proposals[proposalId] = Proposal({
+        items[itemId] = Item({
             whitelisted: false,
             owner: msg.sender,
             balance: _depositAmount,
@@ -133,38 +133,38 @@ contract BasicTCR is Controlled {
             data: _data,
             applicationExpiry: block.number + applyStageLength});
 
-        emit ProposalSubmitted(proposalId);
+        emit ItemSubmitted(itemId);
     }
 
     /**
-     @notice Increase proposal balance
-     @param _proposalId Id of the proposal to increase balance
+     @notice Increase item balance
+     @param _itemId Id of the item to increase balance
      @param _amount Amount of tokens to add to balance
      **/
     function increaseBalance(
-        uint256 _proposalId,
+        uint256 _itemId,
         uint _amount
     ) 
         external
     {
-        Proposal storage p = proposals[_proposalId];
+        Item storage p = items[_itemId];
         require(p.owner == msg.sender);
         require(token.transferFrom(msg.sender, this, _amount));
         p.balance += _amount;
     }
 
     /**
-     @notice Reduce proposal balance. Must be grater than submitPrice
-     @param _proposalId Id of the proposal to increase balance
+     @notice Reduce item balance. Must be grater than submitPrice
+     @param _itemId Id of the item to increase balance
      @param _amount Amount of tokens to add to balance
      **/
     function reduceBalance(
-        uint256 _proposalId,
+        uint256 _itemId,
         uint _amount
     )
         external
     {
-        Proposal storage p = proposals[_proposalId];
+        Item storage p = items[_itemId];
         require(p.owner == msg.sender);
         require(_amount <= p.balance);
         uint256 submitPrice = getSubmitPrice(msg.sender);
@@ -174,40 +174,40 @@ contract BasicTCR is Controlled {
     }
 
     /**
-     @notice Withdraw proposal from TCR.
-     @dev To withdraw a proposal, it must be whitelisted and unchallenged.
-          It will refund the balance to the proposal owner
-     @param _proposalId Id of the proposal to increase balance
+     @notice Withdraw item from TCR.
+     @dev To withdraw an item, it must be whitelisted and unchallenged.
+          It will refund the balance to the item owner
+     @param _itemId Id of the item to increase balance
      **/
-    function withdrawProposal(uint256 _proposalId) 
+    function withdrawItem(uint256 _itemId) 
         external 
     {
-        require(proposals[_proposalId].whitelisted == true);
-        require(proposals[_proposalId].challengeId == 0 || challenges[proposals[_proposalId].challengeId].resolved);
+        require(items[_itemId].whitelisted == true);
+        require(items[_itemId].challengeId == 0 || challenges[items[_itemId].challengeId].resolved);
 
-        removeProposal(_proposalId);
+        removeItem(_itemId);
     }
     
     /**
-     @notice Challenge an existing unchallenged proposal
-     @dev This will also remove a proposal that doesn't have enough balance to cover the submission price
-     @param _proposalId Id
+     @notice Challenge an existing unchallenged item
+     @dev This will also remove an item that doesn't have enough balance to cover the submission price
+     @param _itemId Id
      @return challenge Id
      */
-    function challenge(uint256 _proposalId) 
+    function challenge(uint256 _itemId) 
         external 
         returns (uint challengeId) 
     {
-        require(proposalExists(_proposalId));
+        require(itemExists(_itemId));
         
-        Proposal storage p = proposals[_proposalId];
+        Item storage p = items[_itemId];
 
         uint256 submitPrice = getSubmitPrice(msg.sender);
 
         // Touch and go
         if(p.balance < submitPrice){
-            removeProposal(_proposalId);
-            emit ProposalDelisted(_proposalId);
+            removeItem(_itemId);
+            emit ItemDelisted(_itemId);
             return 0;
         }
 
@@ -231,42 +231,42 @@ contract BasicTCR is Controlled {
         p.challengeId = challengeId;
         p.balance -= submitPrice;
 
-        emit ProposalChallenged(_proposalId, challengeId);
+        emit ItemChallenged(_itemId, challengeId);
     }
 
     /**
-     @notice Process any proposal change or revert if there are no changes pending
-     @dev Will whitelist a proposal or resolve a pending challenge
-     @param _proposalId Id of the proposal
+     @notice Process any item change or revert if there are no changes pending
+     @dev Will whitelist an item or resolve a pending challenge
+     @param _itemId Id of the item
      */
-    function processProposal(uint256 _proposalId)
+    function processItem(uint256 _itemId)
         public
     {
-        if (canBeWhitelisted(_proposalId)) {
-            whitelistProposal(_proposalId);
-        } else if (challengeCanBeResolved(_proposalId)) {
-            resolveChallenge(_proposalId);
+        if (canBeWhitelisted(_itemId)) {
+            whitelistItem(_itemId);
+        } else if (challengeCanBeResolved(_itemId)) {
+            resolveChallenge(_itemId);
         } else {
             revert();
         }
     }
 
     /**
-     @notice Determine if a proposal can be whitelisted
-     @dev Call this function before invoking updateProposal to save gas
-     @param _proposalId Id of the proposal to verify
-     @return Boolean that indicates if a proposal can be whitelisted or not
+     @notice Determine if an item can be whitelisted
+     @dev Call this function before invoking updateItem to save gas
+     @param _itemId Id of the item to verify
+     @return Boolean that indicates if an item can be whitelisted or not
      */
-    function canBeWhitelisted(uint256 _proposalId)
+    function canBeWhitelisted(uint256 _itemId)
         public
         view
         returns (bool)
     {
-        uint challengeId = proposals[_proposalId].challengeId;
+        uint challengeId = items[_itemId].challengeId;
         
-        if (proposalExists(_proposalId) &&
-            proposals[_proposalId].applicationExpiry < block.number && 
-            !isWhitelisted(_proposalId) &&
+        if (itemExists(_itemId) &&
+            items[_itemId].applicationExpiry < block.number && 
+            !isWhitelisted(_itemId) &&
             (challengeId == 0 || challenges[challengeId].resolved == true)
         ) {
             return true;
@@ -276,56 +276,56 @@ contract BasicTCR is Controlled {
     }
 
     /**
-     @notice Determine if a proposal is whitelisted or not
-     @dev A proposal is whitelisted if it reaches the apply length unchallenged or if it survives a challenge
-     @param _proposalId Id of the proposal
+     @notice Determine if an item is whitelisted or not
+     @dev An item is whitelisted if it reaches the apply length unchallenged or if it survives a challenge
+     @param _itemId Id of the item
      @return Boolean to indicate if it is whitelisted
     */
-    function isWhitelisted(uint256 _proposalId)
+    function isWhitelisted(uint256 _itemId)
         public
         view
         returns (bool whitelisted)
     {
-        return proposals[_proposalId].whitelisted;
+        return items[_itemId].whitelisted;
     }
     
     /**
-     @dev Whitelist a proposal
-     @param _proposalId Id of the proposal to whitelist
+     @dev Whitelist an item
+     @param _itemId Id of the item to whitelist
      */
-    function whitelistProposal(uint256 _proposalId)
+    function whitelistItem(uint256 _itemId)
         private 
     {
-        proposals[_proposalId].whitelisted = true;
-        emit ProposalWhitelisted(_proposalId);
+        items[_itemId].whitelisted = true;
+        emit ItemWhitelisted(_itemId);
     }
 
     /**
-     @notice Determine if a proposal challenge can be resolved.
-     @dev Call this function before invoking updateProposal to save gas
-     @dev Will revert if proposal is unchallenged
-     @param _proposalId Id of the proposal to verify
-     @return Boolean that indicates if a proposal challenge can be solved or not
+     @notice Determine if an item challenge can be resolved.
+     @dev Call this function before invoking updateItem to save gas
+     @dev Will revert if item is unchallenged
+     @param _itemId Id of the item to verify
+     @return Boolean that indicates if an item challenge can be solved or not
      */
-    function challengeCanBeResolved(uint256 _proposalId)
+    function challengeCanBeResolved(uint256 _itemId)
         public
         view
         returns (bool)
     {
-        uint challengeId = proposals[_proposalId].challengeId;
+        uint challengeId = items[_itemId].challengeId;
         require(challengeId > 0 && !challenges[challengeId].resolved);
         return proposalManager.isVotingAvailable(challengeId) == false;
     }
 
     /**
-     @dev Resolve a proposal challenge after voting is complete. 
+     @dev Resolve an item challenge after voting is complete. 
           Also calculate rewards and transfer tokens
-     @param _proposalId Id of the challenged proposal
+     @param _itemId Id of the challenged item
      */
-    function resolveChallenge(uint256 _proposalId) 
+    function resolveChallenge(uint256 _itemId) 
         private 
     {
-        uint challengeId = proposals[_proposalId].challengeId;
+        uint challengeId = items[_itemId].challengeId;
 
         Challenge storage c = challenges[challengeId];
         
@@ -336,34 +336,34 @@ contract BasicTCR is Controlled {
         c.winningTokens = proposalManager.getProposalResultsByVote(challengeId, votingResult);
 
         if (votingResult == RESULT_APPROVE || c.winningTokens == 0) {
-            whitelistProposal(_proposalId);
-            proposals[_proposalId].balance += reward;
-            emit ChallengeFailed(_proposalId, challengeId, c.rewardPool, c.winningTokens);
+            whitelistItem(_itemId);
+            items[_itemId].balance += reward;
+            emit ChallengeFailed(_itemId, challengeId, c.rewardPool, c.winningTokens);
         } else {
-            removeProposal(_proposalId);
-            emit ChallengeSucceeded(_proposalId, challengeId, c.rewardPool, c.winningTokens);
+            removeItem(_itemId);
+            emit ChallengeSucceeded(_itemId, challengeId, c.rewardPool, c.winningTokens);
             require(token.transfer(c.challenger, reward));
         }
     }
 
     /**
-     @dev Remove a proposal from listing and refund balance to owner
-     @param _proposalId Proposal to be removed
+     @dev Remove an item from listing and refund balance to owner
+     @param _itemId Item to be removed
      */
-    function removeProposal(uint256 _proposalId)
+    function removeItem(uint256 _itemId)
         private
     {
-        Proposal storage p = proposals[_proposalId];
+        Item storage p = items[_itemId];
         address owner = p.owner;
         uint balance = p.balance;
-        delete proposals[_proposalId];
+        delete items[_itemId];
         if (balance > 0){
             require(token.transfer(owner, balance));
         }
     }
 
     /**
-     @notice Determine reward earned by the proposal owner or challenger after voting ends
+     @notice Determine reward earned by the item owner or challenger after voting ends
      @dev Requires voting process to conclude
      @param _challengeId Id of the challenge to verify rewards
      @return Reward amount 
@@ -437,7 +437,7 @@ contract BasicTCR is Controlled {
     }
     
     /**
-     @notice Get submission price to submit proposal or challenge
+     @notice Get submission price to submit item or challenge
      @param _who Get price for address (normally msg.sender)
      @return price of the submission
      */
@@ -456,22 +456,22 @@ contract BasicTCR is Controlled {
     }
     
     /**
-     * @notice Determine if a proposal exists
-     * @param _proposalId Id of the proposal to look for
-     * @return Boolean that indicates if a proposal exists or not
+     * @notice Determine if an item exists
+     * @param _itemId Id of the item to look for
+     * @return Boolean that indicates if an item exists or not
      */
-    function proposalExists(uint256 _proposalId) 
+    function itemExists(uint256 _itemId) 
         view
         public
         returns (bool exists) 
     {
-        return proposals[_proposalId].applicationExpiry > 0;
+        return items[_itemId].applicationExpiry > 0;
     }
     
     // TCR Parameter Management
     
     /**
-     @notice Set proposal submission price for everyone, specific addresses
+     @notice Set item submission price for everyone, specific addresses
              or delete submission price if update is false
      @param _who Address to set price, use address(0) for everyone
      @param _remove Remove the price info for an address 
@@ -495,8 +495,8 @@ contract BasicTCR is Controlled {
     
     /**
      @notice Update whitelisting and voting period in block numbers
-     @param _applyStageLength Number of blocks before a proposal can be whitelisted
-     @param _commitPeriodLength Number of blocks where voting is allowed in a challenged proposal
+     @param _applyStageLength Number of blocks before an item can be whitelisted
+     @param _commitPeriodLength Number of blocks where voting is allowed in a challenged item
      **/
     function updatePeriods(
         uint _applyStageLength,
@@ -510,7 +510,7 @@ contract BasicTCR is Controlled {
     }
     
     /**
-     @notice Set porcentage of the reward that goes to the owner or challenger of a proposal
+     @notice Set porcentage of the reward that goes to the owner or challenger of an item
      @dev This percentage is used to determine the reward that goes to whoever wins the challenge
           being the rest of the proportion given to the voters
      **/
