@@ -13,7 +13,7 @@ import "../democracy/ProposalManager.sol";
         mechanism in order to publish and remove them. This uses Status' democracy contracts 
         and doesn't require a registry for managing parameters, set price to specific addresses
  **/
-contract TCR is Controlled {
+contract BasicTCR is Controlled {
 
     uint256 public constant RESULT_NULL = 0;
 
