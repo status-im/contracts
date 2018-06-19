@@ -472,7 +472,7 @@ contract BasicTCR is Controlled {
     }
 
     /**
-     @Notice Determine if an item is valid
+     @notice Determine if an item is valid
      @param _itemId Id of the item to look for
      @return Boolean that indicates if an item is valid or not
      **/
