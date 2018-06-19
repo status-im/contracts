@@ -27,6 +27,8 @@ contract BasicTCR is Controlled {
 
     MiniMeTokenInterface public token;
 
+    TrustNetworkInterface public trustNet;
+
     struct SubmitPrice {
         bool priceSet;
         uint256 stakePrice;
@@ -94,6 +96,7 @@ contract BasicTCR is Controlled {
         public
     {
         token = _token;
+        trustNet = _trustNet;
         proposalManager = new ProposalManager(_token, _trustNet);
 
         // Default values
@@ -466,6 +469,24 @@ contract BasicTCR is Controlled {
         returns (bool exists) 
     {
         return items[_itemId].applicationExpiry > 0;
+    }
+
+    /**
+     @Notice Determine if an item is valid
+     @param _itemId Id of the item to look for
+     @return Boolean that indicates if an item is valid or not
+     **/
+     function isValid(uint256 _itemId)
+        view
+        public
+        returns (bool)
+    {
+        return itemExists(_itemId) &&
+                isWhitelisted(_itemId) &&
+                (
+                    items[_itemId].challengeId == 0 ||
+                    challenges[items[_itemId].challengeId].resolved
+                );
     }
     
     // TCR Parameter Management
