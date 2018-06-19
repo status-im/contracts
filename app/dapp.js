@@ -12,8 +12,19 @@ import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import NameLookup from './components/ens/nameLookup';
 import AdminMode from './components/AdminMode';
 import TokenPermissions from './components/standard/TokenPermissionConnect';
+import web3 from "Embark/web3";
+import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
 
 import './dapp.css';
+
+const { getNetworkType } = web3.eth.net;
+
+const symbols = {
+  'ropsten': 'STT',
+  'private': 'SNT',
+  'main': 'SNT'
+}
 
 class App extends React.Component {
   constructor(props) {
@@ -23,6 +34,7 @@ class App extends React.Component {
 
   componentDidMount(){
     __embarkContext.execWhenReady(() => {
+      getNetworkType().then(network => { this.setState({ network })});
 
     });
   }
@@ -37,7 +49,7 @@ class App extends React.Component {
   }
 
   render() {
-    const { admin } = this.state;
+    const { admin, network } = this.state;
     return (
       <div>
         <div style={{ display: admin ? 'block' : 'none' }} >
@@ -45,10 +57,13 @@ class App extends React.Component {
         </div>
         {!admin &&
          <Fragment>
+           <Paper elevation={4}>
+             <Typography style={{ fontSize: '2.5rem', padding: '0.5%', textAlign: 'center' }} variant="headline" component="h3"><i style={{ fontSize: '1rem' }}>network </i>{network}</Typography>
+           </Paper>
            <NameLookup />
-           <div style={{ textAlign: 'center', marginTop: '10%' }}>
+           <div style={{ textAlign: 'center' }}>
              <TokenPermissions
-               symbol='SNT'
+               symbol={symbols[network] || 'SNT'}
                spender={ENSSubdomainRegistry._address}
                methods={TestToken.methods} />
              <hr/>

@@ -81,7 +81,7 @@ const tooltip = (
 
 const TokenPermissions = (props) => (
   <Fragment>
-    <OverlayTrigger placement="right" overlay={tooltip}>
+    <OverlayTrigger placement="top" overlay={tooltip}>
       <h3>Token Permissions</h3>
     </OverlayTrigger>
     <hr/>

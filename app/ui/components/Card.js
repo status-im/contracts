@@ -10,10 +10,10 @@ const StyledCard = styled.div`
   border: ${({ border }) => border || `1px solid ${theme.contentBorder}`};
   border-radius: 3px;
   min-height: 30vh;
-  ${media.desktop`margin-top: 10%;`}
-  ${media.giant`margin-top: 10%;`}
-  ${media.tablet`margin-top: 50%;`}
-  ${media.phone`margin-top: 50%;`}
+  ${media.desktop`margin-top: 5%;`}
+  ${media.giant`margin-top: 5%;`}
+  ${media.tablet`margin-top: 25%;`}
+  ${media.phone`margin-top: 25%;`}
 `
 
 export default StyledCard
