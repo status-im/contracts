@@ -335,5 +335,13 @@ contract ENSSubdomainRegistry is Controlled {
     {
         creationTime = accounts[_subdomainHash].creationTime;
     }
-   
+
+    function getExpirationTime(bytes32 _subdomainHash)
+      external
+      view
+      returns(uint256 expirationTime)
+    {
+      expirationTime = accounts[_subdomainHash].creationTime + releaseDelay;
+    }
+
 }

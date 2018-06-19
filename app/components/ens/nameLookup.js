@@ -12,7 +12,7 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import RegisterSubDomain from '../ens/registerSubDomain';
 import StatusLogo from '../../ui/icons/components/StatusLogo'
 import EnsLogo from '../../ui/icons/logos/ens.png';
-const { getPrice } = ENSSubdomainRegistry.methods;
+const { getPrice, getExpirationTime } = ENSSubdomainRegistry.methods;
 
 const invalidSuffix = '0000000000000000000000000000000000000000'
 const nullAddress = '0x0000000000000000000000000000000000000000'
@@ -41,18 +41,20 @@ const backButton = {
   cursor: 'pointer'
 }
 
+const generatePrettyDate = (timestamp) => new Date(timestamp * 1000).toDateString();
+
 class RenderAddresses extends PureComponent {
   state = { copied: false }
 
   render() {
-    const { domainName, address, statusAccount } = this.props
+    const { domainName, address, statusAccount, expirationTime } = this.props
     const { copied } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
     return (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b> Resolves To:</Info.Action>
+        <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b>{expirationTime && <i> (Expires {generatePrettyDate(expirationTime)})</i>} Resolves To:</Info.Action>
         {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
         <CopyToClipboard text={address} onCopy={markCopied}>
           <div style={addressStyle}>{address}</div>
@@ -163,6 +165,7 @@ const InnerForm = ({
        domainName={values.domainName}
        address={status.address}
        statusAccount={status.statusAccount}
+       expirationTime={status.expirationTime}
        setStatus={setStatus} /> :
      <ConnectedRegister
        setStatus={setStatus}
@@ -179,7 +182,8 @@ const NameLookup = withFormik({
     const lookupHash = hash(formatName(domainName));
     const address = await addr(lookupHash).call();
     const statusAccount = await text(lookupHash, 'statusAccount').call();
-    setStatus({ address, statusAccount });
+    const expirationTime = await getExpirationTime(lookupHash).call();
+    setStatus({ address, statusAccount, expirationTime });
   }
 })(InnerForm)
 
