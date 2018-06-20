@@ -8,10 +8,11 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 
 // We set an allowance to be "unlimited" by setting it to
 // it's maximum possible value -- namely, 2^256 - 1.
+const { fromWei } = web3.utils;
 const unlimitedAllowance = new BigNumber(2).pow(256).sub(1);
 const getDefaultAccount = () => web3.eth.defaultAccount;
-const SUPPORTED_TOKENS = ['SNT'];
-const BALANCE_KEYS = { 'SNT': 'SNTBalance' };
+const SUPPORTED_TOKENS = ['SNT', 'STT'];
+const BALANCE_KEYS = { 'SNT': 'SNTBalance', 'STT': 'SNTBalance' };
 
 class TokenHandle extends PureComponent {
   constructor(props){
@@ -65,7 +66,7 @@ class TokenHandle extends PureComponent {
           checked={!!Number(approved)}
           name={symbol}
           onChange={this.toggleApproved} />
-        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(account[BALANCE_KEYS[symbol]]).toLocaleString()} ${symbol.toUpperCase()}`}</label>
+        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(fromWei(account[BALANCE_KEYS[symbol]])).toLocaleString()} ${symbol.toUpperCase()}`}</label>
       </div>}
       {isLoading || updating && <CircularProgress />}
       </Fragment>

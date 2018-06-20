@@ -4,11 +4,11 @@ import React from 'react';
 import { Button } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
-import { zeroAddress, zeroBytes32 } from './utils';
+import { zeroAddress, zeroBytes32, formatPrice } from './utils';
 import FieldGroup from '../standard/FieldGroup';
 import LinearProgress from '@material-ui/core/LinearProgress';
 
-const { soliditySha3 } = web3.utils;
+const { soliditySha3, fromWei } = web3.utils;
 
 const InnerForm = ({
   values,
@@ -25,46 +25,46 @@ const InnerForm = ({
 }) => (
   <form onSubmit={handleSubmit}>
     {!subDomain &&
-    <FieldGroup
-      id="subDomain"
-      name="subDomain"
-      type="text"
-      label="Sub Domain"
-      onChange={handleChange}
-      onBlur={handleBlur}
-      value={values.subDomain}
-      error={errors.subDomain}
-    />}
+     <FieldGroup
+       id="subDomain"
+       name="subDomain"
+       type="text"
+       label="Sub Domain"
+       onChange={handleChange}
+       onBlur={handleBlur}
+       value={values.subDomain}
+       error={errors.subDomain}
+     />}
     {!domainName &&
-    <FieldGroup
-      id="domainName"
-      name="domainName"
-      type="text"
-      label="Domain Name"
-      onChange={handleChange}
-      onBlur={handleBlur}
-      value={values.domainName}
-      button={
-        <Button
-          mode="strong"
-          style={{ marginTop: '5px' }}
-          onClick={() => {
+     <FieldGroup
+       id="domainName"
+       name="domainName"
+       type="text"
+       label="Domain Name"
+       onChange={handleChange}
+       onBlur={handleBlur}
+       value={values.domainName}
+       button={
+         <Button
+           mode="strong"
+           style={{ marginTop: '5px' }}
+           onClick={() => {
               ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
                                   .call()
-                                  .then((res) => { setFieldValue('price', res); });
+                                  .then((res) => { setFieldValue('price', fromWei(res)); });
           }}
-        >
-          Get Price
-        </Button>
-      }
-    />}
+           >
+           Get Price
+         </Button>
+       }
+     />}
     {!domainPrice &&
-    <FieldGroup
-      id="price"
-      name="price"
-      label="Domain Price"
-      disabled
-      value={values.price ? `${Number(values.price).toLocaleString()} SNT` : ''} />}
+     <FieldGroup
+       id="price"
+       name="price"
+       label="Domain Price"
+       disabled
+       value={values.price ? `${formatPrice(values.price)} SNT` : ''} />}
     <FieldGroup
       id="statusAddress"
       name="statusAddress"

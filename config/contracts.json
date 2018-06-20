@@ -79,8 +79,11 @@
       "PublicResolver": {
         "address": "0x5FfC014343cd971B7eb70732021E26C35B744cc4"
       },
+      "TestToken": {
+        "address": "0xc55cF4B03948D7EBc8b9E8BAD92643703811d162"
+      },
       "ENSSubdomainRegistry": {
-        "address": "0x149651FF48AEDBe84ab2551D2CaA48538449CEA5"
+        "address": "0xb1C47B61CDaeee3fA85Fe8B93FcE6311165E6291"
       }
     }
   },

@@ -1,4 +1,5 @@
 import React, { Fragment, PureComponent } from 'react';
+import web3 from 'web3';
 import { connect } from 'react-redux';
 import { actions as accountActions } from '../../reducers/accounts';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
@@ -12,6 +13,7 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import RegisterSubDomain from '../ens/registerSubDomain';
 import StatusLogo from '../../ui/icons/components/StatusLogo'
 import EnsLogo from '../../ui/icons/logos/ens.png';
+import { formatPrice } from '../ens/utils'
 const { getPrice, getExpirationTime } = ENSSubdomainRegistry.methods;
 
 const invalidSuffix = '0000000000000000000000000000000000000000'
@@ -21,6 +23,7 @@ const validStatusAddress = address => !address.includes(invalidSuffix);
 const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
 const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join('.');
 const hashedDomain = domainName => hash(getDomain(domainName));
+const { fromWei } = web3.utils;
 
 const cardStyle = {
   width: '100%',
@@ -95,7 +98,7 @@ class Register extends PureComponent {
         {!registered ?
          <Fragment>
            <Info.Action title="No address is associated with this domain">
-             <span style={{ color: theme.accent }}>{formattedDomain.toUpperCase()}</span> can be registered for {domainPrice} SNT
+             <span style={{ color: theme.accent }}>{formattedDomain.toUpperCase()}</span> can be registered for {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
            </Info.Action>
            <RegisterSubDomain
              subDomain={formattedDomainArray[0]}
