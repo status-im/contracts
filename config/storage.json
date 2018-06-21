@@ -3,7 +3,7 @@
     "versions": {
       "ipfs-api": "17.2.4"
     },
-    "enabled": true,
+    "enabled": false,
     "ipfs_bin": "ipfs",
     "provider": "ipfs",
     "available_providers": ["ipfs"],
@@ -11,7 +11,7 @@
     "port": 5001
   },
   "development": {
-    "enabled": true,
+    "enabled": false,
     "provider": "ipfs",
     "host": "localhost",
     "port": 5001,
