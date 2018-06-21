@@ -19,6 +19,8 @@ contract ProposalManager is Controlled {
     uint256 public tabulationBlockDelay;
     Proposal[] public proposals;
     
+    uint public quorumPercentage; 
+
     struct Proposal {
         bytes32 topic; 
         bytes32 txHash;
@@ -49,24 +51,30 @@ contract ProposalManager is Controlled {
     {
         trustNet = _trustNet;
         token = _token;
+        proposals.length++;
+
+        quorumPercentage = 50;
         
     }
 
     function addProposal(
         bytes32 _topic,
-        bytes32 _txHash
+        bytes32 _txHash,
+        uint blocksUntilVotingStart,
+        uint voteDuration
     )
         public
         returns (uint proposalId)
     {
         proposalId = proposals.length++;
+        
         Proposal storage p = proposals[proposalId];
         
         p.topic = _topic;
         p.txHash = _txHash;
 
-        p.blockStart = block.number + 0; //will be replaced by configurations
-        p.voteBlockEnd = p.blockStart + 10; //dummy value
+        p.blockStart = block.number + blocksUntilVotingStart; //will be replaced by configurations
+        p.voteBlockEnd = p.blockStart + voteDuration; //dummy value
         emit ProposalSet(_topic, proposalId, _txHash);
     }
 
@@ -77,7 +85,7 @@ contract ProposalManager is Controlled {
         require(block.number >= proposal.blockStart);
         require(block.number <= proposal.voteBlockEnd);
         proposal.voteMap[msg.sender] = _vote;
-
+        proposal.voters.push(msg.sender);
     }
 
     function tabulateVote(uint _proposalId, address _delegator) 
@@ -99,6 +107,13 @@ contract ProposalManager is Controlled {
         proposal.lastTabulationTimestamp = block.timestamp;
     }
 
+    function getProposalResultsByVote(uint _proposalId, uint8 vote) 
+        public 
+        view 
+        returns (uint256){
+        return proposals[_proposalId].results[vote];
+    }
+
     function finalResult(uint _proposalId)
         public
     {
@@ -107,7 +122,9 @@ contract ProposalManager is Controlled {
         require(proposal.result == Vote.Null);
         uint256 totalTokens = token.totalSupplyAt(proposal.voteBlockEnd);
         uint256 approvals = proposal.results[uint8(Vote.Approve)];
-        uint256 approvalQuorum = (totalTokens / 2);
+
+        uint256 approvalQuorum = (totalTokens * quorumPercentage / 100);
+
         if(approvals >= approvalQuorum) {
             proposal.result = Vote.Approve;
         } else {
@@ -116,8 +133,20 @@ contract ProposalManager is Controlled {
         emit ProposalResult(_proposalId, uint8(proposal.result));
     }
 
+    function setQuorum(uint _percentage)
+        public 
+        onlyController {
+        require(_percentage > 0 && _percentage <= 100);
+        quorumPercentage = _percentage;
+    }
 
-
+    function hasVotesRecorded(uint256 _proposalId)
+        external
+        view
+        returns (bool)
+    {
+        return proposals[_proposalId].voters.length > 0;
+    }
 
     function getProposalFinalResult(
         uint256 _proposalId
@@ -130,42 +159,34 @@ contract ProposalManager is Controlled {
         return uint8(proposals[_proposalId].result);
     } 
 
-    function getProposalCount() 
-        external
-        view 
-        returns (uint256){
-        return proposals.length;
-    }
-
     function getProposal(uint _proposalId)
         external
         view
         returns (
             bytes32 topic,
             bytes32 txHash,
-            bool approved,
-            Vote vote
+            bool approved
         )
     {
-        Proposal storage p = proposals[_proposalId];
-        return (p.topic, p.txHash, p.result == Vote.Approve, p.voteMap[msg.sender]);
-    } 
-
-    function getProposalData(uint _proposalId)
-        external
-        view
-        returns (
-            bytes32 topic,
-            bytes32 txHash,
-            uint blockStart,
-            uint voteBlockEnd,
-            Vote result
-        )
-    {
-        Proposal storage p = proposals[_proposalId];
-        return (p.topic, p.txHash, p.blockStart, p.voteBlockEnd, p.result);
+        Proposal memory p = proposals[_proposalId];
+        return (p.topic, p.txHash, p.result == Vote.Approve);
     }
 
+    function isVotingAvailable(uint _proposalId) public view returns (bool){
+        Proposal memory p = proposals[_proposalId];
+        return p.voteBlockEnd > block.number && p.result == Vote.Null;
+    }
+
+    function getVoteInfo(uint _proposalId, address voter)
+        public 
+        view 
+        returns (uint8 vote, uint256 tokens)
+    {
+        Proposal storage p = proposals[_proposalId];
+
+        vote = uint8(p.voteMap[voter]);
+        tokens = token.balanceOfAt(voter, p.voteBlockEnd);
+    }
     
     function offchainTabulateVoteResult(uint256 _proposalId) 
         external
@@ -173,7 +194,6 @@ contract ProposalManager is Controlled {
         returns (uint256[] votes) 
     {
         Proposal memory proposal = proposals[_proposalId];
-        address[] memory voters = proposal.voters;
         uint256 len = proposal.voters.length;
         votes = new uint256[](4);
         for(uint256 i = 0; i < len; i++) {
