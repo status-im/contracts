@@ -2,20 +2,19 @@ pragma solidity ^0.4.23;
 
 import "./MiniMeToken.sol";
 
+/**
+ * @title 1:1 minime token to be used with TCRs
+ * @dev This allows to have a token with shorter supply to simplify voting.
+ */
+contract TCRMiniMeToken is MiniMeToken {
 
-contract BondedCurveMiniMeToken is MiniMeToken {
-
-    event TokensBought(address owner, uint amount, uint price);
-    event TokensSold(address owner, uint amount, uint price);
+    event TokensBought(address owner, uint amount);
+    event TokensSold(address owner, uint amount);
 
     MiniMeToken token;
 
-    uint256 basePrice;
-    uint256 currentPrice;
-
     constructor(
         MiniMeToken _token,
-        uint256 _basePrice,
         address _tokenFactory,
         string _tokenName, 
         uint8 _decimalUnits, 
@@ -38,10 +37,9 @@ contract BondedCurveMiniMeToken is MiniMeToken {
         require(token.allowance(msg.sender, address(this)) >= _amount);
         require(token.transferFrom(msg.sender, address(this), _amount));
 
-        uint256 tokensBought = 1; // TODO: calculate how much BCToken per token
-        currentPrice = 1; // TODO: calculate price
+        uint256 tokensBought = _amount; // TODO: calculate how much BCToken per baseToken
 
-        emit TokensBought(msg.sender, tokensBought, currentPrice);
+        emit TokensBought(msg.sender, tokensBought);
 
         // TODO: extracted from minimetoken, refactor
         uint curTotalSupply = totalSupplyAt(block.number);
@@ -59,8 +57,7 @@ contract BondedCurveMiniMeToken is MiniMeToken {
         returns(bool) 
     {
     
-        uint256 baseTokenAmount = 1; // TODO: calculate how much baseTokens per token
-        currentPrice = 1; // TODO: calculate price    
+        uint256 baseTokenAmount = _amount; // TODO: calculate how much baseTokens per token
     
         require(token.balanceOf(address(this)) >= baseTokenAmount);
         require(token.transfer(msg.sender, baseTokenAmount));
