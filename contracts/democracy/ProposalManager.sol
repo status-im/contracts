@@ -51,7 +51,6 @@ contract ProposalManager is Controlled {
     {
         trustNet = _trustNet;
         token = _token;
-        proposals.length++;
 
         quorumPercentage = 50;
         
@@ -88,6 +87,14 @@ contract ProposalManager is Controlled {
         proposal.voters.push(msg.sender);
     }
 
+
+    function exists(uint _proposalId)
+        public 
+        view
+        returns (bool) {
+        return proposals.length != 0 && proposals[_proposalId].blockStart != 0;
+    }
+
     function tabulateVote(uint _proposalId, address _delegator) 
         public
     {
@@ -106,6 +113,7 @@ contract ProposalManager is Controlled {
         }
         proposal.lastTabulationTimestamp = block.timestamp;
     }
+
 
     function getProposalResultsByVote(uint _proposalId, uint8 vote) 
         public 

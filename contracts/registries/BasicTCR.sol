@@ -270,7 +270,7 @@ contract BasicTCR is Controlled {
         if (itemExists(_itemId) &&
             items[_itemId].applicationExpiry < block.number && 
             !isWhitelisted(_itemId) &&
-            (challengeId == 0 || challenges[challengeId].resolved == true)
+            (!proposalManager.exists(challengeId) || challenges[challengeId].resolved)
         ) {
             return true;
         }
@@ -316,7 +316,7 @@ contract BasicTCR is Controlled {
         returns (bool)
     {
         uint challengeId = items[_itemId].challengeId;
-        require(challengeId > 0 && !challenges[challengeId].resolved);
+        require(proposalManager.exists(challengeId) && !challenges[challengeId].resolved);
         return proposalManager.isVotingAvailable(challengeId) == false;
     }
 
@@ -376,7 +376,7 @@ contract BasicTCR is Controlled {
         view
         returns (uint)
     {
-        require(_challengeId > 0 && !challenges[_challengeId].resolved);
+        require(proposalManager.exists(_challengeId) && !challenges[_challengeId].resolved);
         require(proposalManager.isVotingAvailable(_challengeId) == false);
 
         // Edge case, nobody voted, give all tokens to the challenger.

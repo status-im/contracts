@@ -169,7 +169,7 @@ describe("BasicTCR", function () {
         await utils.mineBlocks(11);
 
         canBeWhiteListed = await BasicTCR.methods.canBeWhitelisted(itemId).call();
-        assert.equal(canBeWhiteListed, true, "Item could be whitelisted now");
+        assert.equal(canBeWhiteListed, true, "Item should be whitelisted now");
 
         receipt = await BasicTCR.methods.processItem(itemId).send();
         assert.equal(!!receipt.events.ItemWhitelisted, true, "ItemWhitelisted not triggered");

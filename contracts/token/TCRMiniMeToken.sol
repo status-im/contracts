@@ -26,8 +26,6 @@ contract TCRMiniMeToken is MiniMeToken {
         require(_token != address(0));
 
         token = _token;
-        basePrice = _basePrice;
-        currentPrice = _basePrice;
     }
 
     function buy(uint256 _amount) 
@@ -62,7 +60,7 @@ contract TCRMiniMeToken is MiniMeToken {
         require(token.balanceOf(address(this)) >= baseTokenAmount);
         require(token.transfer(msg.sender, baseTokenAmount));
 
-        emit TokensSold(msg.sender, _amount, currentPrice);
+        emit TokensSold(msg.sender, _amount);
 
         // TODO: extracted from minime token, refactor
         uint curTotalSupply = totalSupplyAt(block.number);
