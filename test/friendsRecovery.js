@@ -52,6 +52,7 @@ describe('FriendsRecovery', function() {
         const hashedSecret = web3.utils.soliditySha3(identity.options.address, secret);
         
         let threshold = 3;
+        let secretTheshold = web3.utils.soliditySha3(hashedSecret, threshold);
         let friendHashes = [
             web3.utils.soliditySha3(identity.options.address, secret, friends[0].address),
             web3.utils.soliditySha3(identity.options.address, secret, friends[1].address), 
@@ -62,7 +63,7 @@ describe('FriendsRecovery', function() {
         let newController = accounts[9];
 
         let recovery = await recoveryContract.deploy({data: friendsRecoveryJson.code,
-                                                      arguments: [identity.options.address, 600, threshold, hashedSecret, friendHashes] })
+                                                      arguments: [identity.options.address, 600, secretTheshold, hashedSecret, friendHashes] })
                                              .send({from: accounts[0], gas: 5000000, gasPrice: 1});
         recovery.setProvider(web3.currentProvider);
 
@@ -75,7 +76,10 @@ describe('FriendsRecovery', function() {
         
         const newSecret = '0x0000000000000000000000000000000000000000000000000000000000abcdef';
         const data = idUtils.encode.managerReset(newController);
+        
         const newHashedSecret = web3.utils.soliditySha3(identity.options.address, newSecret);
+        const newSecretTheshold = web3.utils.soliditySha3(newHashedSecret, threshold);
+        
         const newFriendHashes = [
             web3.utils.soliditySha3(accounts[3], newSecret),
             web3.utils.soliditySha3(accounts[4], newSecret), 
@@ -114,6 +118,7 @@ describe('FriendsRecovery', function() {
 
         let tx3 = await recovery.methods.execute(
             secret,
+            threshold.
             identity.options.address,
             data,
             [
@@ -122,10 +127,11 @@ describe('FriendsRecovery', function() {
                 friends[2].address
             ],
             newHashedSecret,
-            newFriendHashes)
+            newFriendHashes,
+            newSecretTheshold)
             .send({from: accounts[5], gas: 5000000});
 
-       await identity.methods.processManagerReset(0).send({from: accounts[0], gas: 5000000});
+       //await identity.methods.processManagerReset(0).send({from: accounts[0], gas: 5000000});
 
         assert.equal(
             await identity.methods.getKeyPurpose(TestUtils.addressToBytes32(newController)).call(),

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 import "../common/MessageSigned.sol";
 
@@ -10,7 +10,7 @@ contract FriendsRecovery is MessageSigned {
     
     address private identity;
     bytes32 private secret;
-    uint256 private threshold;
+    bytes32 private threshold;
     uint256 private setupDelay;
     mapping(bytes32 => bool) private friendAllowed;
     mapping(bytes32 => bool) private revealed;
@@ -20,7 +20,7 @@ contract FriendsRecovery is MessageSigned {
     struct NewRecovery {
         uint256 addition;
         bytes32 secret;
-        uint256 threshold;
+        bytes32 threshold;
         uint256 setupDelay;
         bytes32[] friends;
     }
@@ -47,17 +47,17 @@ contract FriendsRecovery is MessageSigned {
      * @param _secret Double hash of User Secret
      * @param _friendHashes Friends addresses hashed with single hash of User Secret
      **/
-    function FriendsRecovery(
+    constructor(
         address _identity,
         uint256 _setupDelay,
-        uint256 _threshold,
+        bytes32 _secretThreshold,
         bytes32 _secret,
         bytes32[] _friendHashes
     ) 
         public 
     {
         identity = _identity;
-        threshold = _threshold;
+        threshold = _secretThreshold;
         secret = _secret;
         setupDelay = _setupDelay;
         addFriends(_friendHashes);
@@ -88,13 +88,13 @@ contract FriendsRecovery is MessageSigned {
      * @notice reconfigure recovery parameters
      * @param _newSecret Double hash of User Secret
      * @param _setupDelay Delay for changes being active
-     * @param _threshold Amount of approvals required
+     * @param _secretThreshold Secret Amount of approvals required
      * @param _newFriendsHashes Friends addresses hashed with single hash of User Secret
      */
     function setup(
         bytes32 _newSecret,
         uint256 _setupDelay,
-        uint256 _threshold,
+        bytes32 _secretThreshold,
         bytes32[] _newFriendsHashes
         )
         external 
@@ -104,7 +104,7 @@ contract FriendsRecovery is MessageSigned {
         pendingSetup.addition = block.timestamp;
         pendingSetup.secret = _newSecret;
         pendingSetup.friends = _newFriendsHashes;
-        pendingSetup.threshold = _threshold;
+        pendingSetup.threshold = _secretThreshold;
         pendingSetup.setupDelay = _setupDelay;
         emit SetupRequested(block.timestamp + setupDelay);
     }
@@ -127,66 +127,71 @@ contract FriendsRecovery is MessageSigned {
 
     /**
      * @notice Approves a recovery
-     * @param _secretHash Hash of the transaction
+     * @param _secretCall Hash of the transaction
      */
-    function approve(bytes32 _secretHash) 
+    function approve(bytes32 _secretCall) 
         external 
     {
-        require(!signed[_secretHash][msg.sender]);
-        signed[_secretHash][msg.sender] = true;
-        emit Approved(_secretHash, msg.sender);
+        require(!signed[_secretCall][msg.sender]);
+        signed[_secretCall][msg.sender] = true;
+        emit Approved(_secretCall, msg.sender);
     }
 
     /**
      * @notice Approve a recovery using an ethereum signed message
-     * @param _secretHash Hash of the transaction
+     * @param _secretCall Hash of the transaction
      * @param _v signatures v
      * @param _r signatures r
      * @param _s signatures s
      */
-    function approvePreSigned(bytes32 _secretHash, uint8[] _v, bytes32[] _r, bytes32[] _s) 
+    function approvePreSigned(bytes32 _secretCall, uint8[] _v, bytes32[] _r, bytes32[] _s) 
         external 
     {
         uint256 len = _v.length;
         require (_r.length == len);
         require (_s.length == len);    
         require (_v.length == len);    
-        bytes32 signatureHash = getSignHash(_secretHash); 
+        bytes32 signatureHash = getSignHash(_secretCall); 
         for (uint256 i = 0; i < len; i++) {
-            address recovered = ecrecover(signatureHash, _v[i], _r[i], _s[i]);
-            require(!signed[_secretHash][recovered]);
-            require(recovered != address(0));
-            signed[_secretHash][recovered] = true;
-            emit Approved(_secretHash, recovered);
+            address signer = ecrecover(signatureHash, _v[i], _r[i], _s[i]);
+            require(!signed[_secretCall][signer]);
+            require(signer != address(0));
+            signed[_secretCall][signer] = true;
+            emit Approved(_secretCall, signer);
         }        
     }
 
     /**
      * @notice executes an approved transaction revaling secret hash, friends addresses and set new recovery parameters
      * @param _revealedSecret Single hash of User Secret
+     * @param _threshold Revealed threshold
      * @param _dest Address will be called
      * @param _data Data to be sent
      * @param _friendList friends addresses that approved
      * @param _newSecret new recovery double hashed user secret
      * @param _newFriendsHashes new friends list hashed with new recovery secret hash
+     * @param _newSecretThreshld Threshold using the new secret
      */
     function execute(
         bytes32 _revealedSecret,
+        uint256 _threshold,
         address _dest,
         bytes _data,
         address[] _friendList,
         bytes32 _newSecret,
-        bytes32[] _newFriendsHashes
+        bytes32[] _newFriendsHashes,
+        bytes32 _newSecretTheshold
         ) 
         external 
         notRevealed(_newSecret)
     {
-        require(_friendList.length >= threshold);
+        require(threshold == keccak256(_revealedSecret, _threshold));
+        require(_friendList.length >= _threshold);
         require(keccak256(identity, _revealedSecret) == secret);
         revealed[_newSecret] = true;
         bytes32 _secretHash = keccak256(identity, _revealedSecret, _dest, _data, _newSecret, _newFriendsHashes);
         
-        for (uint256 i = 0; i < threshold; i++) {
+        for (uint256 i = 0; i < _threshold; i++) {
             address friend = _friendList[i];
             require(friend != address(0));
             require(friendAllowed[keccak256(identity, _revealedSecret, friend)]);
@@ -195,6 +200,7 @@ contract FriendsRecovery is MessageSigned {
         }
 
         secret = _newSecret;
+        threshold = _newSecretTheshold;
         addFriends(_newFriendsHashes);
 
         emit Execution(_dest.call(_data));
@@ -205,7 +211,6 @@ contract FriendsRecovery is MessageSigned {
      */
     function addFriends(bytes32[] _newFriendsHashes) private {
         uint256 len = _newFriendsHashes.length;
-        require(len >= threshold);
         for (uint256 i = 0; i < len; i++) {
             friendAllowed[_newFriendsHashes[i]] = true;
         }
