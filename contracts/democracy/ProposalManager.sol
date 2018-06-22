@@ -51,7 +51,7 @@ contract ProposalManager is Controlled {
     {
         trustNet = _trustNet;
         token = _token;
-
+        tabulationBlockDelay = 7 days;
         quorumPercentage = 50;
         
     }
@@ -153,6 +153,13 @@ contract ProposalManager is Controlled {
         onlyController {
         require(_percentage > 0 && _percentage <= 100);
         quorumPercentage = _percentage;
+    }
+    
+    function setTabulationBlockDelay(uint256 _tabulationBlockDelay)
+        public 
+        onlyController 
+    {
+        tabulationBlockDelay = _tabulationBlockDelay;
     }
 
     function hasVotesRecorded(uint256 _proposalId)
