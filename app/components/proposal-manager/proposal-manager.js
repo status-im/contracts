@@ -97,6 +97,46 @@ class InnerForm extends PureComponent {
             onBlur={handleBlur}
             value={values.url}
           />
+
+          <FieldGroup
+            id="topic"
+            name="topic"
+            type="text"
+            label="Topic"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            value={values.topic}
+          />
+
+          <FieldGroup
+            id="to"
+            name="to"
+            type="text"
+            label="To"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            value={values.to}
+          />
+
+          <FieldGroup
+            id="data"
+            name="data"
+            type="text"
+            label="Data"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            value={values.data}
+          />
+          <FieldGroup
+            id="value"
+            name="value"
+            type="text"
+            label="Value"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            value={values.value}
+          />
+
           <Button type="submit" disabled={!canSubmit || isSubmitting}>{isSubmitting ? 'Submission in progress' : 'Submit'}</Button>
         </Form>
       </Fragment>
@@ -105,14 +145,14 @@ class InnerForm extends PureComponent {
 }
 
 const ProposalManager = withFormik({
-  mapPropsToValues: props => ({ title: '', description: '', url: '' }),
+  mapPropsToValues: props => ({ title: '', description: '', url: '', data: '0x00', value: '0', topic: '0x00', to: '0x0000000000000000000000000000000000000000' }),
   validate(values) {},
   handleSubmit(values, { setSubmitting}){
 
     let dataObj =  { 
       title: values.title,
       description: values.description,
-      url: values.url
+      url: values.url,
     };
     
     const { toHex } = web3.utils;
@@ -123,10 +163,10 @@ const ProposalManager = withFormik({
         const hexHash = toHex(hash);
         //TODO create toggle for address approval
         submitProposal(
-          "0x00",
-          "0x0000000000000000000000000000000000000000",
-          0,
-          "0x00",
+          values.topic,
+          values.to,
+          values.value,
+          values.data,
           hexHash
         )
           .send({from: web3.eth.defaultAccount, gasLimit: 1000000})

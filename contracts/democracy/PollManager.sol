@@ -12,13 +12,12 @@ contract PollManager is Controlled {
     event PollCreated(uint256 pollId, uint8 numOptions);
     event PollCanceled(uint256 pollId);
     event Voted(address voter, uint8[] votes);
-    
 
     MiniMeTokenFactory public tokenFactory;
     MiniMeTokenInterface public token;
     
     Poll[] public polls;
-    
+
     struct Vote {
         mapping(uint8 => uint8) distribution;
         bool voted;
@@ -48,6 +47,7 @@ contract PollManager is Controlled {
         uint8 _numOptions
     )
         public
+        onlyController
         returns (uint pollId)
     {
         pollId = polls.length++;
