@@ -1,15 +1,18 @@
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import web3 from 'web3';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
-import React, { Fragment } from 'react';
+import React from 'react';
 import { Button } from 'react-bootstrap';
-import FieldGroup from '../standard/FieldGroup'
+import FieldGroup from '../standard/FieldGroup';
 import { withFormik } from 'formik';
-import { hash } from 'eth-ens-namehash'
-import { debounce } from 'lodash/fp'
+import { hash } from 'eth-ens-namehash';
+import { debounce } from 'lodash/fp';
+
+setTimeout(() => { ENSSubdomainRegistry.methods.controller().call(console.log)}, 2000)
 
 const { methods: { owner } } = ENSRegistry;
 
-const delay = debounce(250);
+const delay = debounce(500);
 const getDomain = (hashedDomain, domains) => domains(hashedDomain).call();
 const registryIsOwner = address => address == ENSSubdomainRegistry._address;
 const fetchOwner = domainName => owner(hash(domainName)).call();
@@ -57,23 +60,22 @@ const InnerForm = ({
 
 const AddDomain = withFormik({
   mapPropsToValues: props => ({ domainName: '', domainPrice: '' }),
-  async validate(values, props) {
-    const { domainName } = values
+  async validate(values) {
+    const { domainName } = values;
     const errors = {};
     if (!domainName) errors.domainName = 'Required';
-    if (domainName && !await getAndIsOwner(domainName)) errors.domainName = 'This domain is not owned by registry'
+    if (domainName && !await getAndIsOwner(domainName)) errors.domainName = 'This domain is not owned by registry';
     if (Object.keys(errors).length) throw errors;
   },
   async handleSubmit(values, { setSubmitting }) {
-    const { domainName, domainPrice } = values
-    const { methods: { domains, setDomainPrice, updateDomainPrice } } = ENSSubdomainRegistry
-    const { sha3 } = window.web3.utils
-    const hashedDomain = hash(domainName)
+    const { domainName, domainPrice } = values;
+    const { methods: { domains, setDomainPrice, updateDomainPrice } } = ENSSubdomainRegistry;
+    const hashedDomain = hash(domainName);
     const { state } = await getDomain(hashedDomain, domains);
     setPrice(
-      !!Number(state) ? updateDomainPrice : setDomainPrice,
+      Number(state) ? updateDomainPrice : setDomainPrice,
       hashedDomain,
-      domainPrice
+      web3.utils.toWei(domainPrice.toString(), 'ether'),
     )
       .then(res => {
         setSubmitting(false);
@@ -84,6 +86,6 @@ const AddDomain = withFormik({
         console.log(err);
       })
   }
-})(InnerForm)
+})(InnerForm);
 
 export default AddDomain;
