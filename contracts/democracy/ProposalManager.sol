@@ -131,7 +131,7 @@ contract ProposalManager is Controlled {
         public
     {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.lastTabulationTimestamp + tabulationBlockDelay > block.number);
+        require(proposal.lastTabulationTimestamp + tabulationBlockDelay < block.timestamp);
         require(proposal.result == Vote.Null);
         uint256 totalTokens = token.totalSupplyAt(proposal.voteBlockEnd);
         uint256 approvals = proposal.results[uint8(Vote.Approve)];
