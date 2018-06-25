@@ -21,14 +21,14 @@ class InnerForm extends PureComponent {
   }
 
   componentDidMount(){
-    this.loadPrice();
+    this._loadPrice();
   }
 
   componentWillReceiveProps(){
-    this.loadPrice();
+    this._loadPrice();
   }
 
-  async loadPrice(){
+  _loadPrice(){
     __embarkContext.execWhenReady(async () => {
       try {
         let _b = await ProposalCuration.methods.getSubmitPrice(web3.eth.defaultAccount).call();

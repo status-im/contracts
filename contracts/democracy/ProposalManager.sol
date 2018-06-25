@@ -58,9 +58,7 @@ contract ProposalManager is Controlled {
 
     function addProposal(
         bytes32 _topic,
-        bytes32 _txHash,
-        uint blocksUntilVotingStart,
-        uint voteDuration
+        bytes32 _txHash
     )
         public
         returns (uint proposalId)
@@ -72,8 +70,8 @@ contract ProposalManager is Controlled {
         p.topic = _topic;
         p.txHash = _txHash;
 
-        p.blockStart = block.number + blocksUntilVotingStart; //will be replaced by configurations
-        p.voteBlockEnd = p.blockStart + voteDuration; //dummy value
+        p.blockStart = block.number + 1; //TODO: will be replaced by configurations
+        p.voteBlockEnd = p.blockStart + 10; //TODO: dummy value
         emit ProposalSet(_topic, proposalId, _txHash);
     }
 

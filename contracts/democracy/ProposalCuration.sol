@@ -56,7 +56,7 @@ contract ProposalCuration is Controlled {
         uint256 submitPrice = getSubmitPrice(msg.sender);
         require(token.allowance(msg.sender, address(this)) >= submitPrice);
         require(token.transferFrom(msg.sender, address(this), submitPrice));
-        proposalId = proposalManager.addProposal(_topic,keccak256(_to,_value,_data), 0, 1000);
+        proposalId = proposalManager.addProposal(_topic,keccak256(_to,_value,_data));
         proposals[proposalId] = ProposalData(
             msg.sender,
             _to,

@@ -15,9 +15,20 @@ class Voting extends Component {
         };
     }
 
+    componentWillReceiveProps(){
+        __embarkContext.execWhenReady(async () => {
+            this._loadProposalData();
+        });
+    }
+
     componentDidMount(){
         __embarkContext.execWhenReady(async () => {
-            ProposalManager.options.address = await ProposalCuration.methods.proposalManager().call();
+            this._loadProposalData();
+        });
+    }
+
+    async _loadProposalData() {
+        ProposalManager.options.address = await ProposalCuration.methods.proposalManager().call();
             let _proposal = await ProposalManager.methods.getVoteInfo(this.props.proposalId, web3.eth.defaultAccount).call();
             let blockNum = await web3.eth.getBlockNumber();
             let _data = await ProposalManager.methods.proposals(this.props.proposalId).call();
@@ -28,7 +39,6 @@ class Voting extends Component {
                 block: blockNum,
                 finalResult: _data.result
             });
-        });
     }
 
     async determineFinalResult(e){
@@ -39,9 +49,7 @@ class Voting extends Component {
 
         if(receipt.status == '0x1'){
             this.setState({
-                decision: choice,
-                block: blockNum,
-                finalResult: receipt.events.ProposalResult.finalResult
+                finalResult: receipt.events.ProposalResult.returnValues.finalResult
             });
         }
     }
@@ -71,7 +79,6 @@ class Voting extends Component {
     }
 
     render(){
-        console.log(this.state);
         return <div>
             {
                 this.state.decision != 0 ?
