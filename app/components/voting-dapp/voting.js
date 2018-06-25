@@ -11,7 +11,10 @@ class Voting extends Component {
       super(props);
       this.state = {
           decision: 0,
-          finalResult: null
+          finalResult: null,
+          data: null,
+          tabulationAvailable: false,
+          votingAvailable: false
         };
     }
 
@@ -21,37 +24,51 @@ class Voting extends Component {
         });
     }
 
-    componentDidMount(){
-        __embarkContext.execWhenReady(async () => {
-            this._loadProposalData();
-        });
-    }
-
     async _loadProposalData() {
         ProposalManager.options.address = await ProposalCuration.methods.proposalManager().call();
-            let _proposal = await ProposalManager.methods.getVoteInfo(this.props.proposalId, web3.eth.defaultAccount).call();
-            let blockNum = await web3.eth.getBlockNumber();
-            let _data = await ProposalManager.methods.proposals(this.props.proposalId).call();
+        const _votingInfo = await ProposalManager.methods.getVoteInfo(this.props.proposalId, web3.eth.defaultAccount).call();
+        const _blockNum = await web3.eth.getBlockNumber();
+        const _data = await ProposalManager.methods.proposals(this.props.proposalId).call();
+        
+        const _votingAvailable = await ProposalManager.methods.isVotingAvailable(this.props.proposalId).call();
+        const _tabulationAvailable = await ProposalManager.methods.isTabulationAvailable(this.props.proposalId).call();
+        const _voteTabulated = await ProposalManager.methods.isDelegatorVoteTabulated(this.props.proposalId, web3.eth.defaultAccount).call();
+        const _canCalculateFinalResult = await ProposalManager.methods.canCalculateFinalResult(this.props.proposalId).call();
 
-            this.setState({
-                data: _data,
-                decision: _proposal.vote,
-                block: blockNum,
-                finalResult: _data.result
-            });
+        this.setState({
+            data: _data,
+            decision: _votingInfo.vote,
+            block: _blockNum,
+            finalResult: _data.result,
+            votingAvailable: _votingAvailable,
+            tabulationAvailable: _tabulationAvailable,
+            canCalculateFinalResult: _canCalculateFinalResult,
+            voteTabulated: _voteTabulated
+        });
     }
 
     async determineFinalResult(e){
         e.preventDefault();
 
         let receipt = await ProposalManager.methods.finalResult(this.props.proposalId)
-                                .send({from: web3.eth.defaultAccount});
-
+                                .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
         if(receipt.status == '0x1'){
             this.setState({
-                finalResult: receipt.events.ProposalResult.returnValues.finalResult
+                finalResult: receipt.events.ProposalResult.returnValues.finalResult,
+                finalResultAvailable: false
             });
-        }
+        } 
+    }
+
+    async tabulateVote(e){
+        e.preventDefault();
+
+        const receipt = await ProposalManager.methods.tabulateVote(this.props.proposalId, web3.eth.defaultAccount)
+                                .send({from: web3.eth.defaultAccount, gasLimit: 1000000});
+
+        // TODO: handle error
+
+        this._loadProposalData();
     }
 
     async handleClick(e, vote){
@@ -63,16 +80,25 @@ class Voting extends Component {
         else
             choice = 1;
 
-        let proposal = this.props.proposalId;
-        let receipt = await ProposalManager.methods.voteProposal(this.props.proposalId, choice)
+        const proposal = this.props.proposalId;
+        const receipt = await ProposalManager.methods.voteProposal(this.props.proposalId, choice)
                         .send({from: web3.eth.defaultAccount});
-        let blockNum = await web3.eth.getBlockNumber();
+        
+        const _votingAvailable = await ProposalManager.methods.isVotingAvailable(this.props.proposalId).call();
+        const _tabulationAvailable = await ProposalManager.methods.isTabulationAvailable(this.props.proposalId).call();
+        const _voteTabulated = await ProposalManager.methods.isDelegatorVoteTabulated(this.props.proposalId, web3.eth.defaultAccount).call();
+        const _canCalculateFinalResult = await ProposalManager.methods.canCalculateFinalResult(this.props.proposalId).call();
 
+        const blockNum = await web3.eth.getBlockNumber();
 
         if(receipt.status == '0x1'){
             this.setState({
                 decision: choice,
-                block: blockNum
+                block: blockNum,
+                votingAvailable: _votingAvailable,
+                tabulationAvailable: _tabulationAvailable,
+                finalResultAvailable: _canCalculateFinalResult,
+                voteTabulated: _voteTabulated
             });
         }
         // TODO: handle error
@@ -87,7 +113,7 @@ class Voting extends Component {
             }
 
             {
-                this.state.data != null && this.state.block < this.state.data.voteBlockEnd ?
+                this.state.data != null && this.state.votingAvailable ?
                 <Fragment>
                     <Button onClick={(e) => this.handleClick(e, 'APPROVE') }>Approve</Button>
                     <Button onClick={(e) => this.handleClick(e, 'REJECT') }>Reject</Button>
@@ -96,9 +122,17 @@ class Voting extends Component {
             }
 
             {
-                this.state.data != null && this.state.block >= this.state.data.voteBlockEnd && this.state.data.result == 0 ?
-                <Button onClick={(e) => this.determineFinalResult(e) }>Determine final result</Button>
+                this.state.data != null && this.state.tabulationAvailable && !this.state.voteTabulated ?
+                <Button onClick={(e) => this.tabulateVote(e) }>Tabulate your vote</Button>
                 : ''
+            }
+
+            {
+                
+                this.state.finalResultAvailable ?
+                <Button onClick={(e) => this.determineFinalResult(e) }>Determine final result</Button>
+                : !this.state.tabulationAvailable && !this.state.voteTabulated ?
+                  <p>Final results aren't available yet</p> : ''
             }
 
             { this.state.data != null ?

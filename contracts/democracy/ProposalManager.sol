@@ -51,7 +51,7 @@ contract ProposalManager is Controlled {
     {
         trustNet = _trustNet;
         token = _token;
-        tabulationBlockDelay = 7 days;
+        tabulationBlockDelay = 10 seconds; // TODO: set 7 days
         quorumPercentage = 50;
         
     }
@@ -106,8 +106,10 @@ contract ProposalManager is Controlled {
         Proposal storage proposal = proposals[_proposalId];
         require(block.number > proposal.voteBlockEnd);
         require(!proposal.tabulated[_delegator]);
-        proposal.tabulated[_delegator] = true;
+       
+
         Vote _vote = proposal.voteMap[_delegator];
+        
         if(_vote == Vote.Null) {
             address delegate = trustNet.getVoteDelegation(proposal.topic).delegationOfAt(_delegator, proposal.voteBlockEnd);
             _vote = proposal.voteMap[delegate];
@@ -116,6 +118,8 @@ contract ProposalManager is Controlled {
         if (_vote == Vote.Reject || _vote == Vote.Approve) {
             proposal.results[uint8(_vote)] += token.balanceOfAt(_delegator, proposal.voteBlockEnd);
         }
+
+        proposal.tabulated[_delegator] = true;
         proposal.lastTabulationTimestamp = block.timestamp;
     }
 
@@ -131,6 +135,7 @@ contract ProposalManager is Controlled {
         public
     {
         Proposal storage proposal = proposals[_proposalId];
+        require(block.number > proposal.voteBlockEnd);
         require(proposal.lastTabulationTimestamp + tabulationBlockDelay < block.timestamp);
         require(proposal.result == Vote.Null);
         uint256 totalTokens = token.totalSupplyAt(proposal.voteBlockEnd);
@@ -194,7 +199,30 @@ contract ProposalManager is Controlled {
 
     function isVotingAvailable(uint _proposalId) public view returns (bool){
         Proposal memory p = proposals[_proposalId];
-        return p.voteBlockEnd > block.number && p.result == Vote.Null;
+        return p.voteBlockEnd > block.number && p.result == Vote.Null && p.lastTabulationTimestamp == 0;
+    }
+
+    function canCalculateFinalResult(uint _proposalId) public view returns (bool){
+        Proposal memory proposal = proposals[_proposalId];
+        return  proposal.lastTabulationTimestamp + tabulationBlockDelay < block.timestamp &&
+                proposal.result == Vote.Null &&
+                block.number > proposal.voteBlockEnd;
+    }
+
+    function isTabulationAvailable(uint _proposalId) public view returns (bool){
+        Proposal memory p = proposals[_proposalId];
+        return !isVotingAvailable(_proposalId) && 
+               block.timestamp > p.lastTabulationTimestamp + tabulationBlockDelay;
+    }
+
+    function isDelegatorVoteTabulated(uint _proposalId, address _delegator)
+        public
+        view
+        returns (bool)
+    {
+        Proposal storage proposal = proposals[_proposalId];
+        return proposal.tabulated[_delegator];
+
     }
 
     function getVoteInfo(uint _proposalId, address voter)
