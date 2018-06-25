@@ -11,7 +11,6 @@ class Voting extends Component {
       super(props);
       this.state = {
           decision: 0,
-          proposal: null,
           finalResult: null
         };
     }
@@ -19,12 +18,11 @@ class Voting extends Component {
     componentDidMount(){
         __embarkContext.execWhenReady(async () => {
             ProposalManager.options.address = await ProposalCuration.methods.proposalManager().call();
-            let _proposal = await ProposalManager.methods.getProposal(this.props.proposalId).call();
+            let _proposal = await ProposalManager.methods.getVoteInfo(this.props.proposalId, web3.eth.defaultAccount).call();
             let blockNum = await web3.eth.getBlockNumber();
-            let _data = await ProposalManager.methods.getProposalData(this.props.proposalId).call();
+            let _data = await ProposalManager.methods.proposals(this.props.proposalId).call();
 
             this.setState({
-                proposal: _proposal,
                 data: _data,
                 decision: _proposal.vote,
                 block: blockNum,
@@ -46,7 +44,6 @@ class Voting extends Component {
                 finalResult: receipt.events.ProposalResult.finalResult
             });
         }
-        console.log(receipt);
     }
 
     async handleClick(e, vote){
@@ -70,8 +67,6 @@ class Voting extends Component {
                 block: blockNum
             });
         }
-        console.log(receipt);
-
         // TODO: handle error
     }
 

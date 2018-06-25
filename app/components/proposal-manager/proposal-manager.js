@@ -49,7 +49,7 @@ class InnerForm extends PureComponent {
     setSubmitPrice(address, allowed, stakeValue)
       .send()
       .then(res => {
-        this.setState({ ...state, canSubmit: true });
+        this.setState({ ...this.state, canSubmit: true });
         console.log(res);
       })
       .catch(err => { console.log(err) })

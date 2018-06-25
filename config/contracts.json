@@ -78,7 +78,8 @@
           "$DelegationProxyFactory"
         ],
         "gasLimit": 5000000
-      }
+      },
+      "PollManager":  { "deploy": false }
     }
   }
 }
