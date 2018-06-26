@@ -1,14 +1,15 @@
 pragma solidity ^0.4.6;
 
 import "./SingleChoice.sol";
-import "./PollManager.sol";
+import "./IPollFactory.sol";
+
 
 contract SingleChoiceFactory is IPollFactory  {
     uint salt;
-    function create(bytes _description) returns(address) {
+    function create(bytes _description) public returns(address) {
         salt++;
         SingleChoice sc = new SingleChoice(msg.sender, _description, salt);
-        SingleChoiceCreated(address(sc));
+        emit SingleChoiceCreated(address(sc));
         return address(sc);
     }
 

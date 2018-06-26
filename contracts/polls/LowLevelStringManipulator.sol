@@ -65,7 +65,7 @@ contract LowLevelStringManipulator {
     }
 
     function getTokenNameSymbol(address tokenAddr) internal returns (string name, string symbol) {
-        return (getString(tokenAddr, bytes4(sha3("name()"))),getString(tokenAddr, bytes4(sha3("symbol()"))));
+        return (getString(tokenAddr, bytes4(keccak256("name()"))),getString(tokenAddr, bytes4(keccak256("symbol()"))));
     }
 
     function getString(address _dst, bytes4 sig) internal returns(string) {
