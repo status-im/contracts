@@ -1,15 +1,9 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import ReactDOM from 'react-dom';
-import { Tabs, Tab } from 'react-bootstrap';
 
 import EmbarkJS from 'Embark/EmbarkJS';
-import TopNavbar from './components/topnavbar';
-import TestTokenUI from './components/testtoken';
-import ERC20TokenUI from './components/erc20token';
-import ProposalManager from './components/proposal-manager/proposal-manager'
-import VotingDapp from './components/voting-dapp/voting-dapp';
-import SNTUI from './components/snt-ui';
-
+import AdminView from './components/AdminView';
+import Voting from './components/Voting';
 import SNT from  'Embark/contracts/SNT';
 window['SNT'] = SNT;
 
@@ -20,6 +14,7 @@ class App extends React.Component {
   constructor(props) {
     super(props);
   }
+  state = { admin: false };
 
   componentDidMount(){
     __embarkContext.execWhenReady(() => {
@@ -32,34 +27,20 @@ class App extends React.Component {
 
   _renderStatus(title, available) {
     let className = available ? 'pull-right status-online' : 'pull-right status-offline';
-    return <React.Fragment>
+    return <Fragment>
       {title}
       <span className={className}></span>
-    </React.Fragment>;
+    </Fragment>;
   }
 
   render(){
+    const { admin } = this.state;
+    const toggleAdmin = () => this.setState({ admin: true });
     return (
-      <div>
-        <TopNavbar accountUpdateHandler={(e) => this.setAccount(e)} />
-        <Tabs defaultActiveKey={0} id="uncontrolled-tab-example">
-          <Tab eventKey={0} title="VotingDapp">
-              <VotingDapp />
-          </Tab>
-          <Tab eventKey={1} title="ProposalManager">
-            <ProposalManager />
-          </Tab>
-          <Tab eventKey={2} title="SNT Token">
-              <SNTUI />
-          </Tab>
-          <Tab eventKey={3} title="TestToken">
-              <TestTokenUI />
-          </Tab>
-          <Tab eventKey={4} title="ERC20Token">
-              <ERC20TokenUI />
-          </Tab>
-        </Tabs>
-      </div>);
+      <Fragment>
+        {admin ? <AdminView setAccount={this.setAccount} /> : <Voting toggleAdmin={toggleAdmin} />}
+      </Fragment>
+    );
   }
 }
 
