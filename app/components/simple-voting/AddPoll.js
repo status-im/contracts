@@ -1,5 +1,4 @@
 import React, { Fragment } from 'react';
-import web3 from 'web3';
 import Card from '@material-ui/core/Card';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
@@ -8,8 +7,6 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import { withStyles } from '@material-ui/core/styles';
 import { withFormik } from 'formik';
-
-const Web3 = new web3;
 
 const oneDayinBlocks = 5760;
 
@@ -71,13 +68,13 @@ const AddPoll = withFormik({
   },
   async handleSubmit(values, { setSubmitting }) {
     const { description } = values;
-    const { getBlockNumber } = Web3.eth;
+    const { eth: { getBlockNumber }, utils: { asciiToHex } } = window.web3;
     const { addPoll } = PollManager.methods;
     const currentBlock = await getBlockNumber();
     const endTime = currentBlock * oneDayinBlocks * 90;
     addPoll(
       endTime,
-      description
+      asciiToHex(description)
     )
       .send()
       .then(res => {
