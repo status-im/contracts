@@ -26,12 +26,12 @@ config({
         ],
         "gasLimit": 4000000
     },
+    "SingleChoiceFactory": {
+        "deploy": false
+    },
     "PollManager": {
         "deploy": true,
         "args": ["$MiniMeTokenFactory", "$SNT"]
-      },
-    "SingleChoiceFactory": {
-        "deploy": true
     }
   }
 });
@@ -84,7 +84,6 @@ describe("VotingDapp", function () {
             receipt = await PollManager.methods.addPoll(
                 blockNumber,
                 blockNumber + 10, 
-                SingleChoiceFactory.options.address,
                 question)
                 .send({from: accounts[8]});
             assert.fail('should have reverted before');
@@ -99,7 +98,6 @@ describe("VotingDapp", function () {
         receipt = await PollManager.methods.addPoll(
                                 blockNumber,
                                 blockNumber + 10, 
-                                SingleChoiceFactory.options.address,
                                 question)
                                 .send({from: accounts[0]});
 

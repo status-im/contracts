@@ -3,6 +3,10 @@ pragma solidity ^0.4.23;
 import "../common/Controlled.sol";
 import "./LowLevelStringManipulator.sol";
 import "../token/MiniMeToken.sol";
+import "./IPollFactory.sol";
+import "./SingleChoiceFactory.sol";
+
+
 
 contract IPollContract {
     function deltaVote(int _amount, bytes32 _ballot) public returns (bool _succes);
@@ -10,9 +14,6 @@ contract IPollContract {
     function question() public constant returns (string);
 }
 
-contract IPollFactory {
-    function create(bytes _description) public returns(address);
-}
 
 contract PollManager is LowLevelStringManipulator, Controlled {
 
@@ -33,6 +34,7 @@ contract PollManager is LowLevelStringManipulator, Controlled {
     }
 
     Poll[] _polls;
+    IPollFactory pollFactory;
 
     MiniMeTokenFactory public tokenFactory;
     MiniMeToken public token;
@@ -41,6 +43,7 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         public {
         tokenFactory = MiniMeTokenFactory(_tokenFactory);
         token = MiniMeToken(_token);
+        pollFactory = IPollFactory(new SingleChoiceFactory());
     }
 
     modifier onlySNTHolder {
@@ -52,7 +55,6 @@ contract PollManager is LowLevelStringManipulator, Controlled {
     function addPoll(
         uint _startBlock,
         uint _endBlock,
-        address _pollFactory,
         bytes _description)
         public
         onlySNTHolder
@@ -82,7 +84,7 @@ contract PollManager is LowLevelStringManipulator, Controlled {
             proposalSymbol,
             true);
 
-        p.pollContract = IPollFactory(_pollFactory).create(_description);
+        p.pollContract = pollFactory.create(_description);
 
         require(p.pollContract != 0);
 

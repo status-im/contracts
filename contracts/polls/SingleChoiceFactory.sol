@@ -1,7 +1,8 @@
 pragma solidity ^0.4.6;
 
 import "./SingleChoice.sol";
-import "./PollManager.sol";
+import "./IPollFactory.sol";
+
 
 contract SingleChoiceFactory is IPollFactory  {
     uint salt;

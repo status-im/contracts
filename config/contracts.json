@@ -48,10 +48,6 @@
       "TestToken": {
         "deploy": true
       },
-      "MultiOptionPollManager": {
-        "deploy": false
-      },
-
       "SNT": {
         "instanceOf": "MiniMeToken",
         "deploy": true,
@@ -83,10 +79,13 @@
         ],
         "gasLimit": 5000000
       },
-     "PollManager": {
-       "deploy": true,
-       "args": ["$MiniMeTokenFactory", "$SNT"]
-     },
+      "SingleChoiceFactory": {
+        "deploy": false
+      },
+      "PollManager": {
+          "deploy": true,
+          "args": ["$MiniMeTokenFactory", "$SNT"]
+      },
      "SingleChoice": {
        "deploy": false
      }
