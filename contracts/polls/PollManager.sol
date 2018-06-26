@@ -53,19 +53,18 @@ contract PollManager is LowLevelStringManipulator, Controlled {
     }
 
     function addPoll(
-        uint _startBlock,
         uint _endBlock,
         bytes _description)
         public
         onlySNTHolder
         returns (uint _idPoll)
     {
-        require(_endBlock > _startBlock && _endBlock > block.number);
+        require(_endBlock > block.number);
 
         _idPoll = _polls.length;
         _polls.length ++;
         Poll storage p = _polls[ _idPoll ];
-        p.startBlock = _startBlock;
+        p.startBlock = block.number;
         p.endBlock = _endBlock;
         p.voters = 0;
 
@@ -78,7 +77,7 @@ contract PollManager is LowLevelStringManipulator, Controlled {
 
         p.token = tokenFactory.createCloneToken(
             address(token),
-            _startBlock - 1,
+            block.number - 1,
             proposalName,
             token.decimals(),
             proposalSymbol,
