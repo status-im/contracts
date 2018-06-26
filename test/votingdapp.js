@@ -82,7 +82,6 @@ describe("VotingDapp", function () {
         // Creating a proposal without holding SNT SHOULD FAIL!
         try {
             receipt = await PollManager.methods.addPoll(
-                blockNumber,
                 blockNumber + 10, 
                 question)
                 .send({from: accounts[8]});
@@ -96,7 +95,6 @@ describe("VotingDapp", function () {
         // Creating a proposal as a SNT holder
         
         receipt = await PollManager.methods.addPoll(
-                                blockNumber,
                                 blockNumber + 10, 
                                 question)
                                 .send({from: accounts[0]});
