@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.23;
 
 import "../common/Controlled.sol";
 import "./LowLevelStringManipulator.sol";
@@ -27,6 +27,8 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         address token;
         address pollContract;
         bool canceled;
+        uint voters;
+        mapping(bytes32 => uint) votersPerBallot;
         mapping(address => VoteLog) votes;
     }
 
@@ -62,10 +64,10 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         Poll p = _polls[ _idPoll ];
         p.startBlock = _startBlock;
         p.endBlock = _endBlock;
+        p.voters = 0;
 
-
-        var (name,symbol) = getTokenNameSymbol(address(token));
-        string memory proposalName = strConcat(name , "_", uint2str(_idPoll));
+        var (name, symbol) = getTokenNameSymbol(address(token));
+        string memory proposalName = strConcat(name, "_", uint2str(_idPoll));
         string memory proposalSymbol = strConcat(symbol, "_", uint2str(_idPoll));
 
         p.token = tokenFactory.createCloneToken(
@@ -80,6 +82,8 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         p.pollContract = IPollFactory(_pollFactory).create(_description);
 
         if (p.pollContract == 0) throw;
+
+        emit PollCreated(_idPoll); 
     }
 
     function cancelPoll(uint _idPoll) onlyController {
@@ -88,6 +92,18 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         if (getBlockNumber() >= p.endBlock) throw;
         p.canceled = true;
         PollCanceled(_idPoll);
+    }
+
+    function canVote(uint _idPoll) public view returns(bool) {
+        if(_idPoll >= _polls.length) return false;
+
+        Poll storage p = _polls[_idPoll];
+        uint balance = MiniMeToken(p.token).balanceOf(msg.sender);
+
+        return block.number >= p.startBlock && 
+                block.number <= p.endBlock && 
+               !p.canceled && 
+               balance != 0;
     }
 
     function vote(uint _idPoll, bytes32 _ballot) {
@@ -110,6 +126,10 @@ contract PollManager is LowLevelStringManipulator, Controlled {
 
         p.votes[msg.sender].ballot = _ballot;
         p.votes[msg.sender].amount = amount;
+        
+        p.voters++;
+
+        p.votersPerBallot[_ballot]++;
 
         if (!IPollContract(p.pollContract).deltaVote(int(amount), _ballot)) throw;
 
@@ -129,9 +149,11 @@ contract PollManager is LowLevelStringManipulator, Controlled {
 
         if (!IPollContract(p.pollContract).deltaVote(-int(amount), ballot)) throw;
 
-
         p.votes[msg.sender].ballot = 0;
         p.votes[msg.sender].amount = 0;
+        p.votersPerBallot[ballot]--;
+
+        p.voters--;
 
 //        enableTransfers = true;
         if (!MiniMeToken(p.token).transferFrom(address(this), msg.sender, amount)) throw;
@@ -155,7 +177,8 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         bytes32 _pollType,
         string _question,
         bool _finalized,
-        uint _totalCensus
+        uint _totalCensus,
+        uint _voters
     ) {
         if (_idPoll >= _polls.length) throw;
         Poll p = _polls[_idPoll];
@@ -168,6 +191,7 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         _question = getString(p.pollContract, bytes4(sha3("question()")));
         _finalized = (!p.canceled) && (getBlockNumber() >= _endBlock);
         _totalCensus = MiniMeToken(p.token).totalSupply();
+        _voters = p.voters;
     }
 
     function getVote(uint _idPoll, address _voter) constant returns (bytes32 _ballot, uint _amount) {
@@ -176,6 +200,16 @@ contract PollManager is LowLevelStringManipulator, Controlled {
 
         _ballot = p.votes[_voter].ballot;
         _amount = p.votes[_voter].amount;
+    }
+
+    function getVotesByBallot(uint _idPoll, bytes32 _ballot)
+        public view returns(uint voters, uint votes) {
+        if (_idPoll >= _polls.length) throw;
+        Poll storage p = _polls[_idPoll];
+
+        voters = p.votersPerBallot[_ballot];
+        votes = p.votersPerBallot[_ballot];
+
     }
 
     function proxyPayment(address ) payable returns(bool) {
@@ -199,6 +233,7 @@ contract PollManager is LowLevelStringManipulator, Controlled {
     event Vote(uint indexed idPoll, address indexed _voter, bytes32 ballot, uint amount);
     event Unvote(uint indexed idPoll, address indexed _voter, bytes32 ballot, uint amount);
     event PollCanceled(uint indexed idPoll);
+    event PollCreated(uint indexed idPoll);
 
 
 

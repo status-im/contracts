@@ -1,8 +1,9 @@
 pragma solidity ^0.4.6;
 
 import "./SingleChoice.sol";
+import "./PollManager.sol";
 
-contract SingleChoiceFactory {
+contract SingleChoiceFactory is IPollFactory  {
     uint salt;
     function create(bytes _description) returns(address) {
         salt++;

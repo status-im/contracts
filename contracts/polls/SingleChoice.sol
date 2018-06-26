@@ -26,7 +26,7 @@ contract SingleChoice is Controlled {
     using RLP for bytes;
 
     string public question;
-    string[] public options;
+    string[] public choices;
     int[] public result;
     bytes32 uid;
 
@@ -50,11 +50,11 @@ contract SingleChoice is Controlled {
         var itrOptions  = itmOptions.iterator();
 
         while(itrOptions.hasNext()) {
-            options.length++;
-            options[options.length-1] = itrOptions.next().toAscii();
+            choices.length++;
+            choices[choices.length-1] = itrOptions.next().toAscii();
         }
 
-        result.length = options.length;
+        result.length = choices.length; 
     }
 
     function pollType() constant returns (bytes32) {
@@ -63,7 +63,7 @@ contract SingleChoice is Controlled {
 
     function isValid(bytes32 _ballot) constant returns(bool) {
         uint v = uint(_ballot) / (2**248);
-        if (v>=options.length) return false;
+        if (v>=choices.length) return false;
         if (getBallot(v) != _ballot) return false;
         return true;
     }
@@ -76,7 +76,7 @@ contract SingleChoice is Controlled {
     }
 
     function nOptions() constant returns(uint) {
-        return options.length;
+        return choices.length;
     }
 
     function getBallot(uint _option) constant returns(bytes32) {
