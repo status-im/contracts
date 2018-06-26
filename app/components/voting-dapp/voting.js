@@ -42,7 +42,7 @@ class Voting extends Component {
             finalResult: _data.result,
             votingAvailable: _votingAvailable,
             tabulationAvailable: _tabulationAvailable,
-            canCalculateFinalResult: _canCalculateFinalResult,
+            finalResultAvailable: _canCalculateFinalResult,
             voteTabulated: _voteTabulated
         });
     }
@@ -105,6 +105,7 @@ class Voting extends Component {
     }
 
     render(){
+        console.log(this.state);
         return <div>
             {
                 this.state.decision != 0 ?
