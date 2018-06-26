@@ -8,7 +8,7 @@ import "../token/MiniMeTokenFactory.sol";
  * @title PollManager
  * @author Richard Ramos (Status Research & Development GmbH)
  */
-contract PollManager is Controlled {
+contract MultiOptionPollManager is Controlled {
     event PollCreated(uint256 pollId, uint8 numOptions);
     event PollCanceled(uint256 pollId);
     event Voted(address voter, uint8[] votes);
@@ -131,7 +131,7 @@ contract PollManager is Controlled {
         Poll memory p = polls[_pollId];
         return p.end > block.number;
     }
-
+    
     function cancel(uint _pollId) onlyController {
         require(polls[_pollId].start > 0);
         require(polls[_pollId].end < block.number);
