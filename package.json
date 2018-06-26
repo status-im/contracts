@@ -17,9 +17,12 @@
   },
   "homepage": "https://github.com/status-im/contracts#readme",
   "dependencies": {
+    "@material-ui/core": "^1.3.0",
+    "@material-ui/icons": "^1.1.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-stage-2": "^6.24.1",
     "bignumber.js": "^5.0.0",
+    "bootstrap": "^3.3.7",
     "formik": "^0.11.11",
     "jquery": "^3.3.1",
     "lodash": "^4.17.10",
@@ -28,6 +31,7 @@
     "react-bootstrap": "^0.32.1",
     "react-dom": "^16.3.2",
     "react-toggle": "^4.0.2",
-    "rlp": "^2.0.0"
+    "rlp": "^2.0.0",
+    "typeface-roboto": "0.0.54"
   }
 }
