@@ -59,13 +59,13 @@ describe("VotingDapp", function () {
         
         web3.eth.getAccounts().then((acc) => { 
             accounts = acc; 
-            return SNT.methods.generateTokens(accounts[0], 123456).send()
+            return SNT.methods.generateTokens(accounts[0], 6).send()
         }).then((receipt) => { 
-            return SNT.methods.generateTokens(accounts[1], 789012).send()
+            return SNT.methods.generateTokens(accounts[1], 12).send()
         }).then((receipt) => { 
-            return SNT.methods.generateTokens(accounts[2], 345678).send()
+            return SNT.methods.generateTokens(accounts[2], 10).send()
         }).then((receipt) => { 
-            return SNT.methods.generateTokens(accounts[3], 901234).send()
+            return SNT.methods.generateTokens(accounts[3], 7).send()
         }).then((receipt) => {
             done(); 
         });
@@ -148,17 +148,24 @@ describe("VotingDapp", function () {
         poll = await PollManager.methods.poll(pollId).call();
         let votersByBallotYES = await PollManager.methods.getVotesByBallot(pollId, Yes).call();
         let tokenVotesByBallotYES = await pollContract.methods.result(0).call(); // 0 == Yes (because it is the initial option )
-        
-        // console.dir(poll); // Will contain state of the poll
-        // console.log(tokenVotesByBallotYES); // Contains how many votes has a ballot
-        // console.log(votersByBallotYES); // Contains how many voters voted for that option
+        let quadraticVotesByBallotYES = await pollContract.methods.qvResult(0).call(); // 0 == Yes (because it is the initial option )
 
+        // Will contain state of the poll
+        // console.dir(poll);
+
+        // Contains how many votes has a ballot
+        // console.log(tokenVotesByBallotYES); 
+
+        // Contains how many votes has a ballot using quadratic voting
+        //console.log(quadraticVotesByBallotYES);
+
+        // Contains how many voters voted for that option
+        // console.log(votersByBallotYES); 
 
         // ===================================================
         // Unvote
         receipt = await PollManager.methods.unvote(pollId).send({from: accounts[0]});
         assert.equal(!!receipt.events.Unvote, true, "Unvote not triggered");
-
 
     });
 

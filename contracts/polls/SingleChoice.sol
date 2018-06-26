@@ -27,7 +27,10 @@ contract SingleChoice is Controlled {
 
     string public question;
     string[] public choices;
+
     int[] public result;
+    int[] public qvResult;
+
     bytes32 uid;
 
     function SingleChoice(address _controller, bytes _rlpDefinition, uint salt) {
@@ -55,6 +58,7 @@ contract SingleChoice is Controlled {
         }
 
         result.length = choices.length; 
+        qvResult.length = choices.length; 
     }
 
     function pollType() public constant returns (bytes32) {
@@ -71,7 +75,18 @@ contract SingleChoice is Controlled {
     function deltaVote(int _amount, bytes32 _ballot) onlyController returns (bool _succes) {
         if (!isValid(_ballot)) return false;
         uint v = uint(_ballot) / (2**248);
+        
         result[v] += _amount;
+
+        int qv;
+        if (_amount < 0) {
+            qv = -sqrt(-_amount);
+        } else {
+            qv = sqrt(_amount);
+        }
+
+        qvResult[v] += qv;
+        
         return true;
     }
 
@@ -81,6 +96,15 @@ contract SingleChoice is Controlled {
 
     function getBallot(uint _option) constant returns(bytes32) {
         return bytes32((_option * (2**248)) + (uint(keccak256(uid, _option)) & (2**248 -1)));
+    }
+
+    function sqrt(int256 x) public pure returns (int256 y) {
+        int256 z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
     }
 }
 
