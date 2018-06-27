@@ -108,8 +108,10 @@ const AddPoll = withFormik({
     const { addPoll } = PollManager.methods;
     const currentBlock = await getBlockNumber();
     const endTime = currentBlock + (oneDayinBlocks * 90);
-
     const toSend = addPoll(endTime, singleChoiceDef(description, ['YES']));
+
+    setSubmitting(true);
+
     toSend.estimateGas()
       .then(gasEstimated => {
         console.log("addPoll gas estimated: "+gasEstimated);
@@ -122,6 +124,8 @@ const AddPoll = withFormik({
       })
       .catch(res => {
         console.log('fail:', res);
+      })
+      .finally(() => {
         setSubmitting(false);
       });
 
