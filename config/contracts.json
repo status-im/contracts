@@ -24,13 +24,13 @@
         "deploy": false
       },
       "DelegationProxyFactory": {
-        "deploy": true
+        "deploy": false
       },
       "ProposalManager": {
         "deploy": false
       },
       "TrustNetwork": {
-        "deploy": true,
+        "deploy": false,
         "args": ["$DelegationProxyFactory"]
       },
       "Factory": {
@@ -72,7 +72,7 @@
         "args": ["$SNT", "$TrustNetwork"]
       },
       "Democracy": {
-        "deploy": true,
+        "deploy": false,
         "args": [
           "$SNT",
           "$DelegationProxyFactory"
