@@ -123,6 +123,9 @@ describe("VotingDapp", function () {
         receipt = await PollManager.methods.vote(pollId, Yes).send({from: accounts[0]});
         assert.equal(!!receipt.events.Vote, true, "Vote not triggered");
         
+        receipt = await PollManager.methods.customVote(pollId, Yes, 12).send({from: accounts[1]});
+        assert.equal(!!receipt.events.Vote, true, "Vote not triggered");
+        
 
         // ===================================================
         // Getting what option the voter selected
@@ -152,7 +155,7 @@ describe("VotingDapp", function () {
         // console.dir(poll);
 
         // Contains how many votes has a ballot
-        // console.log(tokenVotesByBallotYES); 
+        //console.log(tokenVotesByBallotYES); 
 
         // Contains how many votes has a ballot using quadratic voting
         //console.log(quadraticVotesByBallotYES);
@@ -164,7 +167,6 @@ describe("VotingDapp", function () {
         // Unvote
         receipt = await PollManager.methods.unvote(pollId).send({from: accounts[0]});
         assert.equal(!!receipt.events.Unvote, true, "Unvote not triggered");
-
     });
 
 });

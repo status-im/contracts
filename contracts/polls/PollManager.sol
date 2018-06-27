@@ -146,6 +146,32 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         emit Vote(_idPoll, msg.sender, _ballot, amount);
     }
 
+    function customVote(uint _idPoll, bytes32 _ballot, uint _amount) public {
+        require(_idPoll < _polls.length);
+
+        Poll storage p = _polls[_idPoll];
+
+        require(block.number >= p.startBlock && block.number < p.endBlock && !p.canceled);
+
+        unvote(_idPoll);
+
+        uint balance = MiniMeToken(p.token).balanceOf(msg.sender);
+
+        require(balance != 0 && balance >= _amount);
+        require(MiniMeToken(p.token).transferFrom(msg.sender, address(this), _amount));
+
+        p.votes[msg.sender].ballot = _ballot;
+        p.votes[msg.sender].amount = _amount;
+        
+        p.voters++;
+
+        p.votersPerBallot[_ballot]++;
+
+        require(IPollContract(p.pollContract).deltaVote(int(_amount), _ballot));
+
+        emit Vote(_idPoll, msg.sender, _ballot, _amount);
+    }
+
     function unvote(uint _idPoll) public {
         require(_idPoll < _polls.length);
         Poll storage p = _polls[_idPoll];
