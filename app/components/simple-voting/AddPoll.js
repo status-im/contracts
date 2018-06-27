@@ -92,8 +92,10 @@ const InnerForm = ({
 const StyledForm = withStyles(styles)(InnerForm);
 const AddPoll = withFormik({
   mapPropsToValues: props => ({ description: ''}),
-  validate(values){
+  validate(values, props){
     const errors = {};
+    const { description } = values;
+    if(description.toString().trim() === "") errors.description = true;
     return errors;
   },
   async handleSubmit(values, { setSubmitting }) {
@@ -102,17 +104,20 @@ const AddPoll = withFormik({
     const { addPoll } = PollManager.methods;
     const currentBlock = await getBlockNumber();
     const endTime = currentBlock + (oneDayinBlocks * 90);
-    addPoll(
-      endTime,
-      singleChoiceDef(description, ['YES', 'NO'])
-    )
-      .send()
+
+    const toSend = addPoll(endTime, singleChoiceDef(description, ['YES']));
+    toSend.estimateGas()
+      .then(gasEstimated => {
+        console.log("addPoll gas estimated: "+gasEstimated);
+        return toSend.send({gas: gasEstimated + 1000});
+      })
       .then(res => {
         console.log('sucess:', res);
       })
       .catch(res => {
         console.log('fail:', res);
-      })
+      });
+
   }
 })(StyledForm)
 
