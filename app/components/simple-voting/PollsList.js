@@ -20,7 +20,7 @@ const Poll = ({ _question, _totalCensus, _voters }) => (
 
 const PollsList = ({ rawPolls  }) => (
   <Fragment>
-    {rawPolls.map(poll => <Poll {...poll} />)}
+    {rawPolls.map((poll, idx) => <Poll key={idx} {...poll} />)}
   </Fragment>
 )
 

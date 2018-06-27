@@ -2,6 +2,7 @@ import React, { Fragment } from 'react';
 import ReactDOM from 'react-dom';
 import EmbarkJS from 'Embark/EmbarkJS';
 import PollManager from 'Embark/contracts/PollManager';
+import SingleChoice from 'Embark/contracts/SingleChoice';
 import AdminView from './components/AdminView';
 import Voting from './components/Voting';
 import SNT from  'Embark/contracts/SNT';
@@ -15,7 +16,7 @@ const getPolls = (number, pollMethod) => {
     const poll = pollMethod(i).call();
     polls.push(poll);
   }
-  return Promise.all(polls);
+  return Promise.all(polls.reverse());
 }
 
 class App extends React.Component {
@@ -28,6 +29,7 @@ class App extends React.Component {
   componentDidMount(){
     __embarkContext.execWhenReady(() => {
       this._getPolls();
+      this._setVotingOptions();
     });
   }
 
@@ -39,7 +41,16 @@ class App extends React.Component {
     const { nPolls, poll } = PollManager.methods;
     const polls = await nPolls.call();
     const total = await polls.call();
+    if (total) this._setVotingOptions();
     getPolls(total, poll).then(rawPolls => { this.setState({ rawPolls })});
+  }
+
+  async _setVotingOptions(){
+    const poll = await PollManager.methods.poll(0).call();
+    SingleChoice.options.address = poll._pollContract;
+    const yes = await SingleChoice.methods.getBallot(0).call();
+    const no = await SingleChoice.methods.getBallot(1).call();
+    this.setState({ votingOptions: { yes, no } })
   }
 
   _renderStatus(title, available) {
