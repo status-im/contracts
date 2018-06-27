@@ -92,8 +92,10 @@ const InnerForm = ({
 const StyledForm = withStyles(styles)(InnerForm);
 const AddPoll = withFormik({
   mapPropsToValues: props => ({ description: ''}),
-  validate(values){
+  validate(values, props){
     const errors = {};
+    const { description } = values;
+    if(description.toString().trim() === "") errors.description = true;
     return errors;
   },
   async handleSubmit(values, { setSubmitting }) {
