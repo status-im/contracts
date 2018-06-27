@@ -51,11 +51,13 @@ class App extends React.Component {
   }
 
   render(){
-    const { admin } = this.state;
+    const { admin, rawPolls } = this.state;
     const toggleAdmin = () => this.setState({ admin: true });
     return (
       <Fragment>
-        {admin ? <AdminView setAccount={this.setAccount} /> : <Voting toggleAdmin={toggleAdmin} />}
+        {admin ?
+         <AdminView setAccount={this.setAccount} /> :
+         <Voting toggleAdmin={toggleAdmin} rawPolls={rawPolls} />}
       </Fragment>
     );
   }
