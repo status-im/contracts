@@ -23,7 +23,7 @@ const styles = {
 };
 
 function ButtonAppBar(props) {
-  const { classes, toggleAdmin } = props;
+  const { classes, toggleAdmin, togglePoll } = props;
   return (
     <div className={classes.root} >
       <AppBar position="static">
@@ -34,7 +34,7 @@ function ButtonAppBar(props) {
           <Typography variant="display1" color="inherit" className={classes.flex}>
             What should we build next?
           </Typography>
-          <Button color="inherit" style={{ fontSize: '16px' }}>Add Proposal</Button>
+          <Button variant="outlined" color="inherit" style={{ fontSize: '16px' }} onClick={togglePoll}>Add Proposal</Button>
         </Toolbar>
       </AppBar>
     </div>

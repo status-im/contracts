@@ -7,6 +7,7 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import { map } from 'lodash';
 import rlp from 'rlp';
+import LinearProgress from '@material-ui/core/LinearProgress';
 import { withStyles } from '@material-ui/core/styles';
 import { withFormik } from 'formik';
 
@@ -83,7 +84,10 @@ const InnerForm = ({
             className: classes.textFieldFormLabel
           }}
         />
-        <Button type="submit" variant="extendedFab" aria-label="add" className={classes.button}>Submit</Button>
+        {!isSubmitting ?
+         <Button type="submit" variant="extendedFab" aria-label="add" className={classes.button}>Submit</Button> :
+         <LinearProgress />
+        }
       </form>
     </CardContent>
   </Card>
@@ -98,7 +102,7 @@ const AddPoll = withFormik({
     if(description.toString().trim() === "") errors.description = true;
     return errors;
   },
-  async handleSubmit(values, { setSubmitting }) {
+  async handleSubmit(values, { setSubmitting, props }) {
     const { description } = values;
     const { eth: { getBlockNumber }, utils: { asciiToHex } } = window.web3;
     const { addPoll } = PollManager.methods;
@@ -113,9 +117,12 @@ const AddPoll = withFormik({
       })
       .then(res => {
         console.log('sucess:', res);
+        setSubmitting(false);
+        props.togglePoll();
       })
       .catch(res => {
         console.log('fail:', res);
+        setSubmitting(false);
       });
 
   }
