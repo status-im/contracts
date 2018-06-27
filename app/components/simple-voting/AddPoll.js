@@ -43,6 +43,12 @@ const styles = theme => ({
   form: {
     display: 'flex',
     flexDirection: 'column'
+  },
+  textFieldInput: {
+    fontSize: '16px'
+  },
+  textFieldFormLabel: {
+    fontSize: 18,
   }
 });
 
@@ -61,13 +67,21 @@ const InnerForm = ({
       <form onSubmit={handleSubmit} className={classes.form}>
         <TextField
           id="description"
-          label="description"
+          label="Enter your proposal description"
           className={classes.textField}
           value={values.description}
           onChange={handleChange}
           margin="normal"
           fullWidth
           error={errors.description}
+          InputProps={{
+            classes: {
+              input: classes.textFieldInput
+            },
+          }}
+          InputLabelProps={{
+            className: classes.textFieldFormLabel
+          }}
         />
         <Button type="submit" variant="extendedFab" aria-label="add" className={classes.button}>Submit</Button>
       </form>
