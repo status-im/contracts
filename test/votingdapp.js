@@ -1,6 +1,5 @@
 const utils = require('../utils/testUtils')
 const assert = require('assert');
-const SingleChoice = require('Embark/contracts/SingleChoice');
 const BN = web3.utils.BN;
 var _ = require('lodash');
 var rlp = require('rlp');
@@ -26,29 +25,12 @@ config({
         ],
         "gasLimit": 4000000
     },
-    "SingleChoiceFactory": {
-        "deploy": false
-    },
     "PollManager": {
         "deploy": true,
         "args": ["$MiniMeTokenFactory", "$SNT"]
     }
   }
 });
-
-singleChoiceDef = (question, options) => {
-    var d = [
-        new Buffer(question),
-        _.map(options, function(o) {
-            return new Buffer(o);
-        })
-    ];
-
-    var b= rlp.encode(d);
-    var rlpDefinition =  '0x' + b.toString('hex');
-
-    return rlpDefinition;
-}
 
 describe("VotingDapp", function () {
     this.timeout(0);
@@ -74,7 +56,7 @@ describe("VotingDapp", function () {
     it("Test", async () => {
 
         const blockNumber = await web3.eth.getBlockNumber();
-        const question =  singleChoiceDef("Move from Slack to Status Desktop", [ "Yes", "No" ]);
+        const question =  "Move from Slack to Status Desktop";
         let receipt;
         
 
@@ -103,14 +85,7 @@ describe("VotingDapp", function () {
 
         const pollId = receipt.events.PollCreated.returnValues.idPoll;
         let poll = await PollManager.methods.poll(pollId).call();
-        
-        SingleChoice.options.address = poll._pollContract;
-        const pollContract = SingleChoice; 
-        
-        // Options are represented as a hex value
-        const Yes = await SingleChoice.methods.getBallot(0).call();
-        const No = await SingleChoice.methods.getBallot(1).call();
-      
+   
 
         // ===================================================
         // Determining if I can vote por a proposal
@@ -120,23 +95,24 @@ describe("VotingDapp", function () {
 
         // ===================================================
         // Voting
-        receipt = await PollManager.methods.vote(pollId, Yes).send({from: accounts[0]});
+        receipt = await PollManager.methods.vote(pollId).send({from: accounts[0]});
         assert.equal(!!receipt.events.Vote, true, "Vote not triggered");
         
-        receipt = await PollManager.methods.customVote(pollId, Yes, 12).send({from: accounts[1]});
+        receipt = await PollManager.methods.customVote(pollId, 12).send({from: accounts[1]});
         assert.equal(!!receipt.events.Vote, true, "Vote not triggered");
         
 
         // ===================================================
         // Getting what option the voter selected
         let myVote = await PollManager.methods.getVote(pollId, accounts[0]).call();
-        assert.equal(myVote._ballot, Yes, "Vote is different from selected");
+        const balance = await SNT.methods.balanceOf(accounts[0]).call();
+        assert.equal(myVote, balance, "Vote is different from selected");
 
 
         // ===================================================
         // Voting when you're not a SNT holder SHOULD FAIL!
         try {
-            receipt = await PollManager.methods.vote(pollId, Yes)
+            receipt = await PollManager.methods.vote(pollId)
                             .send({from: accounts[8]});
             assert.fail('should have reverted before');
         } catch(error) {
@@ -147,21 +123,21 @@ describe("VotingDapp", function () {
         // ===================================================
         // Getting proposal information
         poll = await PollManager.methods.poll(pollId).call();
-        let votersByBallotYES = await PollManager.methods.getVotesByBallot(pollId, Yes).call();
-        let tokenVotesByBallotYES = await pollContract.methods.result(0).call(); // 0 == Yes (because it is the initial option )
-        let quadraticVotesByBallotYES = await pollContract.methods.qvResult(0).call(); // 0 == Yes (because it is the initial option )
+        let tokenVotes = poll._results;
+        let quadraticVotes = poll._qvResults;
+        let voters = poll._voters;
 
         // Will contain state of the poll
         // console.dir(poll);
 
-        // Contains how many votes has a ballot
-        //console.log(tokenVotesByBallotYES); 
+        // Contains how many voters
+        // console.log(voters); 
 
-        // Contains how many votes has a ballot using quadratic voting
-        //console.log(quadraticVotesByBallotYES);
+        // Contains how many votes using quadratic voting
+        // console.log(quadraticVotes);
 
-        // Contains how many voters voted for that option
-        // console.log(votersByBallotYES); 
+        // Contains how many votes
+        // console.log(tokenVotes); 
 
         // ===================================================
         // Unvote

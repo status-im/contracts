@@ -5,27 +5,11 @@ import CardContent from '@material-ui/core/CardContent';
 import PollManager from 'Embark/contracts/PollManager';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import { map } from 'lodash';
-import rlp from 'rlp';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import { withStyles } from '@material-ui/core/styles';
 import { withFormik } from 'formik';
 
 const oneDayinBlocks = 5760;
-
-const singleChoiceDef = (question, options) => {
-  const d = [
-    new Buffer(question),
-    map(options, function(o) {
-      return new Buffer(o);
-    })
-  ];
-
-  const b = rlp.encode(d);
-  const rlpDefinition =  '0x' + b.toString('hex');
-
-  return rlpDefinition;
-}
 
 const styles = theme => ({
   button: {
@@ -108,7 +92,7 @@ const AddPoll = withFormik({
     const { addPoll } = PollManager.methods;
     const currentBlock = await getBlockNumber();
     const endTime = currentBlock + (oneDayinBlocks * 90);
-    const toSend = addPoll(endTime, singleChoiceDef(description, ['YES']));
+    const toSend = addPoll(endTime, description);
 
     setSubmitting(true);
 

@@ -1,40 +1,25 @@
 pragma solidity ^0.4.23;
 
 import "../common/Controlled.sol";
-import "./LowLevelStringManipulator.sol";
 import "../token/MiniMeToken.sol";
-import "./IPollFactory.sol";
-import "./SingleChoiceFactory.sol";
 
 
 
-contract IPollContract {
-    function deltaVote(int _amount, bytes32 _ballot) public returns (bool _succes);
-    function pollType() public constant returns (bytes32);
-    function question() public constant returns (string);
-}
-
-
-contract PollManager is LowLevelStringManipulator, Controlled {
-
-    struct VoteLog {
-        bytes32 ballot;
-        uint amount;
-    }
+contract PollManager is Controlled {
 
     struct Poll {
         uint startBlock;
         uint endBlock;
         address token;
-        address pollContract;
         bool canceled;
         uint voters;
-        mapping(bytes32 => uint) votersPerBallot;
-        mapping(address => VoteLog) votes;
+        string description;
+        mapping(address => uint) votes;
+        uint results;
+        uint qvResults;
     }
 
     Poll[] _polls;
-    IPollFactory pollFactory;
 
     MiniMeTokenFactory public tokenFactory;
     MiniMeToken public token;
@@ -43,7 +28,6 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         public {
         tokenFactory = MiniMeTokenFactory(_tokenFactory);
         token = MiniMeToken(_token);
-        pollFactory = IPollFactory(new SingleChoiceFactory());
     }
 
     modifier onlySNTHolder {
@@ -54,7 +38,7 @@ contract PollManager is LowLevelStringManipulator, Controlled {
 
     function addPoll(
         uint _endBlock,
-        bytes _description)
+        string _description)
         public
         onlySNTHolder
         returns (uint _idPoll)
@@ -67,25 +51,15 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         p.startBlock = block.number;
         p.endBlock = _endBlock;
         p.voters = 0;
-
-        string memory name;
-        string memory symbol;
-        (name, symbol) = getTokenNameSymbol(address(token));
-
-        string memory proposalName = strConcat(name, "_", uint2str(_idPoll));
-        string memory proposalSymbol = strConcat(symbol, "_", uint2str(_idPoll));
+        p.description = _description;
 
         p.token = tokenFactory.createCloneToken(
             address(token),
             block.number - 1,
-            proposalName,
+            "SNT Voting Token",
             token.decimals(),
-            proposalSymbol,
+            "SVT",
             true);
-
-        p.pollContract = pollFactory.create(_description);
-
-        require(p.pollContract != 0);
 
         emit PollCreated(_idPoll); 
     }
@@ -120,7 +94,16 @@ contract PollManager is LowLevelStringManipulator, Controlled {
                balance != 0;
     }
 
-    function vote(uint _idPoll, bytes32 _ballot) public {
+    function sqrt(uint256 x) public pure returns (uint256 y) {
+        uint256 z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+    }
+
+    function vote(uint _idPoll) public {
         require(_idPoll < _polls.length);
 
         Poll storage p = _polls[_idPoll];
@@ -134,19 +117,16 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         require(amount != 0);
         require(MiniMeToken(p.token).transferFrom(msg.sender, address(this), amount));
 
-        p.votes[msg.sender].ballot = _ballot;
-        p.votes[msg.sender].amount = amount;
-        
+        p.votes[msg.sender] = amount;
         p.voters++;
+        
+        p.results += amount;
+        p.qvResults += sqrt(amount);
 
-        p.votersPerBallot[_ballot]++;
-
-        require(IPollContract(p.pollContract).deltaVote(int(amount), _ballot));
-
-        emit Vote(_idPoll, msg.sender, _ballot, amount);
+        emit Vote(_idPoll, msg.sender, amount);
     }
 
-    function customVote(uint _idPoll, bytes32 _ballot, uint _amount) public {
+    function customVote(uint _idPoll, uint _amount) public {
         require(_idPoll < _polls.length);
 
         Poll storage p = _polls[_idPoll];
@@ -160,16 +140,13 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         require(balance != 0 && balance >= _amount);
         require(MiniMeToken(p.token).transferFrom(msg.sender, address(this), _amount));
 
-        p.votes[msg.sender].ballot = _ballot;
-        p.votes[msg.sender].amount = _amount;
-        
+        p.votes[msg.sender] = _amount;
         p.voters++;
 
-        p.votersPerBallot[_ballot]++;
+        p.results += _amount;
+        p.qvResults += sqrt(_amount);
 
-        require(IPollContract(p.pollContract).deltaVote(int(_amount), _ballot));
-
-        emit Vote(_idPoll, msg.sender, _ballot, _amount);
+        emit Vote(_idPoll, msg.sender, _amount);
     }
 
     function unvote(uint _idPoll) public {
@@ -178,21 +155,18 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         
         require(block.number >= p.startBlock && block.number < p.endBlock && !p.canceled);
 
-        uint amount = p.votes[msg.sender].amount;
-        bytes32 ballot = p.votes[msg.sender].ballot;
+        uint amount = p.votes[msg.sender];
         if (amount == 0) return;
 
-        require(IPollContract(p.pollContract).deltaVote(-int(amount), ballot));
-
-        p.votes[msg.sender].ballot = 0x00;
-        p.votes[msg.sender].amount = 0;
-        p.votersPerBallot[ballot]--;
+        p.votes[msg.sender] = 0;
 
         p.voters--;
+        p.results -= amount;
+        p.qvResults -= sqrt(amount);
 
         require(MiniMeToken(p.token).transferFrom(address(this), msg.sender, amount));
 
-        emit Unvote(_idPoll, msg.sender, ballot, amount);
+        emit Unvote(_idPoll, msg.sender, amount);
     }
 
 // Constant Helper Function
@@ -212,13 +186,13 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         uint _startBlock,
         uint _endBlock,
         address _token,
-        address _pollContract,
         bool _canceled,
-        bytes32 _pollType,
-        string _question,
+        string _description,
         bool _finalized,
         uint _totalCensus,
-        uint _voters
+        uint _voters,
+        uint _results,
+        uint _qvResults
     )
     {
         require(_idPoll < _polls.length);
@@ -228,40 +202,24 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         _startBlock = p.startBlock;
         _endBlock = p.endBlock;
         _token = p.token;
-        _pollContract = p.pollContract;
         _canceled = p.canceled;
-        _pollType = IPollContract(p.pollContract).pollType();
-        _question = getString(p.pollContract, bytes4(keccak256("question()")));
+        _description = p.description;
         _finalized = (!p.canceled) && (block.number >= _endBlock);
         _totalCensus = MiniMeToken(p.token).totalSupply();
         _voters = p.voters;
+        _results = p.results;
+        _qvResults = p.qvResults;
     }
 
     function getVote(uint _idPoll, address _voter) 
         public 
         view 
-        returns (bytes32 _ballot, uint _amount)
+        returns (uint)
     {
         require(_idPoll < _polls.length);
 
         Poll storage p = _polls[_idPoll];
-
-        _ballot = p.votes[_voter].ballot;
-        _amount = p.votes[_voter].amount;
-    }
-
-    function getVotesByBallot(uint _idPoll, bytes32 _ballot)
-        public 
-        view 
-        returns(uint voters, uint votes) 
-    {
-        require(_idPoll < _polls.length);
-
-        Poll storage p = _polls[_idPoll];
-
-        voters = p.votersPerBallot[_ballot];
-        votes = p.votersPerBallot[_ballot];
-
+        return p.votes[_voter];
     }
 
     function proxyPayment(address ) 
@@ -286,8 +244,8 @@ contract PollManager is LowLevelStringManipulator, Controlled {
         return true;
     }
 
-    event Vote(uint indexed idPoll, address indexed _voter, bytes32 ballot, uint amount);
-    event Unvote(uint indexed idPoll, address indexed _voter, bytes32 ballot, uint amount);
+    event Vote(uint indexed idPoll, address indexed _voter, uint amount);
+    event Unvote(uint indexed idPoll, address indexed _voter, uint amount);
     event PollCanceled(uint indexed idPoll);
     event PollCreated(uint indexed idPoll);
 }
