@@ -30,7 +30,7 @@ class Poll extends PureComponent {
             Number of voters: {_voters}
           </Typography>
         </CardContent>
-        <Tooltip id="tooltip-icon" placement="top" title={`${value} SNT`}>
+        <Tooltip id="tooltip-icon" placement="top" title={`${value * value} SNT`}>
         <CardActions>
             <Slider value={value} min={0} max={6} step={1} onChange={this.handleChange} />
             <Button variant="contained" color="primary">Vote</Button>
