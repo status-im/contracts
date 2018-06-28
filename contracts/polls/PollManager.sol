@@ -137,7 +137,7 @@ contract PollManager is Controlled {
 
         uint balance = MiniMeToken(p.token).balanceOf(msg.sender);
 
-        require(balance != 0 && balance >= _amount);
+        require(balance != 0 && balance >= _amount && _amount != 0);
         require(MiniMeToken(p.token).transferFrom(msg.sender, address(this), _amount));
 
         p.votes[msg.sender] = _amount;

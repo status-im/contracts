@@ -25,15 +25,15 @@ class Poll extends Component {
 
     this.setState({isSubmitting: true});
 
-    const { customVote, poll } = PollManager.methods;
+    const { customVote, poll, unvote } = PollManager.methods;
     const { idPoll, value } = this.state;
     const balance4Voting = value * value;
 
-    const toSend = customVote(idPoll, balance4Voting);
+    const toSend = balance4Voting === 0 ? unvote(idPoll) : customVote(idPoll, balance4Voting);
     
     toSend.estimateGas()
       .then(gasEstimated => {
-        console.log("customVote gas estimated: " + gasEstimated);
+        console.log("voting gas estimated: " + gasEstimated);
         return toSend.send({gas: gasEstimated + 1000});
       })
       .then(res => {
@@ -67,7 +67,6 @@ class Poll extends Component {
                        })
   }
 
-
   render(){
     const { _description,
             _totalCensus,
@@ -86,7 +85,7 @@ class Poll extends Component {
     return (
       <Card>
         <CardContent>
-          <Typography variant="headline">Proposal: {_description}</Typography>
+          <Typography variant="headline">{_description}</Typography>
           <Typography variant="subheading" color="textSecondary">
             Number of voters: {_voters}
           </Typography>
