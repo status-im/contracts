@@ -96,7 +96,7 @@ class Poll extends Component {
             SNT Allocated: {_results}
           </Typography>
         </CardContent>
-        <Tooltip id="tooltip-icon" placement="top" title={`${value} votes`}>
+        <Tooltip id="tooltip-icon" placement="top" title={`${value * value} SNT - ${value} vote credits`}>
         <CardActions>
             <Slider disabled={disableVote} value={value} min={0} max={maxValue} step={1} onChange={this.handleChange} />
             <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>Vote</Button>
