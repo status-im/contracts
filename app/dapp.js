@@ -5,6 +5,7 @@ import PollManager from 'Embark/contracts/PollManager';
 import AdminView from './components/AdminView';
 import Voting from './components/Voting';
 import SNT from  'Embark/contracts/SNT';
+import { VotingContext } from './context';
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -36,7 +37,7 @@ class App extends React.Component {
     this.setState({account: _account});
   }
 
-  async _getPolls(){
+  _getPolls = async () => {
     const { nPolls, poll } = PollManager.methods;
     const polls = await nPolls.call();
     const total = await polls.call();
@@ -54,13 +55,17 @@ class App extends React.Component {
 
   render(){
     const { admin, rawPolls } = this.state;
+    const { _getPolls } = this;
     const toggleAdmin = () => this.setState({ admin: true });
+    const votingContext = { getPolls: _getPolls, rawPolls, toggleAdmin };
     return (
-      <Fragment>
-        {admin ?
-         <AdminView setAccount={this.setAccount} /> :
-         <Voting toggleAdmin={toggleAdmin} rawPolls={rawPolls} />}
-      </Fragment>
+      <VotingContext.Provider value={votingContext}>
+        <Fragment>
+          {admin ?
+           <AdminView setAccount={this.setAccount} /> :
+           <Voting />}
+        </Fragment>
+      </VotingContext.Provider>
     );
   }
 }
