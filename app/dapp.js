@@ -1,5 +1,6 @@
 import React, { Fragment } from 'react';
 import ReactDOM from 'react-dom';
+import web3 from "Embark/web3"
 import EmbarkJS from 'Embark/EmbarkJS';
 import PollManager from 'Embark/contracts/PollManager';
 import AdminView from './components/AdminView';
@@ -29,7 +30,7 @@ class App extends React.Component {
   componentDidMount(){
     __embarkContext.execWhenReady(() => {
       this._getPolls();
-      this._setVotingOptions();
+      this._setAccounts();
     });
   }
 
@@ -43,6 +44,14 @@ class App extends React.Component {
     const total = await polls.call();
     if (total) getPolls(total, poll).then(rawPolls => { this.setState({ rawPolls })});
     else this.setState({ rawPolls: [] });
+  }
+
+  _setAccounts() {
+    const { fromWei } = web3.utils;
+    web3.eth.getAccounts(async (err, [address]) => {
+      const balance = await SNT.methods.balanceOf(address).call();
+      this.setState({ snt: { balance: fromWei(balance) }});
+    })
   }
 
   updatePoll = async (idPoll) => {
@@ -63,10 +72,10 @@ class App extends React.Component {
   }
 
   render(){
-    const { admin, rawPolls } = this.state;
+    const { admin, rawPolls, snt } = this.state;
     const { _getPolls, updatePoll } = this;
     const toggleAdmin = () => this.setState({ admin: true });
-    const votingContext = { getPolls: _getPolls, rawPolls, toggleAdmin, updatePoll };
+    const votingContext = { getPolls: _getPolls, rawPolls, toggleAdmin, updatePoll, snt };
     return (
       <VotingContext.Provider value={votingContext}>
         <Fragment>
