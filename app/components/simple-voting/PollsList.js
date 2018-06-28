@@ -98,7 +98,7 @@ class Poll extends Component {
         </CardContent>
         <Tooltip id="tooltip-icon" placement="top" title={`${value} votes`}>
         <CardActions>
-            <Slider value={value} min={0} max={maxValue} step={1} onChange={this.handleChange} />
+            <Slider disabled={disableVote} value={value} min={0} max={maxValue} step={1} onChange={this.handleChange} />
             <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>Vote</Button>
         </CardActions>
           </Tooltip>
