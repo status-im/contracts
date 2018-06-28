@@ -5,6 +5,7 @@ import AppBar from './standard/AppBar';
 import AddPoll from './simple-voting/AddPoll';
 import PollsList from './simple-voting/PollsList';
 import StatusLogo from '../ui/components/StatusLogo';
+import Collapse from '@material-ui/core/Collapse';
 
 class Voting extends PureComponent {
   state = { addPoll: false };
@@ -20,7 +21,9 @@ class Voting extends PureComponent {
         <div style={{ margin: '30px', textAlign: 'center' }}>
           <img src="images/logo.png" width="200" />
         </div>
-        {addPoll && <AddPoll togglePoll={togglePoll} />}
+        <Collapse in={addPoll}>
+          <AddPoll togglePoll={togglePoll} />
+        </Collapse>
         {rawPolls && <PollsList rawPolls={rawPolls} />}
       </Fragment>
     )
