@@ -104,9 +104,9 @@ const AddPoll = withFormik({
           })
           .then(res => {
             console.log('sucess:', res);
+            props.getPolls();
             setSubmitting(false);
             props.togglePoll();
-            props.getPolls();
           })
           .catch(res => {
             console.log('fail:', res);

@@ -33,9 +33,7 @@ function ButtonAppBar(props) {
         <div className={classes.root} >
           <AppBar position="static">
             <Toolbar>
-              <IconButton className={classes.menuButton} color="inherit" aria-label="Menu">
-                <MenuIcon onClick={toggleAdmin} />
-              </IconButton>
+              <IconButton className={classes.menuButton} color="inherit" aria-label="Menu" onClick={toggleAdmin} />
               <Typography variant="display1" color="inherit" className={classes.flex}>
                 What should we build next?
               </Typography>
