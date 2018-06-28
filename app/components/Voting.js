@@ -26,7 +26,7 @@ class Voting extends PureComponent {
             <Collapse in={addPoll}>
               <AddPoll togglePoll={togglePoll} getPolls={getPolls} />
             </Collapse>
-            {rawPolls && <PollsList rawPolls={rawPolls} />}
+            {rawPolls && <PollsList rawPolls={rawPolls}  />}
           </Fragment>
         }
       </VotingContext.Consumer>

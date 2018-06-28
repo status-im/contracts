@@ -9,12 +9,14 @@ import Tooltip from '@material-ui/core/Tooltip';
 import PollManager from 'Embark/contracts/PollManager';
 import MiniMeTokenInterface from 'Embark/contracts/MiniMeTokenInterface';
 import web3 from "Embark/web3"
+import CircularProgress from '@material-ui/core/CircularProgress';
+import { VotingContext } from '../../context';
 
 class Poll extends Component {
 
   constructor(props){
     super(props);
-    this.state = { value: 0, balance: 0, isSubmitting: false, ...props };
+    this.state = { value: 0, balance: 0, isSubmitting: false };
   }
 
   handleChange = (event, value) => {
@@ -27,41 +29,39 @@ class Poll extends Component {
     this.setState({isSubmitting: true});
 
     const { customVote, poll, unvote } = PollManager.methods;
-    const { idPoll, value } = this.state;
+    const { updatePoll, idPoll } = this.props;
+    const { value } = this.state;
     const { toWei } = web3.utils;
 
     const balance4Voting = toWei(value * value);
     const toSend = balance4Voting == 0 ? unvote(idPoll) : customVote(idPoll, balance4Voting);
-    
+
     toSend.estimateGas()
-      .then(gasEstimated => {
-        console.log("voting gas estimated: " + gasEstimated);
-        return toSend.send({gas: gasEstimated + 100000});
-      })
-      .then(res => {
-        console.log('sucess:', res);
-        this.setState({isSubmitting: false});
-        return poll(idPoll).call();
-      })
-      .then(poll => {
-        this.setState(poll);
-      })
-      .catch(res => {
-        console.log('fail:', res);
-      })
-      .finally(() => {
-        this.setState({isSubmitting: false});
-      });
+          .then(gasEstimated => {
+            console.log("voting gas estimated: " + gasEstimated);
+            return toSend.send({gas: gasEstimated + 100000});
+          })
+          .then(res => {
+            console.log('sucess:', res);
+            this.setState({isSubmitting: false});
+            return updatePoll(idPoll);
+          })
+          .catch(res => {
+            console.log('fail:', res);
+          })
+          .finally(() => {
+            this.setState({isSubmitting: false});
+          });
   }
 
   componentDidMount() {
     const { fromWei } = web3.utils;
     MiniMeTokenInterface.options.address = this.props._token;
     MiniMeTokenInterface.methods.balanceOfAt(web3.eth.defaultAccount, this.props._startBlock - 1)
-                                .call()
-                                .then(balance => {
-                                  this.setState({balance: fromWei(balance)});
-                                });
+                        .call()
+                        .then(balance => {
+                          this.setState({balance: fromWei(balance)});
+                        });
 
     PollManager.methods.getVote(this.props.idPoll, web3.eth.defaultAccount)
                        .call()
@@ -71,16 +71,15 @@ class Poll extends Component {
   }
 
   render(){
-    const { _description,
-            _totalCensus,
-            _voters,
-            _qvResults,
-            _results, 
-            _canVote, 
-            value, 
-            isSubmitting,
-            balance,
-            votes } = this.state;
+    const {
+      _description,
+      _totalCensus,
+      _voters,
+      _qvResults,
+      _results,
+      _canVote,
+    } = this.props;
+    const { value, balance, isSubmitting } = this.state;
 
     const disableVote = balance == 0 || !_canVote || isSubmitting;
     const { fromWei } = web3.utils;
@@ -101,21 +100,25 @@ class Poll extends Component {
           </Typography>
         </CardContent>
         <Tooltip id="tooltip-icon" placement="top" title={`${value * value} SNT - ${value} vote credits`}>
-        <CardActions>
+          <CardActions>
             <Slider disabled={disableVote} value={value} min={0} max={maxValue} step={1} onChange={this.handleChange} />
-            <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>Vote</Button>
-        </CardActions>
-          </Tooltip>
+            {isSubmitting ? <CircularProgress /> : <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>Vote</Button>}
+          </CardActions>
+        </Tooltip>
       </Card>
     )
   }
 }
 
 
-const PollsList = ({ rawPolls  }) => (
-  <Fragment>
-    {rawPolls.map((poll, idx) => <Poll key={idx} idPoll={idx} {...poll} />)}
-  </Fragment>
+const PollsList = () => (
+  <VotingContext.Consumer>
+    {({ updatePoll, rawPolls }) =>
+    <Fragment>
+      {rawPolls.map((poll, idx) => <Poll key={idx} idPoll={idx} updatePoll={updatePoll} {...poll} />)}
+    </Fragment>
+    }
+  </VotingContext.Consumer>
 )
 
 export default PollsList

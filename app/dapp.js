@@ -45,6 +45,15 @@ class App extends React.Component {
     else this.setState({ rawPolls: [] });
   }
 
+  updatePoll = async (idPoll) => {
+    const { poll } = PollManager.methods;
+    const { rawPolls } = this.state;
+    const newPolls = [...rawPolls];
+    const updatedPoll = await poll(idPoll).call();
+    newPolls[idPoll] = updatedPoll;
+    this.setState({ rawPolls: newPolls });
+  }
+
   _renderStatus(title, available) {
     let className = available ? 'pull-right status-online' : 'pull-right status-offline';
     return <Fragment>
@@ -55,9 +64,9 @@ class App extends React.Component {
 
   render(){
     const { admin, rawPolls } = this.state;
-    const { _getPolls } = this;
+    const { _getPolls, updatePoll } = this;
     const toggleAdmin = () => this.setState({ admin: true });
-    const votingContext = { getPolls: _getPolls, rawPolls, toggleAdmin };
+    const votingContext = { getPolls: _getPolls, rawPolls, toggleAdmin, updatePoll };
     return (
       <VotingContext.Provider value={votingContext}>
         <Fragment>
