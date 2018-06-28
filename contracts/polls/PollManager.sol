@@ -121,7 +121,7 @@ contract PollManager is Controlled {
         p.voters++;
         
         p.results += amount;
-        p.qvResults += sqrt(amount);
+        p.qvResults += sqrt(amount / 1 ether);
 
         emit Vote(_idPoll, msg.sender, amount);
     }
@@ -144,7 +144,7 @@ contract PollManager is Controlled {
         p.voters++;
 
         p.results += _amount;
-        p.qvResults += sqrt(_amount);
+        p.qvResults += sqrt(_amount / 1 ether);
 
         emit Vote(_idPoll, msg.sender, _amount);
     }
@@ -162,7 +162,7 @@ contract PollManager is Controlled {
 
         p.voters--;
         p.results -= amount;
-        p.qvResults -= sqrt(amount);
+        p.qvResults -= sqrt(amount / 1 ether);
 
         require(MiniMeToken(p.token).transferFrom(address(this), msg.sender, amount));
 

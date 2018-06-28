@@ -8,6 +8,7 @@ import Slider from '@material-ui/lab/Slider';
 import Tooltip from '@material-ui/core/Tooltip';
 import PollManager from 'Embark/contracts/PollManager';
 import MiniMeTokenInterface from 'Embark/contracts/MiniMeTokenInterface';
+import web3 from "Embark/web3"
 
 class Poll extends Component {
 
@@ -27,9 +28,10 @@ class Poll extends Component {
 
     const { customVote, poll, unvote } = PollManager.methods;
     const { idPoll, value } = this.state;
-    const balance4Voting = value * value;
+    const { toWei } = web3.utils;
 
-    const toSend = balance4Voting === 0 ? unvote(idPoll) : customVote(idPoll, balance4Voting);
+    const balance4Voting = toWei(value * value);
+    const toSend = balance4Voting == 0 ? unvote(idPoll) : customVote(idPoll, balance4Voting);
     
     toSend.estimateGas()
       .then(gasEstimated => {
@@ -53,17 +55,18 @@ class Poll extends Component {
   }
 
   componentDidMount() {
+    const { fromWei } = web3.utils;
     MiniMeTokenInterface.options.address = this.props._token;
     MiniMeTokenInterface.methods.balanceOfAt(web3.eth.defaultAccount, this.props._startBlock - 1)
                                 .call()
                                 .then(balance => {
-                                  this.setState({balance});
+                                  this.setState({balance: fromWei(balance)});
                                 });
 
     PollManager.methods.getVote(this.props.idPoll, web3.eth.defaultAccount)
                        .call()
                        .then(vote => {
-                         this.setState({value: Math.sqrt(vote)});
+                         this.setState({value: parseInt(Math.sqrt(fromWei(vote)))});
                        })
   }
 
@@ -80,6 +83,7 @@ class Poll extends Component {
             votes } = this.state;
 
     const disableVote = balance == 0 || !_canVote || isSubmitting;
+    const { fromWei } = web3.utils;
     const maxValue = Math.floor(Math.sqrt(balance));
 
     return (
@@ -93,7 +97,7 @@ class Poll extends Component {
             Votes: {_qvResults}
           </Typography>
           <Typography variant="subheading" color="textSecondary">
-            SNT Allocated: {_results}
+            SNT Allocated: {fromWei(_results)}
           </Typography>
         </CardContent>
         <Tooltip id="tooltip-icon" placement="top" title={`${value * value} SNT - ${value} vote credits`}>
