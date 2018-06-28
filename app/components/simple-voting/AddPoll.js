@@ -89,7 +89,7 @@ const AddPoll = withFormik({
   },
   async handleSubmit(values, { setSubmitting, setErrors, props }) {
     const { description } = values;
-    const { eth: { getBlockNumber }, utils: { asciiToHex } } = window.web3;
+    const { eth: { getBlockNumber } } = window.web3;
     const { addPoll } = PollManager.methods;
     const currentBlock = await getBlockNumber();
     const endTime = currentBlock + (oneDayinBlocks * 90);
