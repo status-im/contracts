@@ -17,8 +17,8 @@ class Voting extends PureComponent {
       <Fragment>
         <CssBaseline />
         <AppBar toggleAdmin={toggleAdmin} togglePoll={togglePoll} />
-        <div style={{ margin: '15px 15px 15px 35%' }}>
-          <StatusLogo />
+        <div style={{ margin: '30px', textAlign: 'center' }}>
+          <img src="images/logo.png" width="200" />
         </div>
         {addPoll && <AddPoll togglePoll={togglePoll} />}
         {rawPolls && <PollsList rawPolls={rawPolls} />}
