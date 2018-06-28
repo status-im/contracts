@@ -16,10 +16,10 @@ class Voting extends PureComponent {
     const togglePoll = () => { this.setState({ addPoll: !addPoll })};
     return (
       <VotingContext.Consumer>
-        {({ getPolls, rawPolls, toggleAdmin }) =>
+        {({ getPolls, rawPolls }) =>
           <Fragment>
             <CssBaseline />
-            <AppBar toggleAdmin={toggleAdmin} togglePoll={togglePoll} />
+            <AppBar togglePoll={togglePoll} />
             <div style={{ margin: '30px', textAlign: 'center' }}>
               <img src="images/logo.png" width="200" />
             </div>
