@@ -79,7 +79,7 @@ class Poll extends Component {
             balance,
             votes } = this.state;
 
-    const disableVote = !_canVote || isSubmitting;
+    const disableVote = balance == 0 || !_canVote || isSubmitting;
     const maxValue = Math.floor(Math.sqrt(balance));
 
     return (
