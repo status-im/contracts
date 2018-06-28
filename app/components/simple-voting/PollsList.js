@@ -7,13 +7,13 @@ import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/lab/Slider';
 import Tooltip from '@material-ui/core/Tooltip';
 import PollManager from 'Embark/contracts/PollManager';
+import MiniMeTokenInterface from 'Embark/contracts/MiniMeTokenInterface';
 
 class Poll extends Component {
 
   constructor(props){
     super(props);
-
-    this.state = { value: 0, isSubmitting: false, ...props };
+    this.state = { value: 0, balance: 0, isSubmitting: false, ...props };
   }
 
   handleChange = (event, value) => {
@@ -52,6 +52,22 @@ class Poll extends Component {
       });
   }
 
+  componentDidMount() {
+    MiniMeTokenInterface.options.address = this.props._token;
+    MiniMeTokenInterface.methods.balanceOfAt(web3.eth.defaultAccount, this.props._startBlock - 1)
+                                .call()
+                                .then(balance => {
+                                  this.setState({balance});
+                                });
+
+    PollManager.methods.getVote(this.props.idPoll, web3.eth.defaultAccount)
+                       .call()
+                       .then(vote => {
+                         this.setState({value: Math.sqrt(vote)});
+                       })
+  }
+
+
   render(){
     const { _description,
             _totalCensus,
@@ -60,16 +76,12 @@ class Poll extends Component {
             _results, 
             _canVote, 
             value, 
-            isSubmitting } = this.state;
+            isSubmitting,
+            balance,
+            votes } = this.state;
 
     const disableVote = !_canVote || isSubmitting;
-
-    const tokenBalance = 100; // TODO: read balance from cloned token
-
-    const maxValue = Math.floor(Math.sqrt(tokenBalance));
-
-    
-
+    const maxValue = Math.floor(Math.sqrt(balance));
 
     return (
       <Card>

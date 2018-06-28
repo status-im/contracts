@@ -86,8 +86,8 @@ contract PollManager is Controlled {
         if(_idPoll >= _polls.length) return false;
 
         Poll storage p = _polls[_idPoll];
-        uint balance = MiniMeToken(p.token).balanceOf(msg.sender);
-
+        uint balance = MiniMeToken(p.token).balanceOfAt(msg.sender, p.startBlock - 1);
+        
         return block.number >= p.startBlock && 
                 block.number <= p.endBlock && 
                !p.canceled && 
