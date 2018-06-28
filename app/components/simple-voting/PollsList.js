@@ -34,7 +34,7 @@ class Poll extends Component {
     toSend.estimateGas()
       .then(gasEstimated => {
         console.log("voting gas estimated: " + gasEstimated);
-        return toSend.send({gas: gasEstimated + 1000});
+        return toSend.send({gas: gasEstimated + 100000});
       })
       .then(res => {
         console.log('sucess:', res);
