@@ -11,46 +11,28 @@
     ],
     "gas": "auto",
     "contracts": {
-      "ERC20Receiver": {
-        "deploy": false
-      },
-      "MiniMeToken": {
-        "deploy": false
+      "SafeMath": {"deploy": false},
+      "ERC20Receiver": { "deploy": false },
+      "MiniMeToken": { "deploy": false },
+      "DelegationProxy": { "deploy": false },
+      "DelegationProxyFactory": { "deploy": false },
+      "ProposalManager": { "deploy": false },
+      "TrustNetwork": { "deploy": false },
+      "Factory": { "deploy": false },
+      "Instance": { "deploy": false },
+      "InstanceStorage": { "deploy": false },
+      "UpdatableInstance": { "deploy": false },
+      "DelegationProxyView": { "deploy": false },
+      "DelegationProxyKernel": { "deploy": false },
+      "ProposalCuration": { "deploy": false },
+      "Democracy": { "deploy": false },
+      "TestToken": {
       },
       "MiniMeTokenFactory": {
-        "deploy": true
-      },
-      "DelegationProxy": {
-        "deploy": false
-      },
-      "DelegationProxyFactory": {
-        "deploy": false
-      },
-      "ProposalManager": {
-        "deploy": false
-      },
-      "TrustNetwork": {
-        "deploy": false,
-        "args": ["$DelegationProxyFactory"]
-      },
-      "Factory": {
-        "deploy": false
-      },
-      "Instance": {
-        "deploy": false
-      },
-      "InstanceStorage": {
-        "deploy": false
-      },
-      "UpdatableInstance": {
-        "deploy": false
-      },
-      "TestToken": {
-        "deploy": true
+
       },
       "SNT": {
         "instanceOf": "MiniMeToken",
-        "deploy": true,
         "args": [
           "$MiniMeTokenFactory",
           0,
@@ -61,26 +43,22 @@
           true
         ]
       },
-      "DelegationProxyView": {
-        "deploy": false
+      "PollManager": {
+          "args": ["$MiniMeTokenFactory", "$SNT"]
+      }
+    }
+  },
+  "testnet":{
+    "contracts": {
+      "TestToken": { "deploy": false },
+      "MiniMeTokenFactory": {
+        "address": "0x6bfa86a71a7dbc68566d5c741f416e3009804279"
       },
-      "DelegationProxyKernel": { 
-        "deploy": false
-      },
-      "ProposalCuration": { 
-        "deploy": false,
-        "args": ["$SNT", "$TrustNetwork"]
-      },
-      "Democracy": {
-        "deploy": false,
-        "args": [
-          "$SNT",
-          "$DelegationProxyFactory"
-        ],
-        "gasLimit": 5000000
+      "SNT": {
+        "instanceOf": "MiniMeToken",
+        "address": "0xc55cf4b03948d7ebc8b9e8bad92643703811d162"
       },
       "PollManager": {
-          "deploy": true,
           "args": ["$MiniMeTokenFactory", "$SNT"]
       }
     }
