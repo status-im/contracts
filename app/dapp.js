@@ -40,7 +40,9 @@ class App extends React.Component {
     const { nPolls, poll } = PollManager.methods;
     const polls = await nPolls.call();
     const total = await polls.call();
-    getPolls(total, poll).then(rawPolls => { this.setState({ rawPolls })});
+    console.log('total', total, polls);
+    if (total) getPolls(total, poll).then(rawPolls => { this.setState({ rawPolls })});
+    else this.setState({ rawPolls: [] });
   }
 
   _renderStatus(title, available) {
