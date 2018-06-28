@@ -5,7 +5,7 @@ import CardContent from '@material-ui/core/CardContent';
 import PollManager from 'Embark/contracts/PollManager';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import LinearProgress from '@material-ui/core/LinearProgress';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import { withStyles } from '@material-ui/core/styles';
 import { withFormik } from 'formik';
 
@@ -58,7 +58,7 @@ const InnerForm = ({
           onChange={handleChange}
           margin="normal"
           fullWidth
-          error={errors.description}
+          error={!!errors.description}
           InputProps={{
             classes: {
               input: classes.textFieldInput
@@ -67,10 +67,11 @@ const InnerForm = ({
           InputLabelProps={{
             className: classes.textFieldFormLabel
           }}
+          helperText={errors.description}
         />
         {!isSubmitting ?
          <Button type="submit" variant="extendedFab" aria-label="add" className={classes.button}>Submit</Button> :
-         <LinearProgress />
+         <CircularProgress style={{ margin: '10px 10px 10px 50%' }} />
         }
       </form>
     </CardContent>
@@ -86,7 +87,7 @@ const AddPoll = withFormik({
     if(description.toString().trim() === "") errors.description = true;
     return errors;
   },
-  async handleSubmit(values, { setSubmitting, props }) {
+  async handleSubmit(values, { setSubmitting, setErrors, props }) {
     const { description } = values;
     const { eth: { getBlockNumber }, utils: { asciiToHex } } = window.web3;
     const { addPoll } = PollManager.methods;
@@ -97,22 +98,22 @@ const AddPoll = withFormik({
     setSubmitting(true);
 
     toSend.estimateGas()
-      .then(gasEstimated => {
-        console.log("addPoll gas estimated: "+gasEstimated);
-        return toSend.send({gas: gasEstimated + 1000});
-      })
-      .then(res => {
-        console.log('sucess:', res);
-        setSubmitting(false);
-      })
-      .catch(res => {
-        console.log('fail:', res);
-      })
-      .finally(() => {
-        setSubmitting(false);
-        props.togglePoll();
-      });
-
+          .then(gasEstimated => {
+            console.log("addPoll gas estimated: "+gasEstimated);
+            return toSend.send({gas: gasEstimated + 100000});
+          })
+          .then(res => {
+            console.log('sucess:', res);
+            setSubmitting(false);
+            props.togglePoll();
+          })
+          .catch(res => {
+            console.log('fail:', res);
+            setErrors({ 'description': res.message.split('Error:').pop().trim() });
+          })
+          .finally(() => {
+            setSubmitting(false);
+          });
   }
 })(StyledForm)
 
