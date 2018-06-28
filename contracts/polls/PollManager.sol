@@ -185,6 +185,7 @@ contract PollManager is Controlled {
         returns(
         uint _startBlock,
         uint _endBlock,
+        bool _canVote,
         address _token,
         bool _canceled,
         string _description,
@@ -203,6 +204,7 @@ contract PollManager is Controlled {
         _endBlock = p.endBlock;
         _token = p.token;
         _canceled = p.canceled;
+        _canVote = canVote(_idPoll);
         _description = p.description;
         _finalized = (!p.canceled) && (block.number >= _endBlock);
         _totalCensus = MiniMeToken(p.token).totalSupply();
