@@ -63,6 +63,8 @@ class App extends React.Component {
     this.setState({ rawPolls: newPolls });
   }
 
+  setPollOrder = pollOrder => { this.setState({ pollOrder }) }
+
   _renderStatus(title, available) {
     let className = available ? 'pull-right status-online' : 'pull-right status-offline';
     return <Fragment>
@@ -72,10 +74,10 @@ class App extends React.Component {
   }
 
   render(){
-    const { admin, rawPolls, snt } = this.state;
-    const { _getPolls, updatePoll } = this;
+    const { admin } = this.state;
+    const { _getPolls, updatePoll, setPollOrder } = this;
     const toggleAdmin = () => this.setState({ admin: true });
-    const votingContext = { getPolls: _getPolls, rawPolls, toggleAdmin, updatePoll, snt };
+    const votingContext = { getPolls: _getPolls, toggleAdmin, updatePoll, setPollOrder, ...this.state };
     return (
       <VotingContext.Provider value={votingContext}>
         <Fragment>

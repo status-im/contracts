@@ -13,8 +13,10 @@ import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 import CloseIcon from '@material-ui/icons/Close';
 import Slide from '@material-ui/core/Slide';
+import Checkbox from '@material-ui/core/Checkbox';
+import { VotingContext } from '../../context';
 
-const options = ['Most Votes', 'Most Voters', 'Newest Added', 'Ending Soonest', ]
+export const constants = { MOST_VOTES: 'Most Votes', MOST_VOTERS: 'Most Voters', NEWEST_ADDED: 'Newest Added', ENDING_SOONEST: 'Ending Soonest' };
 const styles = {
   appBar: {
     position: 'relative',
@@ -28,10 +30,15 @@ function Transition(props) {
   return <Slide direction="up" {...props} />;
 }
 
-const ListButton = ({ name }) => (
+const ListButton = ({ name, setPollOrder, selected }) => (
   <Fragment>
-    <ListItem button>
-      <ListItemText primary={name} />
+    <ListItem button onClick={() => setPollOrder(name)}>
+      <Checkbox
+        checked={selected}
+        color="primary"
+        disableRipple
+      />
+      <ListItemText primary={constants[name]} />
     </ListItem>
     <Divider />
   </Fragment>
@@ -53,32 +60,36 @@ class OrderingDialog extends PureComponent {
   render() {
     const { classes } = this.props;
     return (
-      <div>
-        <Button color="inherit" variant="outlined" onClick={this.handleClickOpen}>Open Filters</Button>
-        <Dialog
-          fullScreen
-          open={this.state.open}
-          onClose={this.handleClose}
-          TransitionComponent={Transition}
-        >
-          <AppBar className={classes.appBar}>
-            <Toolbar>
-              <IconButton color="inherit" onClick={this.handleClose} aria-label="Close">
-                <CloseIcon />
-              </IconButton>
-              <Typography variant="title" color="inherit" className={classes.flex}>
-                close
-              </Typography>
-              <Button color="inherit" onClick={this.handleClose}>
-                save
-              </Button>
-            </Toolbar>
-          </AppBar>
-          <List>
-            {options.map((name, i) => <ListButton key={i} name={name} />)}
-          </List>
-        </Dialog>
-      </div>
+      <VotingContext.Consumer>
+        {({ setPollOrder, pollOrder }) =>
+          <div>
+            <Button color="inherit" variant="outlined" onClick={this.handleClickOpen}>Open Filters</Button>
+            <Dialog
+              fullScreen
+              open={this.state.open}
+              onClose={this.handleClose}
+              TransitionComponent={Transition}
+            >
+              <AppBar className={classes.appBar}>
+                <Toolbar>
+                  <IconButton color="inherit" onClick={this.handleClose} aria-label="Close">
+                    <CloseIcon />
+                  </IconButton>
+                  <Typography variant="title" color="inherit" className={classes.flex}>
+                    close
+                  </Typography>
+                  <Button color="inherit" onClick={this.handleClose}>
+                    save
+                  </Button>
+                </Toolbar>
+              </AppBar>
+              <List>
+                {Object.keys(constants).map((name, i) => <ListButton key={i} name={name} setPollOrder={setPollOrder} selected={pollOrder === name}/>)}
+              </List>
+            </Dialog>
+          </div>
+        }
+      </VotingContext.Consumer>
     );
   }
 }
