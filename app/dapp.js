@@ -63,6 +63,13 @@ class App extends React.Component {
     this.setState({ rawPolls: newPolls });
   }
 
+  appendToPoll = (idPoll, data) => {
+    const { rawPolls } = this.state;
+    const newPolls = [...rawPolls];
+    newPolls[idPoll] = { ...newPolls[idPoll], ...data }
+    this.setState({ rawPolls: newPolls });
+  }
+
   setPollOrder = pollOrder => { this.setState({ pollOrder }) }
 
   _renderStatus(title, available) {
@@ -75,9 +82,9 @@ class App extends React.Component {
 
   render(){
     const { admin } = this.state;
-    const { _getPolls, updatePoll, setPollOrder } = this;
+    const { _getPolls, updatePoll, setPollOrder, appendToPoll } = this;
     const toggleAdmin = () => this.setState({ admin: true });
-    const votingContext = { getPolls: _getPolls, toggleAdmin, updatePoll, setPollOrder, ...this.state };
+    const votingContext = { getPolls: _getPolls, toggleAdmin, updatePoll, appendToPoll, setPollOrder, ...this.state };
     return (
       <VotingContext.Provider value={votingContext}>
         <Fragment>

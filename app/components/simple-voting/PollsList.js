@@ -22,11 +22,12 @@ class Poll extends Component {
 
   constructor(props){
     super(props);
-    this.state = { value: 0, balance: 0, isSubmitting: false };
+    this.state = { isSubmitting: false };
   }
 
   handleChange = (event, value) => {
-    this.setState({ value });
+    const { appendToPoll, idPoll } = this.props;
+    appendToPoll(idPoll, { value });
   };
 
   handleClick = (event) => {
@@ -35,8 +36,7 @@ class Poll extends Component {
     this.setState({isSubmitting: true});
 
     const { customVote, poll, unvote } = PollManager.methods;
-    const { updatePoll, idPoll } = this.props;
-    const { value } = this.state;
+    const { updatePoll, idPoll, value } = this.props;
     const { toWei } = web3.utils;
 
     const balance4Voting = toWei(value * value);
@@ -62,18 +62,19 @@ class Poll extends Component {
 
   componentDidMount() {
     const { fromWei } = web3.utils;
+    const { appendToPoll, idPoll } = this.props;
     MiniMeTokenInterface.options.address = this.props._token;
     MiniMeTokenInterface.methods.balanceOfAt(web3.eth.defaultAccount, this.props._startBlock - 1)
                         .call()
                         .then(balance => {
-                          this.setState({balance: fromWei(balance)});
+                          appendToPoll(idPoll, {balance: fromWei(balance)})
                         });
 
     PollManager.methods.getVote(this.props.idPoll, web3.eth.defaultAccount)
-                       .call()
-                       .then(vote => {
-                         this.setState({value: parseInt(Math.sqrt(fromWei(vote)))});
-                       })
+               .call()
+               .then(vote => {
+                 appendToPoll(idPoll, {value: parseInt(Math.sqrt(fromWei(vote)))})
+               })
   }
 
   render(){
@@ -84,8 +85,10 @@ class Poll extends Component {
       _qvResults,
       _results,
       _canVote,
+      value,
+      balance
     } = this.props;
-    const { value, balance, isSubmitting } = this.state;
+    const { isSubmitting } = this.state;
 
     const disableVote = balance == 0 || !_canVote || isSubmitting;
     const { fromWei } = web3.utils;
@@ -107,7 +110,7 @@ class Poll extends Component {
         </CardContent>
         <Tooltip id="tooltip-icon" placement="top" title={`${value * value} SNT - ${value} vote credits`}>
           <CardActions>
-            <Slider disabled={disableVote} value={value} min={0} max={maxValue} step={1} onChange={this.handleChange} />
+            <Slider disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
             {isSubmitting ? <CircularProgress /> : <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>Vote</Button>}
           </CardActions>
         </Tooltip>
@@ -119,14 +122,14 @@ class Poll extends Component {
 
 const PollsList = () => (
   <VotingContext.Consumer>
-    {({ updatePoll, rawPolls, pollOrder }) =>
+  {({ updatePoll, rawPolls, pollOrder, appendToPoll }) =>
     <Fragment>
-      {rawPolls
-        .map((poll, i) => ({ ...poll, idPoll: i }) )
-        .sort(sortingFn[pollOrder])
-        .map((poll, idx) => <Poll key={idx} updatePoll={updatePoll} {...poll} />)}
+    {rawPolls
+      .map((poll, i) => ({ ...poll, idPoll: i }) )
+      .sort(sortingFn[pollOrder])
+      .map((poll, idx) => <Poll key={idx} appendToPoll={appendToPoll} updatePoll={updatePoll} {...poll} />)}
     </Fragment>
-    }
+  }
   </VotingContext.Consumer>
 )
 
