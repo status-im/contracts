@@ -12,6 +12,12 @@ import web3 from "Embark/web3"
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { VotingContext } from '../../context';
 
+const sortingFn = {
+  MOST_VOTES: (a, b) => b._qvResults - a._qvResults,
+  MOST_VOTERS: (a, b) => b._voters - a._voters,
+  NEWEST_ADDED: (a, b) => b._startBlock - a._startBlock,
+  ENDING_SOONEST: (a, b) => a._endBlock - b._endBlock
+};
 class Poll extends Component {
 
   constructor(props){
@@ -113,9 +119,12 @@ class Poll extends Component {
 
 const PollsList = () => (
   <VotingContext.Consumer>
-    {({ updatePoll, rawPolls }) =>
+    {({ updatePoll, rawPolls, pollOrder }) =>
     <Fragment>
-      {rawPolls.map((poll, idx) => <Poll key={idx} idPoll={idx} updatePoll={updatePoll} {...poll} />)}
+      {rawPolls
+        .map((poll, i) => ({ ...poll, idPoll: i }) )
+        .sort(sortingFn[pollOrder])
+        .map((poll, idx) => <Poll key={idx} updatePoll={updatePoll} {...poll} />)}
     </Fragment>
     }
   </VotingContext.Consumer>

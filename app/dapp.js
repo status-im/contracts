@@ -25,7 +25,7 @@ class App extends React.Component {
   constructor(props) {
     super(props);
   }
-  state = { admin: false };
+  state = { admin: false, pollOrder: 'NEWEST_ADDED' };
 
   componentDidMount(){
     __embarkContext.execWhenReady(() => {
