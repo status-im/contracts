@@ -1,5 +1,6 @@
 pragma solidity 0.4.24^;
 
+import 'token/MiniMeTokenInterface.sol';
 
 contract DAppStore {
     
@@ -27,10 +28,10 @@ contract DAppStore {
         Vote votes;
     }
 
-    Dapp[] dapps;
-    mapping (bytes32 -> uint) id2index;
+    Dapp[] public dapps;
+    mapping(bytes32 -> uint) public id2index;
     
-    // --
+    // -- TEST
     function createDApp(bytes32 _category, bytes32 _name, bytes32 _id, uint256 _amountToStake) public {
         require(_amountToStake != 0);
         require(SNT.allowance(msg.sender, address(this)) >= _amountToStake);
@@ -69,7 +70,7 @@ contract DAppStore {
     }
     */
     
-    // --
+    // -- TEST
     function stake(bytes32 _id, uint256 _amountToStake) public {
         uint dappIdx = id2index[_id];
         Dapp storage d = dapps[dappIdx];
@@ -83,27 +84,41 @@ contract DAppStore {
         d.SNTbalance += _amountToStake;
     }
     
-    /*
-    function upvote() public {
-        var dappvotes = numVotesToMint(msg.data.tokens);
-        mint(dappvotes, true);
-        send(msg.data.tokens);
+    // -- MISSING CODE
+    function upvote(bytes32 _id, uint256 _amount) public {
+        uint dappIdx = id2index[_id];
+        Dapp storage d = dapps[dappIdx];
+        require(d.id == _id);
+        require(_amount != 0);
+
+        /*uint256 dappvotes = numVotesToMint(_amount);*/ //TODO:
+        mint(d, dappvotes, true);
+
+        require(SNT.allowance(msg.sender, d.developer) >= _amount);
+        require(SNT.transferFrom(msg.sender, d.developer, _amount));
     }
-    */
     
-    /*
-    function downVote() public {
-        var dappvotes = numVotesToMint(msg.data.tokens);
-        mint(dappvotes, false);
+    // -- MISSING CODE
+    function downVote(bytes32 _id, uint256 _amount) public {
+        uint dappIdx = id2index[_id];
+        Dapp storage d = dapps[dappIdx];
+        require(d.id == _id);
+        require(_amount != 0);
+
+        /*var dappvotes = numVotesToMint(_amount);*/ // TODO:
+        mint(d, dappvotes, false);
+
+        /*
         var negative_votes_before = _effectiveBalance;
         var negative_votes_now = effectiveBalance + dappvotes;
         var negative_percent = ((negative_votes_now - negative_votes_before) / negative_votes_now ) * 100
-       _effectiveBalance -= negative_percent;
-       send(msg.data.tokens);
-    }
-    */
+       _effectiveBalance -= negative_percent;*///TODO:
 
-    // --    
+        require(SNT.allowance(msg.sender, d.developer) >= _amount);
+        require(SNT.transferFrom(msg.sender, d.developer, _amount));
+    }
+    
+    // -- TEST
     function withdrawStake(bytes32 _id, uint256 _amount) public {
         uint dappIdx = id2index[_id];
         Dapp storage d = dapps[dappIdx];
@@ -119,15 +134,9 @@ contract DAppStore {
         require(SNT.transferFrom(address(this), msg.sender, _amount));
     }
     
-    /*
-    function mint(uint256 _amount, bool _positive) internal {
-        votes.push(Vote(_amount, _positive));
+    // -- TEST
+    function mint(Dapp storage d, uint256 _amount, bool _positive) internal {
+        d.votes.push(Vote(_amount, _positive));
     }
-    */
     
-    /*
-    function send(uint256 _amount) internal {
-        send(_developer, _amount);
-    }
-    */
 }
