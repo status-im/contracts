@@ -30,9 +30,12 @@ function Transition(props) {
   return <Slide direction="up" {...props} />;
 }
 
-const ListButton = ({ name, setPollOrder, selected }) => (
+const ListButton = ({ name, setPollOrder, selected, handleClose }) => (
   <Fragment>
-    <ListItem button onClick={() => setPollOrder(name)}>
+    <ListItem button onClick={() => {
+        setPollOrder(name);
+        handleClose();
+    }}>
       <Checkbox
         checked={selected}
         color="primary"
@@ -59,6 +62,7 @@ class OrderingDialog extends PureComponent {
 
   render() {
     const { classes } = this.props;
+    const { handleClose } = this;
     return (
       <VotingContext.Consumer>
         {({ setPollOrder, pollOrder }) =>
@@ -78,13 +82,10 @@ class OrderingDialog extends PureComponent {
                   <Typography variant="title" color="inherit" className={classes.flex}>
                     close
                   </Typography>
-                  <Button color="inherit" onClick={this.handleClose}>
-                    save
-                  </Button>
                 </Toolbar>
               </AppBar>
               <List>
-                {Object.keys(constants).map((name, i) => <ListButton key={i} name={name} setPollOrder={setPollOrder} selected={pollOrder === name}/>)}
+                {Object.keys(constants).map((name, i) => <ListButton key={i} name={name} setPollOrder={setPollOrder} selected={pollOrder === name} handleClose={handleClose} />)}
               </List>
             </Dialog>
           </div>
