@@ -8,6 +8,7 @@ import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import Hidden from '@material-ui/core/Hidden';
+import OrderingFilter from '../simple-voting/OrderingFilter';
 import { VotingContext } from '../../context';
 
 const hasSnt = snt => Number(snt.balance) > 0;
@@ -38,7 +39,7 @@ function ButtonAppBar(props) {
       <div className={classes.root} >
         <AppBar position="static">
           <Toolbar className={classes.toolBar}>
-            <Hidden lgDown>
+            <Hidden mdDown>
               <IconButton className={classes.menuButton} color="inherit" aria-label="Menu" onClick={toggleAdmin} />
             </Hidden>
             <Hidden smDown>
@@ -46,7 +47,8 @@ function ButtonAppBar(props) {
                 What should we build next?
               </Typography>
             </Hidden>
-            {snt && <Button disabled={!hasSnt(snt)} variant="outlined" color="inherit" style={{ fontSize: '16px' }} onClick={togglePoll}>{hasSnt(snt) ? 'Add Proposal' : 'Your account has no SNT'}</Button>}
+            {snt && <Button disabled={!hasSnt(snt)} variant="outlined" color="inherit" onClick={togglePoll}>{hasSnt(snt) ? 'Add Proposal' : 'Your account has no SNT'}</Button>}
+            <OrderingFilter />
           </Toolbar>
         </AppBar>
       </div>
