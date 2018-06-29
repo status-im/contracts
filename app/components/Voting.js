@@ -6,6 +6,8 @@ import AddPoll from './simple-voting/AddPoll';
 import PollsList from './simple-voting/PollsList';
 import StatusLogo from '../ui/components/StatusLogo';
 import Collapse from '@material-ui/core/Collapse';
+import Hidden from '@material-ui/core/Hidden';
+import Typography from '@material-ui/core/Typography';
 import { VotingContext } from '../context';
 
 class Voting extends PureComponent {
@@ -17,17 +19,22 @@ class Voting extends PureComponent {
     return (
       <VotingContext.Consumer>
         {({ getPolls, rawPolls }) =>
-          <Fragment>
+          <div>
             <CssBaseline />
             <AppBar togglePoll={togglePoll} />
             <div style={{ margin: '30px', textAlign: 'center' }}>
               <img src="images/logo.png" width="200" />
+              <Hidden smUp>
+                <Typography variant="headline" color="inherit">
+                  What should we build next?
+                </Typography>
+              </Hidden>
             </div>
             <Collapse in={addPoll}>
               <AddPoll togglePoll={togglePoll} getPolls={getPolls} />
             </Collapse>
             {rawPolls && <PollsList rawPolls={rawPolls}  />}
-          </Fragment>
+          </div>
         }
       </VotingContext.Consumer>
     )
