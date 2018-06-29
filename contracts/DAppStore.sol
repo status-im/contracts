@@ -1,11 +1,12 @@
-pragma solidity 0.4.24^;
+pragma solidity 0.4.23;
 
-import 'token/MiniMeTokenInterface.sol';
+import './token/MiniMeTokenInterface.sol';
 
 contract DAppStore {
     
-    uint256 public TOTAL_SNT = 3470483788;
-    uint256 public percent_snt = 0.000001;
+    uint256 constant percentage_num = 1;
+    uint256 constant percentage_den = 100000;
+    // if num = 1, and den = 100000, num/den = 0.000001
 
     MiniMeTokenInterface SNT;
 
@@ -13,23 +14,23 @@ contract DAppStore {
         SNT = _SNT;
     }
 
-    struct public Vote {
+    struct Vote {
         uint256 NumberMinted;
         bool positive;
-    };
+    }
 
-    struct public Dapp {
+    struct Dapp {
         address developer;
         bytes32 category;
         bytes32 name;
         bytes32 id;
-        uint256 _SNTBalance;
+        uint256 SNTBalance;
         uint256 _effectiveBalance;
-        Vote votes;
+        Vote[] votes;
     }
 
     Dapp[] public dapps;
-    mapping(bytes32 -> uint) public id2index;
+    mapping(bytes32 => uint) public id2index;
     
     // -- TEST
     function createDApp(bytes32 _category, bytes32 _name, bytes32 _id, uint256 _amountToStake) public {
@@ -48,27 +49,38 @@ contract DAppStore {
         d.id = _id;
         d.SNTBalance = _amountToStake;
 
-        id2index[_id] => dappIdx;
+        id2index[_id] = dappIdx;
     }   
     
-    /*
-    function numVotesToMint(uint256 _SNTBalance) internal returns(uint256) {  
-        if (_SNTBalance <= TOTAL_SNT * snt_percent) {
-            var num_votes_to_mint_at_1 = (1 / percent_snt); 
+    // -- CODE MISSING
+    function numVotesToMint(Dapp storage d, uint256 _SNTBalance) internal view returns(uint256) {  
+        uint TOTAL_SNT = d.SNTBalance;
+        uint SNT_PROPORTION = TOTAL_SNT * percentage_num;
+        assert(SNT_PROPORTION / TOTAL_SNT == percentage_num);
+        SNT_PROPORTION /= percentage_den;
+
+        uint num_votes_to_mint_at_1 =  percentage_den / percentage_num;
+
+        if (_SNTBalance <= SNT_PROPORTION) {
             return num_votes_to_mint_at_1; 
-        }     
-        if (_SNTBalance > TOTAL_SNT * snt_percent) {
-            var current_interval_index = Math.round(_SNTBalance / (TOTAL_SNT * snt_percent));         
-            return num_tokens_to_mint = num_votes_to_mint_at_1 + (current_interval_index * (((SNTBalance/100) - 1) / _effectiveBalance)) * num_votes_to_mint_at_1);
+        }
+
+        if (_SNTBalance > SNT_PROPORTION) {
+            uint current_interval_index = _SNTBalance / SNT_PROPORTION;         
+            
+            return 1;
+            // TODO:
+            // return num_votes_to_mint_at_1 + ((current_interval_index * (((_SNTBalance/100) - 1) / d._effectiveBalance)) * num_votes_to_mint_at_1);
         }
     } 
-    */
-    
-    /*
-    function costOfMinting(uint256 _SNT) public view returns(uint256) {
-        return numVotesToMint(_SNT);
+
+    // -- TEST
+    function costOfMinting(bytes32 _id, uint256 _SNT) public view returns(uint256) {
+        uint dappIdx = id2index[_id];
+        Dapp storage d = dapps[dappIdx];
+        require(d.id == _id);
+        return numVotesToMint(d, _SNT);
     }
-    */
     
     // -- TEST
     function stake(bytes32 _id, uint256 _amountToStake) public {
@@ -81,7 +93,7 @@ contract DAppStore {
         require(SNT.allowance(msg.sender, address(this)) >= _amountToStake);
         require(SNT.transferFrom(msg.sender, address(this), _amountToStake));
         
-        d.SNTbalance += _amountToStake;
+        d.SNTBalance += _amountToStake;
     }
     
     // -- MISSING CODE
@@ -91,7 +103,7 @@ contract DAppStore {
         require(d.id == _id);
         require(_amount != 0);
 
-        /*uint256 dappvotes = numVotesToMint(_amount);*/ //TODO:
+        uint256 dappvotes = numVotesToMint(d, _amount);
         mint(d, dappvotes, true);
 
         require(SNT.allowance(msg.sender, d.developer) >= _amount);
@@ -105,7 +117,7 @@ contract DAppStore {
         require(d.id == _id);
         require(_amount != 0);
 
-        /*var dappvotes = numVotesToMint(_amount);*/ // TODO:
+        uint dappvotes = numVotesToMint(d, _amount);
         mint(d, dappvotes, false);
 
         /*
