@@ -1,15 +1,24 @@
 pragma solidity 0.4.24^;
 
+
 contract DAppStore {
     
-    address public _developer;
     uint256 public TOTAL_SNT = 3470483788;
     uint256 public percent_snt = 0.000001;
+
+    MiniMeTokenInterface SNT;
+
+    constructor (MiniMeTokenInterface _SNT) public {
+        SNT = _SNT;
+    }
+
     struct public Vote {
         uint256 NumberMinted;
         bool positive;
-    };  
+    };
+
     struct public Dapp {
+        address developer;
         bytes32 category;
         bytes32 name;
         bytes32 id;
@@ -17,18 +26,31 @@ contract DAppStore {
         uint256 _effectiveBalance;
         Vote votes;
     }
-    mapping (uint => Dapp) dapps;
+
+    Dapp[] dapps;
+    mapping (bytes32 -> uint) id2index;
     
-    function createDApp(bytes32 _category, bytes32 _name, bytes32 _id) public {
-        require(msg.data.tokens > 0); 
-        _developer = msg.sender;
-        dapp.category = _category;
-        dapp.name = _name;
-        dapp.id = _id;
-        // set the _SNTbalance in the mapping with msg.data.tokens
-        // store the uint for mapping from dapps to this DApp with the id somehow, so that Status can identify legit dapps.
+    // --
+    function createDApp(bytes32 _category, bytes32 _name, bytes32 _id, uint256 _amountToStake) public {
+        require(_amountToStake != 0);
+        require(SNT.allowance(msg.sender, address(this)) >= _amountToStake);
+        require(SNT.transferFrom(msg.sender, address(this), _amountToStake));
+
+        uint dappIdx = dapps.length;
+        
+        dapps.length++;
+
+        Dapp storage d = dapps[dappIdx];
+        d.developer = msg.sender;
+        d.category = _category;
+        d.name = _name;
+        d.id = _id;
+        d.SNTBalance = _amountToStake;
+
+        id2index[_id] => dappIdx;
     }   
     
+    /*
     function numVotesToMint(uint256 _SNTBalance) internal returns(uint256) {  
         if (_SNTBalance <= TOTAL_SNT * snt_percent) {
             var num_votes_to_mint_at_1 = (1 / percent_snt); 
@@ -39,21 +61,37 @@ contract DAppStore {
             return num_tokens_to_mint = num_votes_to_mint_at_1 + (current_interval_index * (((SNTBalance/100) - 1) / _effectiveBalance)) * num_votes_to_mint_at_1);
         }
     } 
+    */
     
+    /*
     function costOfMinting(uint256 _SNT) public view returns(uint256) {
         return numVotesToMint(_SNT);
     }
+    */
     
-    function stake() public {
-        SNTbalance += msg.data.tokens;
+    // --
+    function stake(bytes32 _id, uint256 _amountToStake) public {
+        uint dappIdx = id2index[_id];
+        Dapp storage d = dapps[dappIdx];
+
+        require(d.id == _id);
+
+        require(_amountToStake != 0);
+        require(SNT.allowance(msg.sender, address(this)) >= _amountToStake);
+        require(SNT.transferFrom(msg.sender, address(this), _amountToStake));
+        
+        d.SNTbalance += _amountToStake;
     }
     
+    /*
     function upvote() public {
         var dappvotes = numVotesToMint(msg.data.tokens);
         mint(dappvotes, true);
         send(msg.data.tokens);
     }
+    */
     
+    /*
     function downVote() public {
         var dappvotes = numVotesToMint(msg.data.tokens);
         mint(dappvotes, false);
@@ -63,19 +101,33 @@ contract DAppStore {
        _effectiveBalance -= negative_percent;
        send(msg.data.tokens);
     }
-    
-    function withdrawStake(uint256 _amount) public {
-        if(msg.sender == developer && _amount <= SNTBalance) {
-            SNTBalance -= _amount;
-            send(_amount);
-        }
+    */
+
+    // --    
+    function withdrawStake(bytes32 _id, uint256 _amount) public {
+        uint dappIdx = id2index[_id];
+        Dapp storage d = dapps[dappIdx];
+
+        require(d.id == _id);
+
+        require(_amount != 0);
+        require(d.SNTBalance >= _amount);
+        require(d.developer == msg.sender);
+
+        d.SNTBalance -= _amount; // TODO: what happens if balance is 0? Dapp is deleted?
+        
+        require(SNT.transferFrom(address(this), msg.sender, _amount));
     }
     
+    /*
     function mint(uint256 _amount, bool _positive) internal {
         votes.push(Vote(_amount, _positive));
     }
+    */
     
+    /*
     function send(uint256 _amount) internal {
         send(_developer, _amount);
     }
+    */
 }
