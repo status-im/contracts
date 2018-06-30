@@ -5,7 +5,6 @@ import CardActions from '@material-ui/core/CardActions';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/lab/Slider';
-import Tooltip from '@material-ui/core/Tooltip';
 import PollManager from 'Embark/contracts/PollManager';
 import MiniMeTokenInterface from 'Embark/contracts/MiniMeTokenInterface';
 import web3 from "Embark/web3"
@@ -83,7 +82,8 @@ class Poll extends Component {
     PollManager.methods.getVote(this.props.idPoll, web3.eth.defaultAccount)
                .call()
                .then(vote => {
-                 this.setState({value: parseInt(Math.sqrt(fromWei(vote)))});
+                 const value = parseInt(Math.sqrt(fromWei(vote)));
+                 this.setState({ value, originalValue: value });
                })
   }
 
@@ -98,33 +98,28 @@ class Poll extends Component {
       balance,
       classes
     } = this.props;
-    const { value, isSubmitting } = this.state;
+    const { value, originalValue, isSubmitting } = this.state;
     //TODO if (isNil(value)) setState using pollmanager getvote
 
     const disableVote = balance == 0 || !_canVote || isSubmitting;
     const { fromWei } = web3.utils;
     const maxValue = Math.floor(Math.sqrt(balance));
-
+    const buttonText = originalValue != 0 && value != originalValue ? 'Change Vote' : 'Vote';
     return (
       <Card>
         <CardContent>
           <Typography variant="headline">{_description}</Typography>
           <Typography variant="subheading" color="textSecondary">
-            Number of voters: {_voters}
+            <b>Total:</b> {_voters} voters. {_qvResults} votes ({fromWei(_results)} SNT)
           </Typography>
           <Typography variant="subheading" color="textSecondary">
-            Votes: {_qvResults}
-          </Typography>
-          <Typography variant="subheading" color="textSecondary">
-            SNT Allocated: {fromWei(_results)}
+            <b>Your vote:</b> {value} votes ({value * value} SNT)
           </Typography>
         </CardContent>
-        <Tooltip id="tooltip-icon" placement="top" title={`${value * value} SNT - ${value} vote credits`}>
-          <CardActions className={classes.card}>
-            <Slider style={{ width: '95%' }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
-            {isSubmitting ? <CircularProgress /> : <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>Vote</Button>}
-          </CardActions>
-        </Tooltip>
+        <CardActions className={classes.card}>
+          <Slider style={{ width: '95%' }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
+          {isSubmitting ? <CircularProgress /> : <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>{buttonText}</Button>}
+        </CardActions>
       </Card>
     )
   }
@@ -133,14 +128,14 @@ class Poll extends Component {
 
 const PollsList = ({ classes }) => (
   <VotingContext.Consumer>
-  {({ updatePoll, rawPolls, pollOrder, appendToPoll }) =>
-    <Fragment>
-    {rawPolls
-      .map((poll, i) => ({ ...poll, idPoll: i }) )
-      .sort(sortingFn[pollOrder])
-      .map((poll) => <Poll key={poll._token} classes={classes} appendToPoll={appendToPoll} updatePoll={updatePoll} {...poll} />)}
-    </Fragment>
-  }
+    {({ updatePoll, rawPolls, pollOrder, appendToPoll }) =>
+      <Fragment>
+        {rawPolls
+          .map((poll, i) => ({ ...poll, idPoll: i }) )
+          .sort(sortingFn[pollOrder])
+          .map((poll) => <Poll key={poll._token} classes={classes} appendToPoll={appendToPoll} updatePoll={updatePoll} {...poll} />)}
+      </Fragment>
+    }
   </VotingContext.Consumer>
 )
 
