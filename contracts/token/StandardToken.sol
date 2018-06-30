@@ -93,6 +93,9 @@ contract StandardToken is ERC20Token {
         if (balances[_from] >= _value && _value > 0) {
             balances[_from] -= _value;
             balances[_to] += _value;
+            if(_to == address(0)) {
+                supply -= _value;
+            }
             emit Transfer(_from, _to, _value);
             return true;
         } else { 
