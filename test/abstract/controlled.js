@@ -21,5 +21,11 @@ exports.Test = (Controlled) => {
             var controller = await Controlled.methods.controller().call();
             assert(controller, accounts[1]);
         });
+        
+        it("should set back to original controller", async function() {
+            await Controlled.methods.changeController(accounts[0]).send({from: accounts[1]});
+            var controller = await Controlled.methods.controller().call();
+            assert(controller, accounts[0]);
+        });
     }); 
 }
