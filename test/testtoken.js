@@ -1,14 +1,12 @@
 const Utils = require('../utils/testUtils');
 const TestToken = require('Embark/contracts/TestToken');
-const ERC20Receiver = require('Embark/contracts/ERC20Receiver');
 const ERC20TokenSpec = require('./abstract/erc20tokenspec');
 
 config({
   contracts: {
     "TestToken": {
     },
-    "ERC20Receiver": {
-    }
+    ...ERC20TokenSpec.config.contracts
   }
 });
 
@@ -51,7 +49,7 @@ contract("TestToken", function() {
     }    
   })
   
-  ERC20TokenSpec.Test(TestToken, ERC20Receiver);
+  ERC20TokenSpec.Test(TestToken);
 
 
 });

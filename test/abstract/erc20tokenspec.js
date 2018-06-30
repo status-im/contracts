@@ -1,5 +1,14 @@
 
-exports.Test = (ERC20Token, ERC20ReceiverInstance) => {
+const ERC20Receiver = require('Embark/contracts/ERC20Receiver');
+
+exports.config = {
+  contracts : {
+    "ERC20Receiver": {
+    }
+  }
+} 
+
+exports.Test = (ERC20Token) => {
     describe("ERC20Token", function() {
     
     var accounts;
@@ -53,20 +62,20 @@ exports.Test = (ERC20Token, ERC20ReceiverInstance) => {
       assert.equal(result, 0);
     });
 
-    it("should deposit approved amount to contract ERC20ReceiverInstance", async function() {
-      //ERC20ReceiverInstance = await ERC20Receiver.deploy().send();
-      //console.log(ERC20ReceiverInstance.address);
-      await ERC20Token.methods.approve(ERC20ReceiverInstance.address, 10).send({from: accounts[0]});
-      await ERC20ReceiverInstance.methods.depositToken(ERC20Token.address, 10).send({from: accounts[0]});
-      let result = await ERC20ReceiverInstance.methods.tokenBalanceOf(ERC20Token.address, accounts[0]).call();
-      assert.equal(result, 10, "ERC20ReceiverInstance.tokenBalanceOf("+ERC20Token.address+","+accounts[0]+") wrong");
+    it("should deposit approved amount to contract ERC20Receiver", async function() {
+      //ERC20Receiver = await ERC20Receiver.deploy().send();
+      //console.log(ERC20Receiver.address);
+      await ERC20Token.methods.approve(ERC20Receiver.address, 10).send({from: accounts[0]});
+      await ERC20Receiver.methods.depositToken(ERC20Token.address, 10).send({from: accounts[0]});
+      let result = await ERC20Receiver.methods.tokenBalanceOf(ERC20Token.address, accounts[0]).call();
+      assert.equal(result, 10, "ERC20Receiver.tokenBalanceOf("+ERC20Token.address+","+accounts[0]+") wrong");
     });
 
-    it("should witdraw approved amount from contract ERC20ReceiverInstance", async function() {
-      let tokenBalance = await ERC20ReceiverInstance.methods.tokenBalanceOf(ERC20Token.address, accounts[0]).call();
-      await ERC20ReceiverInstance.methods.withdrawToken(ERC20Token.address, tokenBalance).send({from: accounts[0]});
-      tokenBalance = await ERC20ReceiverInstance.methods.tokenBalanceOf(ERC20Token.address, accounts[0]).call();
-      assert.equal(tokenBalance, 0, "ERC20ReceiverInstance.tokenBalanceOf("+ERC20Token.address+","+accounts[0]+") wrong");
+    it("should witdraw approved amount from contract ERC20Receiver", async function() {
+      let tokenBalance = await ERC20Receiver.methods.tokenBalanceOf(ERC20Token.address, accounts[0]).call();
+      await ERC20Receiver.methods.withdrawToken(ERC20Token.address, tokenBalance).send({from: accounts[0]});
+      tokenBalance = await ERC20Receiver.methods.tokenBalanceOf(ERC20Token.address, accounts[0]).call();
+      assert.equal(tokenBalance, 0, "ERC20Receiver.tokenBalanceOf("+ERC20Token.address+","+accounts[0]+") wrong");
     });
 
     //TODO: include checks for expected events fired
