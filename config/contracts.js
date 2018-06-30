@@ -20,6 +20,12 @@ module.exports = {
       },
       ERC20Receiver: {
         deploy: false
+      },
+      MiniMeToken: {
+        deploy: false
+      },
+      MiniMeTokenFactory: {
+        deploy: true
       }
     }
   },
