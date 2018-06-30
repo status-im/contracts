@@ -1,4 +1,4 @@
-import React, { Fragment, Component } from 'react';
+import React, { Fragment, PureComponent } from 'react';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import CardActions from '@material-ui/core/CardActions';
@@ -26,7 +26,7 @@ const sortingFn = {
   NEWEST_ADDED: (a, b) => b._startBlock - a._startBlock,
   ENDING_SOONEST: (a, b) => a._endBlock - b._endBlock
 };
-class Poll extends Component {
+class Poll extends PureComponent {
 
   constructor(props){
     super(props);
@@ -34,7 +34,6 @@ class Poll extends Component {
   }
 
   handleChange = (event, value) => {
-    const { appendToPoll, idPoll } = this.props;
     this.setState({ value })
   };
 
@@ -58,18 +57,24 @@ class Poll extends Component {
           })
           .then(res => {
             console.log('sucess:', res);
-            this.setState({isSubmitting: false});
+            this.setState({ isSubmitting: false, originalValue: value });
             return updatePoll(idPoll);
           })
           .catch(res => {
             console.log('fail:', res);
           })
           .finally(() => {
+            this.getBalance();
             this.setState({isSubmitting: false});
           });
   }
 
   componentDidMount() {
+    this.getBalance();
+    this.getVote();
+  }
+
+  getBalance() {
     const { fromWei } = web3.utils;
     const { appendToPoll, idPoll } = this.props;
     MiniMeTokenInterface.options.address = this.props._token;
@@ -78,8 +83,12 @@ class Poll extends Component {
                         .then(balance => {
                           appendToPoll(idPoll, {balance: fromWei(balance)})
                         });
+  }
 
-    PollManager.methods.getVote(this.props.idPoll, web3.eth.defaultAccount)
+  getVote() {
+    const { fromWei } = web3.utils;
+    const { idPoll } = this.props;
+    PollManager.methods.getVote(idPoll, web3.eth.defaultAccount)
                .call()
                .then(vote => {
                  const value = parseInt(Math.sqrt(fromWei(vote)));
@@ -99,8 +108,6 @@ class Poll extends Component {
       classes
     } = this.props;
     const { value, originalValue, isSubmitting } = this.state;
-    //TODO if (isNil(value)) setState using pollmanager getvote
-
     const disableVote = balance == 0 || !_canVote || isSubmitting;
     const { fromWei } = web3.utils;
     const maxValue = Math.floor(Math.sqrt(balance));
