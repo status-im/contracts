@@ -127,7 +127,7 @@ const PollsList = () => (
     {rawPolls
       .map((poll, i) => ({ ...poll, idPoll: i }) )
       .sort(sortingFn[pollOrder])
-      .map((poll, idx) => <Poll key={idx} appendToPoll={appendToPoll} updatePoll={updatePoll} {...poll} />)}
+      .map((poll) => <Poll key={poll._token} appendToPoll={appendToPoll} updatePoll={updatePoll} {...poll} />)}
     </Fragment>
   }
   </VotingContext.Consumer>
