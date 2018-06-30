@@ -2,17 +2,16 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import TestToken from 'Embark/contracts/TestToken';
 import React from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
- 
+import ERC20TokenUI from './erc20token';
+import { connect } from 'react-redux';
+import { actions as accountActions } from '../reducers/accounts';
+
 class TestTokenUI extends React.Component {
 
     constructor(props) {
       super(props);
       this.state = {
         amountToMint: 100,
-        accountBalance: 0,
-        accountB: web3.eth.defaultAccount,
-        balanceOf: 0,
-        logs: []
       }      
     }
   
@@ -20,41 +19,25 @@ class TestTokenUI extends React.Component {
       this.setState({amountToMint: e.target.value});
     }
     
-    mint(e){
+  mint(e){
+    const { addToBalance } = this.props;
       e.preventDefault();
   
       var value = parseInt(this.state.amountToMint, 10);
   
       if (EmbarkJS.isNewWeb3()) {
-        TestToken.methods.mint(value).send({from: web3.eth.defaultAccount});
+        TestToken.methods.mint(value).send({from: web3.eth.defaultAccount})
+          .then(r => { addToBalance(value) });
       } else {
-        TestToken.mint(value);
-        this._addToLog("#blockchain", "TestToken.mint(" + value + ")");
+        TestToken.mint(value).send({from: web3.eth.defaultAccount})
+          .then(r => { addToBalance(value) });
       }
-      this._addToLog(TestToken.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
+      console.log(TestToken.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
     }
-  
-    getBalance(e){
-      e.preventDefault();
-      
-      if (EmbarkJS.isNewWeb3()) {
-        TestToken.methods.balanceOf(web3.eth.defaultAccount).call()
-          .then(_value => this.setState({accountBalance: _value}))
-      } else {
-        TestToken.balanceOf(web3.eth.defaultAccount)
-          .then(_value => this.x({valueGet: _value}))
-      }
-      this._addToLog(TestToken.options.address + ".balanceOf(" + web3.eth.defaultAccount + ")");
-    }
-  
-    _addToLog(txt){
-      this.state.logs.push(txt);
-      this.setState({logs: this.state.logs});
-    }
-  
+    
     render(){
       return (<React.Fragment>
-          <h3> 1. Mint Test Token</h3>
+          <h3> Mint Test Token</h3>
           <Form inline>
             <FormGroup>
               <FormControl
@@ -65,24 +48,17 @@ class TestTokenUI extends React.Component {
             </FormGroup>
           </Form>
           
-          <h3> 2. Read your account token balance </h3>
-          <Form inline>
-            <FormGroup>
-              <HelpBlock>Your test token balance is <span className="accountBalance">{this.state.accountBalance}</span></HelpBlock>
-              <Button bsStyle="primary" onClick={(e) => this.getBalance(e)}>Get Balance</Button>
-            </FormGroup>
-          </Form>
-     
-          <h3> 3. Contract Calls </h3>
-          <p>Javascript calls being made: </p>
-          <div className="logs">
-          {
-            this.state.logs.map((item, i) => <p key={i}>{item}</p>)
-          }
-          </div>
+          <ERC20TokenUI address={ TestToken.options.address } />
+
       </React.Fragment>
       );
     }
   }
 
-  export default TestTokenUI;
+const mapDispatchToProps = dispatch => ({
+  addToBalance(amount) {
+    dispatch(accountActions.addToErc20TokenBalance(amount));
+  },
+});
+
+export default connect(null, mapDispatchToProps)(TestTokenUI);
