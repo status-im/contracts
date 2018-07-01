@@ -116,7 +116,6 @@ class Poll extends PureComponent {
     const { fromWei } = web3.utils;
     const maxValue = Math.floor(Math.sqrt(balance));
     const buttonText = originalValue != 0 && value != originalValue ? 'Change Vote' : 'Vote';
-    console.log(classes)
     return (
       <Card>
         <CardContent>
@@ -127,11 +126,15 @@ class Poll extends PureComponent {
           <Typography variant="subheading" color="textSecondary">
             <b>Your vote:</b> {value} votes ({value * value} SNT)
           </Typography>
+          {disableVote && <Typography variant="body2" color="error">
+            {balance == 0 && <span>You can not vote because your account had no SNT when this poll was created</span>}
+            {balance != 0 && !_canVote && <span>You can not vote on this poll</span>}
+          </Typography>}
         </CardContent>
-        <CardActions className={classes.card}>
+        {!disableVote && <CardActions className={classes.card}>
           <Slider style={{ width: '95%' }} classes={{ thumb: classes.thumb }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
           {isSubmitting ? <CircularProgress /> : <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>{buttonText}</Button>}
-        </CardActions>
+        </CardActions>}
       </Card>
     )
   }
