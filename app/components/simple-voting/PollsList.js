@@ -65,7 +65,8 @@ class Poll extends PureComponent {
             return updatePoll(idPoll);
           })
           .catch(res => {
-            console.log('fail:', res);
+            console.log('fail:', res, res.messsage);
+            this.setState({ error: res.message })
           })
           .finally(() => {
             this.getBalance();
@@ -111,7 +112,7 @@ class Poll extends PureComponent {
       balance,
       classes
     } = this.props;
-    const { value, originalValue, isSubmitting } = this.state;
+    const { value, originalValue, isSubmitting, error } = this.state;
     const cantVote = balance == 0 || !_canVote;
     const disableVote = cantVote || isSubmitting;
     const { fromWei } = web3.utils;
@@ -131,6 +132,7 @@ class Poll extends PureComponent {
             {balance == 0 && <span>You can not vote because your account had no SNT when this poll was created</span>}
             {balance != 0 && !_canVote && <span>You can not vote on this poll</span>}
           </Typography>}
+          {error && <Typography variant="body2" color="error">{error}</Typography>}
         </CardContent>
         {!cantVote && <CardActions className={classes.card}>
           <Slider style={{ width: '95%' }} classes={{ thumb: classes.thumb }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
