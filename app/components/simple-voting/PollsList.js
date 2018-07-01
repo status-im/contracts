@@ -17,6 +17,10 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+  },
+  thumb: {
+    width: '24px',
+    height: '24px'
   }
 };
 
@@ -112,6 +116,7 @@ class Poll extends PureComponent {
     const { fromWei } = web3.utils;
     const maxValue = Math.floor(Math.sqrt(balance));
     const buttonText = originalValue != 0 && value != originalValue ? 'Change Vote' : 'Vote';
+    console.log(classes)
     return (
       <Card>
         <CardContent>
@@ -124,7 +129,7 @@ class Poll extends PureComponent {
           </Typography>
         </CardContent>
         <CardActions className={classes.card}>
-          <Slider style={{ width: '95%' }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
+          <Slider style={{ width: '95%' }} classes={{ thumb: classes.thumb }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
           {isSubmitting ? <CircularProgress /> : <Button variant="contained" disabled={disableVote}  color="primary" onClick={this.handleClick}>{buttonText}</Button>}
         </CardActions>
       </Card>
