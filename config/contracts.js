@@ -29,6 +29,12 @@ module.exports = {
       },
       UpdatableInstance: { 
         deploy: false
+      },
+      MiniMeToken: {
+        deploy: false
+      },
+      MiniMeTokenFactory: {
+        deploy: true
       }
     }
   },

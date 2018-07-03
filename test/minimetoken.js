@@ -1,35 +1,40 @@
 const utils = require('../utils/testUtils')
-const ERC20Token = require('./erc20token');
-const Controlled = require('./controlled');
 
-describe("MiniMeToken", async function() {
+const MiniMeToken = require('Embark/contracts/MiniMeToken');
+const ERC20TokenSpec = require('./abstract/erc20tokenspec');
+const ControlledSpec = require('./abstract/controlled');
+
+config({
+  contracts: {
+    "MiniMeTokenFactory": {
+    },
+    "MiniMeToken": {
+        "args": [
+            "$MiniMeTokenFactory",
+            utils.zeroAddress,
+            0,
+            "TestMiniMeToken",
+            18,
+            "TST",
+            true
+        ]
+    },
+    ...ERC20TokenSpec.config.contracts
+  }
+});
+
+
+contract("MiniMeToken", function() {
   this.timeout(0);
   var accounts;
-  var miniMeTokenClone;
-  const b = [];
-  
   before(function(done) {
-    var contractsConfig = {
-      "MiniMeTokenFactory": {
-      },
-      "MiniMeToken": {
-          "args": [
-              "$MiniMeTokenFactory",
-              utils.zeroAddress,
-              0,
-              "TestMiniMeToken",
-              18,
-              "TST",
-              true
-          ]
-      }
-    };
-    EmbarkSpec.deployAll(contractsConfig, async function(accountsArr) { 
-      accounts = accountsArr
-      done() 
+    web3.eth.getAccounts().then(function (res) {
+      accounts = res;
+      done();
     });
   });
-
+  var miniMeTokenClone;
+  const b = [];
 
   it('should generate tokens for address 1', async () => {
     await MiniMeToken.methods.generateTokens(accounts[1], 10).send();
@@ -61,9 +66,7 @@ describe("MiniMeToken", async function() {
       'MMTc',
       0,
       true).send({ from: accounts[0]});
-    let addr = miniMeTokenCloneTx.events.NewCloneToken.raw.topics[1];
-    addr = `0x${addr.slice(26)}`;
-    addr = web3.utils.toChecksumAddress(addr);
+    let addr = miniMeTokenCloneTx.events.NewCloneToken.returnValues[0];
     miniMeTokenClone = new web3.eth.Contract(MiniMeToken._jsonInterface, addr);
 
     b[3] = await web3.eth.getBlockNumber();
@@ -101,32 +104,17 @@ describe("MiniMeToken", async function() {
     assert.equal(await miniMeTokenClone.methods.balanceOf(accounts[1]).call(), 12);
     assert.equal(await miniMeTokenClone.methods.balanceOf(accounts[2]).call(), 4);
   });
+  
 
-  var erc20tokenConfig = {
-    "MiniMeTokenFactory": {
-    },
-    "Contract": { 
-        "instanceOf" : "MiniMeToken", 
-        "args": [
-            "$MiniMeTokenFactory",
-            utils.zeroAddress,
-            0,
-            "TestMiniMeToken",
-            18,
-            "TST",
-            true
-        ] 
-    }
-  }
-
-  ERC20Token.Test(erc20tokenConfig, async function (accounts, MiniMeToken) {
+  it("should mint balances for ERC20TokenSpec", async function() {
+    let initialBalance = 7 * 10 ^ 18;
     for(i=0;i<accounts.length;i++){
-      await MiniMeToken.methods.generateTokens(accounts[i], 7 * 10 ^ 18).send({from: accounts[0]})
-    }
-  });
-  Controlled.Test(erc20tokenConfig, async function (accounts, MiniMeToken) {
-    
-  });
+      await MiniMeToken.methods.generateTokens(accounts[i], initialBalance).send({from: accounts[0]})
+      //assert.equal(await TestToken.methods.balanceOf(accounts[i]).call(), initialBalance);
+    }    
+  })
+  ERC20TokenSpec.Test(MiniMeToken);
+  ControlledSpec.Test(MiniMeToken);
 
   
 
