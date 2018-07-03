@@ -129,7 +129,7 @@ class Poll extends PureComponent {
             <b>Your vote:</b> {value} votes ({value * value} SNT)
           </Typography>
           {cantVote && <Typography variant="body2" color="error">
-            {balance == 0 && <span>You can not vote because your account had no SNT when this poll was created</span>}
+            {balance == 0 && <span>Voting disabled for proposals made when there was no SNT in the account</span>}
             {balance != 0 && !_canVote && <span>You can not vote on this poll</span>}
           </Typography>}
           {error && <Typography variant="body2" color="error">{error}</Typography>}
