@@ -75,7 +75,7 @@
         "address": "0x744d70fdbe2ba4cf95131626614a1763df805b9e"
       },
       "PollManager": 	{
-        "args": ["$MiniMeTokenFactory", "$SNT"]
+        "address": "0x0e222932911b9a558104b4b4b2f330398561436f"
       }
     }
   }
