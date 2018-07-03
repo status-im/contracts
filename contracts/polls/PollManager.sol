@@ -158,10 +158,13 @@ contract PollManager is Controlled {
         uint amount = p.votes[msg.sender];
         if (amount == 0) return;
 
+        assert(p.voters != 0);
+        assert(amount <= p.results);
+
         p.votes[msg.sender] = 0;
 
         p.voters--;
-        p.results -= amount;
+        p.results -= amount; 
         p.qvResults -= sqrt(amount / 1 ether);
 
         require(MiniMeToken(p.token).transferFrom(address(this), msg.sender, amount));
