@@ -44,7 +44,7 @@
         ]
       },
       "PollManager": {
-          "args": ["$MiniMeTokenFactory", "$SNT"]
+        "args": ["$MiniMeTokenFactory", "$SNT"]
       }
     }
   },
@@ -60,6 +60,22 @@
       },
       "PollManager": {
         "address": "0x456E047eDEa0a91a66C3DC7aCc0B1424d80cf8a6"
+      }
+    }
+  },
+  "livenet":{
+    "contracts": {
+      "gasPrice": 30000000000,
+      "TestToken": { "deploy": false },
+      "MiniMeTokenFactory": {
+        "address": "0xa1c957C0210397D2d0296341627B74411756d476"
+      },
+      "SNT": {
+        "instanceOf": "MiniMeToken",
+        "address": "0x744d70fdbe2ba4cf95131626614a1763df805b9e"
+      },
+      "PollManager": 	{
+        "args": ["$MiniMeTokenFactory", "$SNT"]
       }
     }
   }
