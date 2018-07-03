@@ -214,12 +214,12 @@ exports.increaseTime = async (amount) => {
           params: [+amount],
           id: new Date().getSeconds()
         },
-        (error) => {
+        async (error) => {
           if (error) {
             console.log(error);
             return reject(err);
           }
-          web3.currentProvider.sendAsync(
+          await web3.currentProvider.sendAsync(
             {
               jsonrpc: '2.0',
               method: 'evm_mine',
