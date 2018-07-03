@@ -65,7 +65,6 @@
   },
   "livenet":{
     "contracts": {
-      "gasPrice": 30000000000,
       "TestToken": { "deploy": false },
       "MiniMeTokenFactory": {
         "address": "0xa1c957C0210397D2d0296341627B74411756d476"
