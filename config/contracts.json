@@ -63,6 +63,21 @@
       }
     }
   },
+  "staging":{
+    "contracts": {
+      "TestToken": { "deploy": false },
+      "MiniMeTokenFactory": {
+        "address": "0xa1c957C0210397D2d0296341627B74411756d476"
+      },
+      "SNT": {
+        "instanceOf": "MiniMeToken",
+        "address": "0x744d70fdbe2ba4cf95131626614a1763df805b9e"
+      },
+      "PollManager": 	{
+        "address": "0x0e222932911b9a558104b4b4b2f330398561436f"
+      }
+    }
+  },
   "livenet":{
     "contracts": {
       "TestToken": { "deploy": false },
