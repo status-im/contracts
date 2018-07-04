@@ -7,6 +7,7 @@ import AdminView from './components/AdminView';
 import Voting from './components/Voting';
 import SNT from  'Embark/contracts/SNT';
 import { VotingContext } from './context';
+import Web3Render from './components/standard/Web3Render'
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -25,13 +26,16 @@ class App extends React.Component {
   constructor(props) {
     super(props);
   }
-  state = { admin: false, pollOrder: 'NEWEST_ADDED' };
+  state = { admin: false, pollOrder: 'NEWEST_ADDED', web3Provider: true };
 
   componentDidMount(){
-    __embarkContext.execWhenReady(() => {
-      this._getPolls();
-      this._setAccounts();
-    });
+    EmbarkJS.onReady((err) => {
+      if (err) this.setState({ web3Provider: false });
+      else {
+        this._getPolls();
+        this._setAccounts();
+      }
+    })
   }
 
   setAccount(_account){
@@ -80,18 +84,20 @@ class App extends React.Component {
   }
 
   render(){
-    const { admin } = this.state;
+    const { admin, web3Provider } = this.state;
     const { _getPolls, updatePoll, setPollOrder, appendToPoll } = this;
     const toggleAdmin = () => this.setState({ admin: true });
     const votingContext = { getPolls: _getPolls, toggleAdmin, updatePoll, appendToPoll, setPollOrder, ...this.state };
     return (
-      <VotingContext.Provider value={votingContext}>
-        <Fragment>
-          {admin ?
-           <AdminView setAccount={this.setAccount} /> :
-           <Voting />}
-        </Fragment>
-      </VotingContext.Provider>
+      <Web3Render ready={web3Provider}>
+        <VotingContext.Provider value={votingContext}>
+          <Fragment>
+            {admin ?
+             <AdminView setAccount={this.setAccount} /> :
+             <Voting />}
+          </Fragment>
+        </VotingContext.Provider>
+      </Web3Render>
     );
   }
 }
