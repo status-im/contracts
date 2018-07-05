@@ -15,6 +15,9 @@ module.exports = {
     ],
     gas: "auto",
     contracts: {
+      SafeMath: {
+        deploy: false
+      },
       TestToken: {
         deploy: false
       },
@@ -27,6 +30,9 @@ module.exports = {
       Instance: { 
         deploy: false
       },
+      InstanceStorage: {
+        deploy: false
+      },
       UpdatableInstance: { 
         deploy: false
       },
@@ -34,15 +40,62 @@ module.exports = {
         deploy: false
       },
       MiniMeTokenFactory: {
-        deploy: true
-      }
+        deploy: false
+      },
+      DelegationProxy: {
+        deploy: false
+      },
+      DelegationProxyFactory: {
+        deploy: false
+      },
+      DelegationProxyView: {
+        deploy: false
+      },
+      DelegationProxyKernel: {
+        deploy: false
+      },
+      TrustNetwork: {
+        deploy: false
+      },
+      ProposalCuration: {
+        deploy: false
+      },
+      ProposalManager: {
+        deploy: false
+      },
+      Democracy: {
+        deploy: false
+      } 
     }
   },
   development: {
     contracts: {
-      TestToken: {
+      MiniMeTokenFactory : {
         deploy: true
+      },
+      DelegationProxyFactory: {
+        deploy: true
+      },
+      SNT: {
+        deploy: true,
+        instanceOf: "MiniMeToken",
+        args: [
+          "$MiniMeTokenFactory",
+          0,
+          0,
+          "TestMiniMeToken",
+          18,
+          "TST",
+          true
+        ]
       }
+    }, 
+    Democracy: {
+      deploy: true,
+      args: [
+        "$SNT",
+        "$DelegationProxyFactory"
+      ]
     }
   }
 };
