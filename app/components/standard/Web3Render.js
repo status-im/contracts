@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+import NoConnection from './NoConnection';
 
 const NoWeb3 = () => (
   <div>
@@ -8,7 +9,7 @@ const NoWeb3 = () => (
 
 const Web3Render = ({ ready, children }) => (
   <Fragment>
-    {ready ? <Fragment>{children}</Fragment> : <NoWeb3 />}
+    {ready ? <Fragment>{children}</Fragment> : <NoConnection />}
   </Fragment>
 );
 
