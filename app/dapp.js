@@ -12,6 +12,8 @@ window['SNT'] = SNT;
 
 import './dapp.css';
 
+const MAINNET = 1;
+
 const getPolls = (number, pollMethod) => {
   const polls = [];
   for (let i = number-1; i >= 0; i--) {
@@ -35,6 +37,9 @@ class App extends React.Component {
         this._getPolls();
         this._setAccounts();
       }
+      web3.eth.net.getId((err, netId) => {
+        if (netId !== MAINNET) this.setState({ web3Provider: false})
+      })
     })
   }
 
