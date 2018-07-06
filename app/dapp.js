@@ -1,5 +1,6 @@
 import React, { Fragment } from 'react';
 import ReactDOM from 'react-dom';
+import 'typeface-roboto'
 import { Tabs, Tab } from 'react-bootstrap';
 import Toggle from 'react-toggle';
 import EmbarkJS from 'Embark/EmbarkJS';
@@ -15,6 +16,7 @@ import TokenPermissions from './components/standard/TokenPermissionConnect';
 import web3 from "Embark/web3";
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
+import Welcome from './components/ens/welcome';
 
 import './dapp.css';
 
@@ -39,15 +41,6 @@ class App extends React.Component {
     });
   }
 
-
-  _renderStatus(title, available) {
-    let className = available ? 'pull-right status-online' : 'pull-right status-offline';
-    return <React.Fragment>
-      {title}
-      <span className={className}></span>
-    </React.Fragment>;
-  }
-
   render() {
     const { admin, network } = this.state;
     return (
@@ -55,7 +48,8 @@ class App extends React.Component {
         <div style={{ display: admin ? 'block' : 'none' }} >
           <AdminMode style={{ display: admin ? 'block' : 'none' }}/>
         </div>
-        {!admin &&
+        <Welcome />
+        {false &&
          <Fragment>
            <Paper elevation={4}>
              <Typography style={{ fontSize: '2.5rem', padding: '0.5%', textAlign: 'center' }} variant="headline" component="h3"><i style={{ fontSize: '1rem' }}>network </i>{network}</Typography>
