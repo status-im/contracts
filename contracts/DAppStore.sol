@@ -110,7 +110,7 @@ contract DAppStore {
         require(SNT.transferFrom(msg.sender, d.developer, _amount));
     }
     
-    // -- MISSING CODE
+    // -- TEST
     function downVote(bytes32 _id, uint256 _amount) public {
         uint dappIdx = id2index[_id];
         Dapp storage d = dapps[dappIdx];
@@ -120,11 +120,10 @@ contract DAppStore {
         uint dappvotes = numVotesToMint(d, _amount);
         mint(d, dappvotes, false);
 
-        /*
-        var negative_votes_before = _effectiveBalance;
-        var negative_votes_now = effectiveBalance + dappvotes;
-        var negative_percent = ((negative_votes_now - negative_votes_before) / negative_votes_now ) * 100
-       _effectiveBalance -= negative_percent;*///TODO:
+        uint negative_votes_before = d.effectiveBalance;
+        uint negative_votes_now = d.effectiveBalance + dappvotes;
+        uint negative_percent = ((negative_votes_now - negative_votes_before) * 100 / negative_votes_now );
+        d.effectiveBalance -=   d.effectiveBalance * negative_percent / 100;
 
         require(SNT.allowance(msg.sender, d.developer) >= _amount);
         require(SNT.transferFrom(msg.sender, d.developer, _amount));
