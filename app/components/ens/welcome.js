@@ -47,13 +47,13 @@ const WelcomeContent = () => (
   </div>
 );
 
-const Welcome = ({ classes }) => (
+const Welcome = ({ classes, toggleSearch }) => (
   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
     <img src={StatusCards} />
     <Typography variant="title" style={textStyle}>
       Get a human-readable name instead of long addresses
     </Typography>
-    <Button size="large" className={classNames(classes.button)}>
+    <Button size="large" className={classNames(classes.button)} onClick={toggleSearch}>
       <div style={buttonText}>Let's Go</div>
     </Button>
     <WelcomeContent />
