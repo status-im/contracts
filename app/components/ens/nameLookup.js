@@ -2,8 +2,9 @@ import React, { Fragment, PureComponent } from 'react';
 import web3 from 'web3';
 import { connect } from 'react-redux';
 import { actions as accountActions } from '../../reducers/accounts';
+import Hidden from '@material-ui/core/Hidden';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
-import { Button, Field, TextInput, Card, Info, Text } from '../../ui/components'
+import { Button, Field, TextInput, MobileSearch, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
 import theme from '../../ui/theme'
 import { withFormik } from 'formik';
@@ -133,6 +134,25 @@ const DisplayAddress = (props) => (
   </Fragment>
 )
 
+const LookupForm = ({ handleSubmit, values, handleChange }) => (
+  <Fragment>
+    <form onSubmit={handleSubmit} style={{ marginTop: '3em' }}>
+      <Field label="Enter Domain or Status Name" wide>
+        <TextInput
+          value={values.domainName}
+          name="domainName"
+          onChange={handleChange}
+          wide
+          required />
+      </Field>
+      <MobileSearch style={{ marginBottom: '10px' }} wide />
+      <Button mode="strong" type="submit" wide>
+        Lookup Address
+      </Button>
+    </form>
+  </Fragment>
+)
+
 const InnerForm = ({
   values,
   errors,
@@ -144,25 +164,15 @@ const InnerForm = ({
   status,
   setStatus
 }) => (
-  <Card border="None" width="100%" height="auto">
+  <div style={{ margin: '10px' }}>
+    <Hidden smDown>
     <span style={{ display: 'flex', justifyContent: 'space-evenly', marginBottom: '10px' }}>
-    <StatusLogo />
-    <img  style={{ maxWidth: '150px', alignSelf: 'center' }} src={EnsLogo} alt="Ens Logo"/>
+      <StatusLogo />
+      <img  style={{ maxWidth: '150px', alignSelf: 'center' }} src={EnsLogo} alt="Ens Logo"/>
     </span>
+    </Hidden>
     {!status
-     ? <form onSubmit={handleSubmit} style={{ marginTop: '3em' }}>
-       <Field label="Enter Domain or Status Name" wide>
-         <TextInput
-           value={values.domainName}
-           name="domainName"
-           onChange={handleChange}
-           wide
-           required />
-       </Field>
-       <Button mode="strong" type="submit" wide>
-         Lookup Address
-       </Button>
-     </form>
+     ? <LookupForm {...{ handleSubmit, values, handleChange }} />
      : validAddress(status.address) ?
      <DisplayAddress
        domainName={values.domainName}
@@ -174,7 +184,7 @@ const InnerForm = ({
        setStatus={setStatus}
        domainName={values.domainName}  />
     }
-  </Card>
+  </div>
 )
 
 const NameLookup = withFormik({
