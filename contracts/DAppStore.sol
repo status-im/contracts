@@ -21,19 +21,23 @@ contract DAppStore {
 
     struct Dapp {
         address developer;
-        bytes32 category;
-        bytes32 name;
+        bytes category;
+        bytes name;
         bytes32 id;
         uint256 SNTBalance;
-        uint256 _effectiveBalance;
+        uint256 effectiveBalance;
         Vote[] votes;
     }
 
     Dapp[] public dapps;
     mapping(bytes32 => uint) public id2index;
     
+
+    event DAppCreated(bytes32 id, uint256 amount);
+    event IncreasedDAppStake(bytes32 id, uint256 amount);
+
     // -- TEST
-    function createDApp(bytes32 _category, bytes32 _name, bytes32 _id, uint256 _amountToStake) public {
+    function createDApp(bytes _category, bytes _name, bytes32 _id, uint256 _amountToStake) public {
         require(_amountToStake != 0);
         require(SNT.allowance(msg.sender, address(this)) >= _amountToStake);
         require(SNT.transferFrom(msg.sender, address(this), _amountToStake));
@@ -50,9 +54,11 @@ contract DAppStore {
         d.SNTBalance = _amountToStake;
 
         id2index[_id] = dappIdx;
+
+        emit DAppCreated(_id, _amountToStake);
     }   
     
-    // -- CODE MISSING
+    // -- TEST
     function numVotesToMint(Dapp storage d, uint256 _SNTBalance) internal view returns(uint256) {  
         uint TOTAL_SNT = d.SNTBalance;
         uint SNT_PROPORTION = TOTAL_SNT * percentage_num;
@@ -67,10 +73,7 @@ contract DAppStore {
 
         if (_SNTBalance > SNT_PROPORTION) {
             uint current_interval_index = _SNTBalance / SNT_PROPORTION;         
-            
-            return 1;
-            // TODO:
-            // return num_votes_to_mint_at_1 + ((current_interval_index * (((_SNTBalance/100) - 1) / d._effectiveBalance)) * num_votes_to_mint_at_1);
+            return num_votes_to_mint_at_1 + ((current_interval_index * (((_SNTBalance/100) - 1) / d.effectiveBalance)) * num_votes_to_mint_at_1);
         }
     } 
 
@@ -94,9 +97,11 @@ contract DAppStore {
         require(SNT.transferFrom(msg.sender, address(this), _amountToStake));
         
         d.SNTBalance += _amountToStake;
+
+        emit IncreasedDAppStake(_id, _amountToStake);
     }
     
-    // -- MISSING CODE
+    // -- TEST
     function upvote(bytes32 _id, uint256 _amount) public {
         uint dappIdx = id2index[_id];
         Dapp storage d = dapps[dappIdx];
@@ -124,6 +129,10 @@ contract DAppStore {
         uint negative_votes_now = d.effectiveBalance + dappvotes;
         uint negative_percent = ((negative_votes_now - negative_votes_before) * 100 / negative_votes_now );
         d.effectiveBalance -=   d.effectiveBalance * negative_percent / 100;
+
+        assert(d.effectiveBalance < negative_votes_before);
+
+        // TODO: what happens if effectiveValance reaches 0;
 
         require(SNT.allowance(msg.sender, d.developer) >= _amount);
         require(SNT.transferFrom(msg.sender, d.developer, _amount));

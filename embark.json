@@ -13,6 +13,5 @@
     "ipfs-api": "17.2.4"
   },
   "plugins": {
-    "embark-solc": {}
   }
 }
