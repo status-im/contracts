@@ -77,20 +77,25 @@ const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
   <Fragment>
     <Hidden mdDown>
       <Info.Action title="No address is associated with this domain">
-        <span style={{ color: theme.accent }}>{formattedDomain.toUpperCase()}</span> can be registered for {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
+        <span style={{ color: theme.accent }}>{formattedDomain.toLowerCase()}</span> can be registered for {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
       </Info.Action>
     </Hidden>
     <Hidden mdUp>
-      <Info background="#415be3">
+      <Info background="#415be3" style={{ margin: '0.4em' }}>
         <Typography variant="title" style={
           { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
         }>
-          <b>{formattedDomain.toUpperCase()}</b>
+          <b>{formattedDomain.toLowerCase()}</b>
           <div style={{ border: '1px solid', borderRadius: '9px', width: '5em' }}>
             {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
           </div>
         </Typography>
       </Info>
+    </Hidden>
+    <Hidden mdUp>
+      <Typography style={{ textAlign: 'center', padding: '1.5em', color: '#939ba1' }}>
+        Resolve this domain to your Status wallet address and contact code
+      </Typography>
     </Hidden>
   </Fragment>
 )
@@ -174,6 +179,7 @@ const LookupForm = ({ handleSubmit, values, handleChange }) => (
       <Hidden mdUp>
         <Field label="Search for vacant names in domains stateofus.eth and domains associated with this registry"  style={{ textAlign: 'center', padding: '0px 10px 0 10px' }} wide>
           <MobileSearch
+            search
             name="domainName"
             style={{ marginTop: '10px' }}
             placeholder='Search'
