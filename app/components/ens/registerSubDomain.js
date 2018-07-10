@@ -1,7 +1,8 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import React from 'react';
-import { Button } from '../../ui/components';
+import Hidden from '@material-ui/core/Hidden';
+import { Button, MobileSearch } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32, formatPrice } from './utils';
@@ -47,12 +48,12 @@ const InnerForm = ({
        button={
          <Button
            mode="strong"
-           style={{ marginTop: '5px' }}
+                 style={{ marginTop: '5px' }}
            onClick={() => {
-              ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
-                                  .call()
-                                  .then((res) => { setFieldValue('price', fromWei(res)); });
-          }}
+               ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
+                                   .call()
+                                   .then((res) => { setFieldValue('price', fromWei(res)); });
+           }}
            >
            Get Price
          </Button>
@@ -65,29 +66,50 @@ const InnerForm = ({
        label="Domain Price"
        disabled
        value={values.price ? `${formatPrice(values.price)} SNT` : ''} />}
-    <FieldGroup
-      id="statusAddress"
-      name="statusAddress"
-      type="text"
-      label="Status messenger address domain resolves to"
-      onChange={handleChange}
-      onBlur={handleBlur}
-      value={values.statusAddress}
-      error={errors.statusAddress}
-      wide="true"
-    />
-    <FieldGroup
-      id="address"
-      name="address"
-      type="text"
-      label="Ethereum address domain resolves to"
-      onChange={handleChange}
-      onBlur={handleBlur}
-      value={values.address}
-      error={errors.address}
-      button={<Button mode="strong" style={{ padding: '5px 15px 5px 15px', marginTop: '5px' }} onClick={() => setFieldValue('address', web3.eth.defaultAccount)}>Use My Primary Address</Button>}
-    />
-    {!isSubmitting ? <Button wide mode="strong" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button> : <LinearProgress />}
+    <Hidden mdDown>
+      <FieldGroup
+        id="statusAddress"
+        name="statusAddress"
+        type="text"
+        label="Status messenger address domain resolves to"
+        onChange={handleChange}
+        onBlur={handleBlur}
+        value={values.statusAddress}
+        error={errors.statusAddress}
+        wide="true"
+      />
+      <FieldGroup
+        id="address"
+        name="address"
+        type="text"
+        label="Ethereum address domain resolves to"
+        onChange={handleChange}
+        onBlur={handleBlur}
+        value={values.address}
+        error={errors.address}
+        button={<Button mode="strong" style={{ padding: '5px 15px 5px 15px', marginTop: '5px' }} onClick={() => setFieldValue('address', web3.eth.defaultAccount)}>Use My Primary Address</Button>}
+      />
+      {!isSubmitting ? <Button wide mode="strong" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button> : <LinearProgress />}
+    </Hidden>
+    <Hidden mdUp>
+      <MobileSearch
+        name="statusAddress"
+        style={{ marginTop: '10px' }}
+        placeholder="Status Messenger Address"
+        value={values.statusAddress}
+        onChange={handleChange}
+        required
+        wide />
+      <MobileSearch
+        name="address"
+        style={{ marginTop: '10px' }}
+        placeholder="Ethereum Address"
+        value={values.address}
+        onChange={handleChange}
+        paste={() => setFieldValue('address', web3.eth.defaultAccount)}
+        required
+        wide />
+    </Hidden>
   </form>
 );
 
