@@ -137,18 +137,33 @@ const DisplayAddress = (props) => (
 const LookupForm = ({ handleSubmit, values, handleChange }) => (
   <Fragment>
     <form onSubmit={handleSubmit} style={{ marginTop: '3em' }}>
-      <Field label="Enter Domain or Status Name" wide>
-        <TextInput
-          value={values.domainName}
-          name="domainName"
-          onChange={handleChange}
-          wide
-          required />
-      </Field>
-      <MobileSearch style={{ marginBottom: '10px' }} wide />
-      <Button mode="strong" type="submit" wide>
-        Lookup Address
-      </Button>
+      <Hidden smDown>
+        <Field label="Enter Domain or Status Name" wide>
+          <TextInput
+            value={values.domainName}
+            name="domainName"
+            onChange={handleChange}
+            wide
+            required />
+        </Field>
+      </Hidden>
+      <Hidden smUp>
+        <Field label="Search for vacant names in domains stateofus.eth and domains associated with this registry"  style={{ textAlign: 'center', padding: '0px 10px 0 10px' }} wide>
+          <MobileSearch
+            name="domainName"
+            style={{ marginTop: '10px' }}
+            placeholder='Search'
+            value={values.domainName}
+            onChange={handleChange}
+            required
+            wide />
+        </Field>
+      </Hidden>
+      <Hidden smDown>
+        <Button mode="strong" type="submit" wide>
+          Lookup Address
+        </Button>
+      </Hidden>
     </form>
   </Fragment>
 )
@@ -166,10 +181,10 @@ const InnerForm = ({
 }) => (
   <div style={{ margin: '10px' }}>
     <Hidden smDown>
-    <span style={{ display: 'flex', justifyContent: 'space-evenly', marginBottom: '10px' }}>
-      <StatusLogo />
-      <img  style={{ maxWidth: '150px', alignSelf: 'center' }} src={EnsLogo} alt="Ens Logo"/>
-    </span>
+      <span style={{ display: 'flex', justifyContent: 'space-evenly', marginBottom: '10px' }}>
+        <StatusLogo />
+        <img  style={{ maxWidth: '150px', alignSelf: 'center' }} src={EnsLogo} alt="Ens Logo"/>
+      </span>
     </Hidden>
     {!status
      ? <LookupForm {...{ handleSubmit, values, handleChange }} />

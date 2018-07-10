@@ -20,7 +20,7 @@ const MobileInput = styled.input`
   background-color: #eef2f5;
   font-size: 16px;
   border: none;
-  height: 5%;
+  height: 7%;
   width: ${({ wide }) => (wide ? '100%' : 'auto')};
   appearance: none;
   box-shadow: none;
