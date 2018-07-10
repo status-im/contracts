@@ -2,7 +2,7 @@ import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import React from 'react';
 import Hidden from '@material-ui/core/Hidden';
-import { Button, MobileSearch } from '../../ui/components';
+import { Button, MobileSearch, MobileButton } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32, formatPrice } from './utils';
@@ -98,7 +98,6 @@ const InnerForm = ({
         placeholder="Status Messenger Address"
         value={values.statusAddress}
         onChange={handleChange}
-        required
         wide />
       <MobileSearch
         name="address"
@@ -109,6 +108,9 @@ const InnerForm = ({
         paste={() => setFieldValue('address', web3.eth.defaultAccount)}
         required
         wide />
+      <div style={{ margin: '10% 0 0 20%' }}>
+        <MobileButton type="submit" text="Pay & register" />
+      </div>
     </Hidden>
   </form>
 );
