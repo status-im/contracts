@@ -1,6 +1,6 @@
-import React from 'react'
-import styled, { css } from 'styled-components'
-import theme from '../theme'
+import React from 'react';
+import styled, { css } from 'styled-components';
+import theme from '../theme';
 import SearchIcon from '@material-ui/icons/Search';
 
 const searchWrapper = {

@@ -3,6 +3,7 @@ import web3 from 'web3';
 import { connect } from 'react-redux';
 import { actions as accountActions } from '../../reducers/accounts';
 import Hidden from '@material-ui/core/Hidden';
+import Typography from '@material-ui/core/Typography';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import { Button, Field, TextInput, MobileSearch, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
@@ -72,6 +73,28 @@ class RenderAddresses extends PureComponent {
   }
 }
 
+const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
+  <Fragment>
+    <Hidden mdDown>
+      <Info.Action title="No address is associated with this domain">
+        <span style={{ color: theme.accent }}>{formattedDomain.toUpperCase()}</span> can be registered for {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
+      </Info.Action>
+    </Hidden>
+    <Hidden mdUp>
+      <Info background="#415be3">
+        <Typography variant="title" style={
+          { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
+        }>
+          <b>{formattedDomain.toUpperCase()}</b>
+          <div style={{ border: '1px solid', borderRadius: '9px', width: '5em' }}>
+            {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
+          </div>
+        </Typography>
+      </Info>
+    </Hidden>
+  </Fragment>
+)
+
 class Register extends PureComponent {
   state = { domainPrice: null };
 
@@ -98,9 +121,7 @@ class Register extends PureComponent {
       <Fragment>
         {!registered ?
          <Fragment>
-           <Info.Action title="No address is associated with this domain">
-             <span style={{ color: theme.accent }}>{formattedDomain.toUpperCase()}</span> can be registered for {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
-           </Info.Action>
+           <RegisterInfoCard {...{ formattedDomain, domainPrice }}/>
            <RegisterSubDomain
              subDomain={formattedDomainArray[0]}
              domainName={formattedDomainArray.slice(1).join('.')}
@@ -127,9 +148,12 @@ const DisplayAddress = (props) => (
     {validAddress(props.address) ?
      <RenderAddresses {...props} />
      :
-     <Info.Action title="No address is associated with this domain">
-       {props.domainName.toUpperCase()}
-     </Info.Action>}
+     <Hidden mdUp>
+       <Info.Action title="No address is associated with this domain">
+         {props.domainName.toUpperCase()}
+       </Info.Action>
+     </Hidden>
+    }
     <div style={backButton} onClick={() => props.setStatus(null)}>&larr;</div>
   </Fragment>
 )
@@ -137,7 +161,7 @@ const DisplayAddress = (props) => (
 const LookupForm = ({ handleSubmit, values, handleChange }) => (
   <Fragment>
     <form onSubmit={handleSubmit} style={{ marginTop: '3em' }}>
-      <Hidden smDown>
+      <Hidden mdDown>
         <Field label="Enter Domain or Status Name" wide>
           <TextInput
             value={values.domainName}
@@ -147,7 +171,7 @@ const LookupForm = ({ handleSubmit, values, handleChange }) => (
             required />
         </Field>
       </Hidden>
-      <Hidden smUp>
+      <Hidden mdUp>
         <Field label="Search for vacant names in domains stateofus.eth and domains associated with this registry"  style={{ textAlign: 'center', padding: '0px 10px 0 10px' }} wide>
           <MobileSearch
             name="domainName"
@@ -159,7 +183,7 @@ const LookupForm = ({ handleSubmit, values, handleChange }) => (
             wide />
         </Field>
       </Hidden>
-      <Hidden smDown>
+      <Hidden mdDown>
         <Button mode="strong" type="submit" wide>
           Lookup Address
         </Button>
@@ -180,7 +204,7 @@ const InnerForm = ({
   setStatus
 }) => (
   <div style={{ margin: '10px' }}>
-    <Hidden smDown>
+    <Hidden mdDown>
       <span style={{ display: 'flex', justifyContent: 'space-evenly', marginBottom: '10px' }}>
         <StatusLogo />
         <img  style={{ maxWidth: '150px', alignSelf: 'center' }} src={EnsLogo} alt="Ens Logo"/>

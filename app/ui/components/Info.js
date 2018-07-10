@@ -22,7 +22,7 @@ Info.defaultProps = {
 const Main = styled.section`
   background: ${({ background }) => background};
   padding: 15px;
-  border-radius: 3px;
+  border-radius: 4px;
   word-wrap: break-word;
 `
 
