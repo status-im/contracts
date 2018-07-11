@@ -94,8 +94,8 @@ const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
       </Info>
     </Hidden>
     <Hidden mdUp>
-      <Typography style={{ textAlign: 'center', padding: '1.5em', color: '#939ba1' }}>
-        Resolve this domain to your Status wallet address and contact code
+      <Typography style={{ textAlign: 'center', padding: '1.5em' }}>
+        This name will be pointed to the wallet address and contact code below
       </Typography>
     </Hidden>
   </Fragment>

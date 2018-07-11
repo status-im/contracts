@@ -2,7 +2,7 @@ import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import React from 'react';
 import Hidden from '@material-ui/core/Hidden';
-import { Button, MobileSearch, MobileButton } from '../../ui/components';
+import { Button, MobileSearch, MobileButton, Field } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32, formatPrice } from './utils';
@@ -48,7 +48,7 @@ const InnerForm = ({
        button={
          <Button
            mode="strong"
-                 style={{ marginTop: '5px' }}
+           style={{ marginTop: '5px' }}
            onClick={() => {
                ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
                                    .call()
@@ -92,22 +92,27 @@ const InnerForm = ({
       {!isSubmitting ? <Button wide mode="strong" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button> : <LinearProgress />}
     </Hidden>
     <Hidden mdUp>
-      <MobileSearch
-        name="statusAddress"
-        style={{ marginTop: '10px' }}
-        placeholder="Status Messenger Address"
-        value={values.statusAddress}
-        onChange={handleChange}
-        wide />
-      <MobileSearch
-        name="address"
-        style={{ marginTop: '10px' }}
-        placeholder="Ethereum Address"
-        value={values.address}
-        onChange={handleChange}
-        paste={() => setFieldValue('address', web3.eth.defaultAccount)}
-        required
-        wide />
+      <Field label="Your Contact Code">
+        <MobileSearch
+          name="statusAddress"
+          style={{ marginTop: '10px' }}
+          placeholder="Status Messenger Address"
+          label="test"
+          value={values.statusAddress}
+          onChange={handleChange}
+          wide />
+      </Field>
+      <Field label="Your Wallet Address">
+        <MobileSearch
+          name="address"
+          style={{ marginTop: '10px' }}
+          placeholder="Ethereum Address"
+          value={values.address}
+          onChange={handleChange}
+          paste={() => setFieldValue('address', web3.eth.defaultAccount)}
+          required
+          wide />
+      </Field>
       <div style={{ margin: '10% 0 0 20%' }}>
         <MobileButton type="submit" text="Pay & register" />
       </div>
