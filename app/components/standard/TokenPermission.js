@@ -1,10 +1,10 @@
 import React, { Fragment, PureComponent } from 'react';
-import { Tooltip, OverlayTrigger } from 'react-bootstrap';
 import web3 from "Embark/web3"
 import Toggle from 'react-toggle';
 import { BigNumber } from './utils'
 import "react-toggle/style.css";
 import CircularProgress from '@material-ui/core/CircularProgress';
+import Tooltip from '@material-ui/core/Tooltip';
 
 // We set an allowance to be "unlimited" by setting it to
 // it's maximum possible value -- namely, 2^256 - 1.
@@ -74,17 +74,11 @@ class TokenHandle extends PureComponent {
   }
 }
 
-const tooltip = (
-  <Tooltip id="tooltip">
-    Turn on permissions for a token to enable its use with the ENS subdomain registry.
-  </Tooltip>
-);
-
 const TokenPermissions = (props) => (
   <Fragment>
-    <OverlayTrigger placement="top" overlay={tooltip}>
+    <Tooltip title="Turn on permissions for a token to enable its use with the ENS subdomain registry">
       <h3>Token Permissions</h3>
-    </OverlayTrigger>
+    </Tooltip>
     <hr/>
     <TokenHandle {...props} />
   </Fragment>

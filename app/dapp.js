@@ -19,6 +19,7 @@ import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 import Welcome from './components/ens/welcome';
 import Fade from '@material-ui/core/Fade';
+import Hidden from '@material-ui/core/Hidden';
 
 import './dapp.css';
 
@@ -49,36 +50,48 @@ class App extends React.Component {
     return (
       <div>
         <CssBaseline />
-          <div style={{ display: admin ? 'block' : 'none' }} >
-            <AdminMode style={{ display: admin ? 'block' : 'none' }}/>
+        <div style={{ display: admin ? 'block' : 'none' }} >
+          <AdminMode style={{ display: admin ? 'block' : 'none' }}/>
+        </div>
+        {!searching && <Fade in={!searching}>
+          <div>
+            <Welcome toggleSearch={toggleSearch} />
           </div>
-          {!searching && <Fade in={!searching}>
-            <div>
-              <Welcome toggleSearch={toggleSearch} />
-            </div>
-          </Fade>}
-          {searching && <Fade in={searching}>
-            <div>
-              <NameLookup />
-            </div>
-          </Fade>}
-          {false &&
-           <Fragment>
-             <Paper elevation={4}>
-               <Typography style={{ fontSize: '2.5rem', padding: '0.5%', textAlign: 'center' }} variant="headline" component="h3"><i style={{ fontSize: '1rem' }}>network </i>{network}</Typography>
-             </Paper>
-             <NameLookup />
-             <div style={{ textAlign: 'center' }}>
-               <TokenPermissions
-                 symbol={symbols[network] || 'SNT'}
-                 spender={ENSSubdomainRegistry._address}
-                 methods={TestToken.methods} />
-               <hr/>
-               <Toggle onChange={() => { this.setState({ admin: !admin })}} />
-               <br/>
-               <span>Admin Mode</span>
-             </div>
-           </Fragment>}
+        </Fade>}
+        {searching && <Fade in={searching}>
+          <div>
+            <NameLookup />
+            <Hidden mdDown>
+              <div style={{ textAlign: 'center' }}>
+                <TokenPermissions
+                  symbol={symbols[network] || 'SNT'}
+                  spender={ENSSubdomainRegistry._address}
+                  methods={TestToken.methods} />
+                <hr/>
+                <Toggle onChange={() => { this.setState({ admin: !admin })}} />
+                <br/>
+                <span>Admin Mode</span>
+              </div>
+            </Hidden>
+          </div>
+        </Fade>}
+        {false &&
+         <Fragment>
+           <Paper elevation={4}>
+             <Typography style={{ fontSize: '2.5rem', padding: '0.5%', textAlign: 'center' }} variant="headline" component="h3"><i style={{ fontSize: '1rem' }}>network </i>{network}</Typography>
+           </Paper>
+           <NameLookup />
+           <div style={{ textAlign: 'center' }}>
+             <TokenPermissions
+               symbol={symbols[network] || 'SNT'}
+               spender={ENSSubdomainRegistry._address}
+               methods={TestToken.methods} />
+             <hr/>
+             <Toggle onChange={() => { this.setState({ admin: !admin })}} />
+             <br/>
+             <span>Admin Mode</span>
+           </div>
+         </Fragment>}
       </div>
     );
   }

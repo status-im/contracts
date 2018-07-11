@@ -86,9 +86,10 @@ const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
           { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
         }>
           <b>{formattedDomain.toLowerCase()}</b>
-          <div style={{ border: '1px solid', borderRadius: '9px', width: '5em' }}>
+          <div style={{ border: '1px solid', borderRadius: '25px', width: '5em', height: '2em', paddingTop: '0.1em', fontWeight: 300, marginTop: '0.5em' }}>
             {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
           </div>
+          <div style={{ fontWeight: 100, marginTop: '0.3em' }}>1 year</div>
         </Typography>
       </Info>
     </Hidden>
