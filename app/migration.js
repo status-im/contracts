@@ -15,7 +15,7 @@ EmbarkJS.onReady(async (err) => {
     const numPolls = await nPolls().call();
 
     const polls = [];
-    for (let i = numPolls - 1; i >= 0; i--) {
+    for (let i = 0; i < numPolls; i++) {
         const p = await poll(i).call();
 
         console.log(`_polls[${i}] = Poll({canceled: ${p._canceled}, description: "${p._description}", startBlock: ${p._startBlock}, endBlock: ${p._endBlock}, qvResults: ${p._qvResults}, results: ${p._results}, voters: ${p._voters}});`);
