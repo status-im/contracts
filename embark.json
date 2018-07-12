@@ -2,7 +2,9 @@
   "contracts": ["contracts/**"],
   "app": {
     "js/dapp.js": ["app/dapp.js"],
+    "js/migration.js": ["app/migration.js"],
     "index.html": "app/index.html",
+    "migration.html": "app/migration.html",
     "images/": ["app/images/**"]
   },
   "buildDir": "dist/",
