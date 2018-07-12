@@ -1,12 +1,19 @@
 import React, { Fragment, PureComponent } from 'react';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Iframe from 'react-iframe';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import CardActions from '@material-ui/core/CardActions';
 import Button from '@material-ui/core/Button';
+import Dialog from '@material-ui/core/Dialog';
+import Slide from '@material-ui/core/Slide';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/lab/Slider';
 import PollManager from 'Embark/contracts/PollManager';
 import MiniMeTokenInterface from 'Embark/contracts/MiniMeTokenInterface';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
 import web3 from "Embark/web3"
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { withStyles } from '@material-ui/core/styles';
@@ -21,7 +28,16 @@ const styles = {
   thumb: {
     width: '24px',
     height: '24px'
-  }
+  },
+  appBar: {
+    position: 'relative',
+  },
+  flex: {
+    flex: 1,
+  },
+};
+function Transition(props) {
+  return <Slide direction="up" {...props} />;
 };
 
 const getIdeaFromStr = str => {
@@ -39,8 +55,16 @@ class Poll extends PureComponent {
 
   constructor(props){
     super(props);
-    this.state = { value: 0, balance: 0, isSubmitting: false };
+    this.state = { value: 0, balance: 0, isSubmitting: false, open: false };
   }
+
+  handleClickOpen = () => {
+    this.setState({ open: true });
+  };
+
+  handleClose = () => {
+    this.setState({ open: false });
+  };
 
   handleChange = (event, value) => {
     this.setState({ value })
@@ -125,7 +149,7 @@ class Poll extends PureComponent {
     const maxValue = Math.floor(Math.sqrt(balance));
     const buttonText = originalValue != 0 && value != originalValue ? 'Change Vote' : 'Vote';
     const idea = getIdeaFromStr(_description)
-    const ideaSite = ideaSites.filter(site => site.includes(idea));
+    const ideaSite = ideaSites && ideaSites.filter(site => site.includes(idea));
     return (
       <Card>
         <CardContent>
@@ -141,7 +165,30 @@ class Poll extends PureComponent {
             {balance != 0 && !_canVote && <span>You can not vote on this poll</span>}
           </Typography>}
           {error && <Typography variant="body2" color="error">{error}</Typography>}
-          {ideaSite.length && <Typography variant="subheading" color="primary">{ideaSite}</Typography>}
+          {ideaSite.length && <Typography onClick={this.handleClickOpen} variant="subheading" color="primary">{ideaSite}</Typography>}
+          {ideaSite && <Dialog
+                         fullScreen
+                         open={this.state.open}
+                         onClose={this.handleClose}
+                         TransitionComponent={Transition}
+                       >
+            <AppBar className={classes.appBar} onClick={this.handleClose}>
+              <Toolbar>
+                <IconButton color="inherit" aria-label="Close">
+                  <CloseIcon />
+                </IconButton>
+                <Typography variant="title" color="inherit" className={classes.flex}>
+                  close
+                </Typography>
+              </Toolbar>
+            </AppBar>
+            <Iframe url={ideaSite[0]}
+              id="ideaSite"
+              className="ideaSite"
+              display="initial"
+              position="relative"
+              allowFullScreen/>
+          </Dialog>}
         </CardContent>
         {!cantVote && <CardActions className={classes.card}>
           <Slider style={{ width: '95%' }} classes={{ thumb: classes.thumb }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />

@@ -74,9 +74,9 @@ class OrderingDialog extends PureComponent {
               onClose={this.handleClose}
               TransitionComponent={Transition}
             >
-              <AppBar className={classes.appBar}>
+              <AppBar className={classes.appBar} onClick={this.handleClose}>
                 <Toolbar>
-                  <IconButton color="inherit" onClick={this.handleClose} aria-label="Close">
+                  <IconButton color="inherit" aria-label="Close">
                     <CloseIcon />
                   </IconButton>
                   <Typography variant="title" color="inherit" className={classes.flex}>
