@@ -7,7 +7,8 @@ import AdminView from './components/AdminView';
 import Voting from './components/Voting';
 import SNT from  'Embark/contracts/SNT';
 import { VotingContext } from './context';
-import Web3Render from './components/standard/Web3Render'
+import Web3Render from './components/standard/Web3Render';
+import fetchIdeas from './utils/fetchIdeas';
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -40,6 +41,7 @@ class App extends React.Component {
       web3.eth.net.getId((err, netId) => {
         if (netId !== MAINNET) this.setState({ web3Provider: false})
       })
+      fetchIdeas().then(ideaSites => { this.setState({ ideaSites })});
     })
   }
 

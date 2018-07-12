@@ -24,6 +24,11 @@ const styles = {
   }
 };
 
+const getIdeaFromStr = str => {
+  const match = str.match(/\(([^)]+)\)/)
+  if (match) return match[1].toLowerCase();
+  return match;
+}
 const sortingFn = {
   MOST_VOTES: (a, b) => b._qvResults - a._qvResults,
   MOST_VOTERS: (a, b) => b._voters - a._voters,
@@ -110,7 +115,8 @@ class Poll extends PureComponent {
       _results,
       _canVote,
       balance,
-      classes
+      classes,
+      ideaSites
     } = this.props;
     const { value, originalValue, isSubmitting, error } = this.state;
     const cantVote = balance == 0 || !_canVote;
@@ -118,6 +124,8 @@ class Poll extends PureComponent {
     const { fromWei } = web3.utils;
     const maxValue = Math.floor(Math.sqrt(balance));
     const buttonText = originalValue != 0 && value != originalValue ? 'Change Vote' : 'Vote';
+    const idea = getIdeaFromStr(_description)
+    const ideaSite = ideaSites.filter(site => site.includes(idea));
     return (
       <Card>
         <CardContent>
@@ -133,6 +141,7 @@ class Poll extends PureComponent {
             {balance != 0 && !_canVote && <span>You can not vote on this poll</span>}
           </Typography>}
           {error && <Typography variant="body2" color="error">{error}</Typography>}
+          {ideaSite.length && <Typography variant="subheading" color="primary">{ideaSite}</Typography>}
         </CardContent>
         {!cantVote && <CardActions className={classes.card}>
           <Slider style={{ width: '95%' }} classes={{ thumb: classes.thumb }} disabled={disableVote} value={value || 0} min={0} max={maxValue} step={1} onChange={this.handleChange} />
@@ -146,12 +155,12 @@ class Poll extends PureComponent {
 
 const PollsList = ({ classes }) => (
   <VotingContext.Consumer>
-    {({ updatePoll, rawPolls, pollOrder, appendToPoll }) =>
+    {({ updatePoll, rawPolls, pollOrder, appendToPoll, ideaSites }) =>
       <Fragment>
         {rawPolls
           .map((poll, i) => ({ ...poll, idPoll: i }) )
           .sort(sortingFn[pollOrder])
-          .map((poll) => <Poll key={poll._token} classes={classes} appendToPoll={appendToPoll} updatePoll={updatePoll} {...poll} />)}
+          .map((poll) => <Poll key={poll._token} classes={classes} appendToPoll={appendToPoll} updatePoll={updatePoll} ideaSites={ideaSites} {...poll} />)}
       </Fragment>
     }
   </VotingContext.Consumer>
