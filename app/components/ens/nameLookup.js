@@ -120,12 +120,12 @@ class Register extends PureComponent {
   }
 
   render() {
-    const { domainName, setStatus } = this.props;
+    const { domainName, setStatus, style } = this.props;
     const { domainPrice, registered } = this.state;
     const formattedDomain = formatName(domainName);
     const formattedDomainArray = formattedDomain.split('.')
     return (
-      <Fragment>
+      <div style={style}>
         {!registered ?
          <Fragment>
            <RegisterInfoCard {...{ formattedDomain, domainPrice }}/>
@@ -137,7 +137,7 @@ class Register extends PureComponent {
          </Fragment> :
          <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
         <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
-      </Fragment>
+      </div>
     )
   }
 }
@@ -165,7 +165,7 @@ const DisplayAddress = (props) => (
   </Fragment>
 )
 
-const LookupForm = ({ handleSubmit, values, handleChange }) => (
+const LookupForm = ({ handleSubmit, values, handleChange, justSearch }) => (
   <Fragment>
     <form onSubmit={handleSubmit}>
       <Hidden mdDown>
@@ -187,10 +187,10 @@ const LookupForm = ({ handleSubmit, values, handleChange }) => (
           onChange={handleChange}
           required
           wide />
-        <Typography variant="subheading" style={{ color: '#939ba1', textAlign: 'center', marginTop: '25vh' }}>
+        {!justSearch && <Typography variant="subheading" style={{ color: '#939ba1', textAlign: 'center', marginTop: '25vh' }}>
           Symbols * / <br/>
           are not supported
-        </Typography>
+        </Typography>}
       </Hidden>
       <Hidden mdDown>
         <Button mode="strong" type="submit" wide>
@@ -212,7 +212,7 @@ const InnerForm = ({
   status,
   setStatus
 }) => (
-  <div style={{ margin: '10px' }}>
+  <div>
     <Hidden mdDown>
       <span style={{ display: 'flex', justifyContent: 'space-evenly', marginBottom: '10px' }}>
         <StatusLogo />
@@ -228,9 +228,13 @@ const InnerForm = ({
        statusAccount={status.statusAccount}
        expirationTime={status.expirationTime}
        setStatus={setStatus} /> :
-     <ConnectedRegister
-       setStatus={setStatus}
-       domainName={values.domainName}  />
+     <div>
+       <LookupForm {...{ handleSubmit, values, handleChange }} justSearch />
+       <ConnectedRegister
+         style={{ margin: '10px'}}
+         setStatus={setStatus}
+         domainName={values.domainName}  />
+     </div>
     }
   </div>
 )
