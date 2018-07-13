@@ -9,20 +9,12 @@ import SNT from  'Embark/contracts/SNT';
 import { VotingContext } from './context';
 import Web3Render from './components/standard/Web3Render';
 import fetchIdeas from './utils/fetchIdeas';
+import { getPolls, omitUnvotedDupes } from './utils/polls';
 window['SNT'] = SNT;
 
 import './dapp.css';
 
 const MAINNET = 1;
-
-const getPolls = (number, pollMethod) => {
-  const polls = [];
-  for (let i = number-1; i >= 0; i--) {
-    const poll = pollMethod(i).call();
-    polls.push(poll);
-  }
-  return Promise.all(polls.reverse());
-}
 
 class App extends React.Component {
 
@@ -52,7 +44,7 @@ class App extends React.Component {
   _getPolls = async () => {
     const { nPolls, poll } = PollManager.methods;
     const polls = await nPolls().call();
-    if (polls) getPolls(polls, poll).then(rawPolls => { this.setState({ rawPolls })});
+    if (polls) getPolls(polls, poll).then(omitUnvotedDupes).then(rawPolls => { this.setState({ rawPolls })});
     else this.setState({ rawPolls: [] });
   }
 
