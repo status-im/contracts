@@ -48,7 +48,7 @@ const InnerForm = ({
        button={
          <Button
            mode="strong"
-           style={{ marginTop: '5px' }}
+                 style={{ marginTop: '5px' }}
            onClick={() => {
                ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
                                    .call()
@@ -113,8 +113,8 @@ const InnerForm = ({
           required
           wide />
       </Field>
-      <div style={{ margin: '10% 0 0 20%' }}>
-        <MobileButton type="submit" text="Pay & register" />
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, width: '1vw'}}>
+        <MobileButton type="submit" text="Register with transaction" />
       </div>
     </Hidden>
   </form>
