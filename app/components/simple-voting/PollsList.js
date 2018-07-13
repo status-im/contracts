@@ -164,7 +164,7 @@ class Poll extends PureComponent {
             {balance != 0 && !_canVote && <span>You can not vote on this poll</span>}
           </Typography>}
           {error && <Typography variant="body2" color="error">{error}</Typography>}
-          {ideaSite && ideaSite.length && <Typography onClick={this.handleClickOpen} variant="subheading" color="primary">{ideaSite}</Typography>}
+          {ideaSite && ideaSite.length > 0 && <Typography onClick={this.handleClickOpen} variant="subheading" color="primary">{ideaSite}</Typography>}
           {ideaSite && <Dialog
                          fullScreen
                          open={this.state.open}
