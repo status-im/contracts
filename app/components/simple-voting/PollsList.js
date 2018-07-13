@@ -1,7 +1,6 @@
 import React, { Fragment, PureComponent } from 'react';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
-import Iframe from 'react-iframe';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import CardActions from '@material-ui/core/CardActions';
@@ -165,7 +164,7 @@ class Poll extends PureComponent {
             {balance != 0 && !_canVote && <span>You can not vote on this poll</span>}
           </Typography>}
           {error && <Typography variant="body2" color="error">{error}</Typography>}
-          {ideaSite.length && <Typography onClick={this.handleClickOpen} variant="subheading" color="primary">{ideaSite}</Typography>}
+          {ideaSite && ideaSite.length && <Typography onClick={this.handleClickOpen} variant="subheading" color="primary">{ideaSite}</Typography>}
           {ideaSite && <Dialog
                          fullScreen
                          open={this.state.open}
@@ -182,12 +181,19 @@ class Poll extends PureComponent {
                 </Typography>
               </Toolbar>
             </AppBar>
-            <Iframe url={ideaSite[0]}
-              id="ideaSite"
-              className="ideaSite"
-              display="initial"
-              position="relative"
-              allowFullScreen/>
+            <div
+              style={{ overflow: "auto", height: '100%', width: '100%', position: "fixed", top: 0, left: 0, zIndex: 1, overflowScrolling: "touch", WebkitOverflowScrolling: "touch" }}
+            >
+              <iframe
+                className="contentIframe"
+                frameBorder="0"
+                src={ideaSite[0]}
+                style={{ height: "100%", width: "100%" }}
+                height="100%"
+                width="100%"
+              >
+              </iframe>
+            </div>
           </Dialog>}
         </CardContent>
         {!cantVote && <CardActions className={classes.card}>
