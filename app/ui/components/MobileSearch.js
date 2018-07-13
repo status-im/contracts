@@ -31,7 +31,7 @@ const MobileInput = styled.input`
   width: ${({ wide }) => (wide ? '100%' : 'auto')};
   appearance: none;
   box-shadow: none;
-  padding-left: ${({ search }) => (search ? '40px' : '15px')};
+  padding-left: ${({ search }) => (search ? '45px' : '15px')};
   &:focus {
   outline: none;
   border-color: ${theme.contentBorderActive};
@@ -41,7 +41,7 @@ const MobileInput = styled.input`
 const MobileSearch = props => (
   <div style={{ position: 'relative' }}>
     {props.search && <div style={searchWrapper}>
-      <SearchIcon />
+      <SearchIcon style={{ color: theme.accent }}/>
     </div>}
     <div style={{ display: 'flex' }}>
       <MobileInput {...props} />

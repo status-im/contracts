@@ -166,7 +166,7 @@ const DisplayAddress = (props) => (
 
 const LookupForm = ({ handleSubmit, values, handleChange }) => (
   <Fragment>
-    <form onSubmit={handleSubmit} style={{ marginTop: '3em' }}>
+    <form onSubmit={handleSubmit}>
       <Hidden mdDown>
         <Field label="Enter Domain or Status Name" wide>
           <TextInput
@@ -178,17 +178,18 @@ const LookupForm = ({ handleSubmit, values, handleChange }) => (
         </Field>
       </Hidden>
       <Hidden mdUp>
-        <Field label="Search for vacant names in domains stateofus.eth and domains associated with this registry"  style={{ textAlign: 'center', padding: '0px 10px 0 10px' }} wide>
-          <MobileSearch
-            search
-            name="domainName"
-            style={{ marginTop: '10px' }}
-            placeholder='Search'
-            value={values.domainName}
-            onChange={handleChange}
-            required
-            wide />
-        </Field>
+        <MobileSearch
+          search
+          name="domainName"
+          placeholder='Search for vacant name'
+          value={values.domainName}
+          onChange={handleChange}
+          required
+          wide />
+        <Typography variant="subheading" style={{ color: '#939ba1', textAlign: 'center', marginTop: '25vh' }}>
+          Symbols * / <br/>
+          are not supported
+        </Typography>
       </Hidden>
       <Hidden mdDown>
         <Button mode="strong" type="submit" wide>
