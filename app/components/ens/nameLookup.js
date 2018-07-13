@@ -15,7 +15,8 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import RegisterSubDomain from '../ens/registerSubDomain';
 import StatusLogo from '../../ui/icons/components/StatusLogo'
 import EnsLogo from '../../ui/icons/logos/ens.png';
-import { formatPrice } from '../ens/utils'
+import { formatPrice } from '../ens/utils';
+import CheckCircle from '../../ui/icons/components/baseline_check_circle_outline.png';
 const { getPrice, getExpirationTime } = ENSSubdomainRegistry.methods;
 
 const invalidSuffix = '0000000000000000000000000000000000000000'
@@ -85,11 +86,11 @@ const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
         <Typography variant="title" style={
           { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
         }>
+          <img src={CheckCircle} style={{ maxWidth: '2.5em', marginBottom: '0.5em' }} />
           <b>{formattedDomain.toLowerCase()}</b>
-          <div style={{ border: '1px solid', borderRadius: '25px', width: '5em', height: '2em', paddingTop: '0.1em', fontWeight: 300, marginTop: '0.5em' }}>
-            {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT
+          <div style={{ fontWeight: 300 }}>
+            {!!domainPrice && formatPrice(fromWei(domainPrice))} SNT / 1 year
           </div>
-          <div style={{ fontWeight: 100, marginTop: '0.3em' }}>1 year</div>
         </Typography>
       </Info>
     </Hidden>
