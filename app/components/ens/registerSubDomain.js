@@ -113,8 +113,8 @@ const InnerForm = ({
           required
           wide />
       </Field>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, width: '1vw'}}>
-        <MobileButton type="submit" text="Register with transaction" />
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
+        <MobileButton type="submit" text="Register with transaction" style={{ width: '100%' }}/>
       </div>
     </Hidden>
   </form>
