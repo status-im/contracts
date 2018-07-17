@@ -11,7 +11,6 @@ import Slide from '@material-ui/core/Slide';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/lab/Slider';
 import PollManager from 'Embark/contracts/PollManager';
-import MiniMeTokenInterface from 'Embark/contracts/MiniMeTokenInterface';
 import IconButton from '@material-ui/core/IconButton';
 import CloseIcon from '@material-ui/icons/Close';
 import web3 from "Embark/web3"
@@ -104,19 +103,7 @@ class Poll extends PureComponent {
   }
 
   componentDidMount() {
-    this.getBalance();
     this.getVote();
-  }
-
-  getBalance() {
-    const { fromWei } = web3.utils;
-    const { appendToPoll, idPoll } = this.props;
-    MiniMeTokenInterface.options.address = this.props._token;
-    MiniMeTokenInterface.methods.balanceOfAt(web3.eth.defaultAccount, this.props._startBlock - 1)
-                        .call()
-                        .then(balance => {
-                          appendToPoll(idPoll, {balance: fromWei(balance)})
-                        });
   }
 
   getVote() {
