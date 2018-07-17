@@ -54,7 +54,7 @@ class Poll extends PureComponent {
 
   constructor(props){
     super(props);
-    this.state = { value: 0, balance: 0, isSubmitting: false, open: false };
+    this.state = { value: props.votes, originalValue: props.votes, balance: 0, isSubmitting: false, open: false };
   }
 
   handleClickOpen = () => {
@@ -99,21 +99,6 @@ class Poll extends PureComponent {
           .finally(() => {
             this.setState({isSubmitting: false});
           });
-  }
-
-  componentDidMount() {
-    this.getVote();
-  }
-
-  getVote() {
-    const { fromWei } = web3.utils;
-    const { idPoll } = this.props;
-    PollManager.methods.getVote(idPoll, web3.eth.defaultAccount)
-               .call()
-               .then(vote => {
-                 const value = parseInt(Math.sqrt(fromWei(vote)));
-                 this.setState({ value, originalValue: value });
-               })
   }
 
   render(){
@@ -198,7 +183,6 @@ const PollsList = ({ classes }) => (
     {({ updatePoll, rawPolls, pollOrder, appendToPoll, ideaSites }) =>
       <Fragment>
         {rawPolls
-          .map((poll, i) => ({ ...poll, idPoll: i }) )
           .sort(sortingFn[pollOrder])
           .map((poll) => <Poll key={poll._token} classes={classes} appendToPoll={appendToPoll} updatePoll={updatePoll} ideaSites={ideaSites} {...poll} />)}
       </Fragment>
