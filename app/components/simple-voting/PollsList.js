@@ -97,7 +97,6 @@ class Poll extends PureComponent {
             this.setState({ error: res.message })
           })
           .finally(() => {
-            this.getBalance();
             this.setState({isSubmitting: false});
           });
   }
