@@ -1,4 +1,5 @@
 import React, { Fragment, PureComponent } from 'react';
+import { toString } from 'lodash';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Card from '@material-ui/core/Card';
@@ -79,7 +80,7 @@ class Poll extends PureComponent {
     const { value } = this.state;
     const { toWei } = web3.utils;
 
-    const balance4Voting = toWei(value * value);
+    const balance4Voting = toWei(toString(value * value));
     const toSend = balance4Voting == 0 ? unvote(idPoll) : customVote(idPoll, balance4Voting);
 
     toSend.estimateGas()

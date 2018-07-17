@@ -57,11 +57,14 @@ class App extends React.Component {
   }
 
   updatePoll = async (idPoll) => {
-    const { poll } = PollManager.methods;
+    const { poll, nPolls } = PollManager.methods;
     const { rawPolls } = this.state;
+    const npolls = await nPolls().call();
+    // This check needs to be done because of a bug in web3
+    if (npolls !== rawPolls.length) return this._getPolls();
     const newPolls = [...rawPolls];
     const updatedPoll = await poll(idPoll).call();
-    newPolls[idPoll] = updatedPoll;
+    newPolls[idPoll] = { ...updatedPoll };
     this.setState({ rawPolls: newPolls });
   }
 
