@@ -25,6 +25,10 @@ class ContractSettings {
         }	
     }
 
+    getTokens(){
+        return this.tokens;
+    }
+
     getToken(token){
         return this.tokens[token];
     }

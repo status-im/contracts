@@ -6,7 +6,7 @@ const ContractSettings = require('./contract-settings');
 const MessageProcessor = require('./message-processor');
 
 
-// TODO A node should call an API (probably from a status node) to register itself as a 
+// IDEA: A node should call an API (probably from a status node) to register itself as a 
 //      token gas relayer.
 
 console.info("Starting...");
@@ -64,14 +64,15 @@ events.on('setup:complete', (settings) => {
 
 
     if(config.heartbeat.enabled){
+
       let heartbeatSymKeyId;
       web3.shh.addSymKey(config.heartbeat.symKey)
         .then(heartbeatSymKeyId => { 
 
-            // TODO: define minPriceAccepted
-            let heartbeatPayload = {
-              'minPriceAccepted': 0
-            }
+          for(let tokenAddress in settings.getTokens()){
+
+            let heartbeatPayload = settings.getToken(tokenAddress);
+            heartbeatPayload.address = tokenAddress;
 
             setInterval(() => {
                 web3.shh.post({ 
@@ -80,11 +81,12 @@ events.on('setup:complete', (settings) => {
                   ttl: config.node.whisper.ttl, 
                   powTarget:config.node.whisper.minPow, 
                   powTime: config.node.whisper.powTime,
-                  // TODO: topic must be a combination of heartbeat + token
-                  topic: web3.utils.toHex("relay-heartbeat").slice(0, 10),
+                  topic: web3.utils.toHex("relay-heartbeat-" + heartbeatPayload.symbol).slice(0, 10),
                   payload: web3.utils.toHex(JSON.stringify(heartbeatPayload))
               }).catch(console.error);
-            }, 1000);
+            }, 60000);
+
+          }
       });
     }
 
