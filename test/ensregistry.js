@@ -11,7 +11,7 @@ contract('ENS', function () {
         var contractsConfig = {
           "ENSRegistry": { },
         };
-        EmbarkSpec.deployAll(contractsConfig, function(accounts) { 
+        config(contractsConfig, function(accounts) { 
           ens = ENSRegistry;
           accountsArr = accounts; 
           done()

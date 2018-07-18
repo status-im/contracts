@@ -6,7 +6,7 @@ exports.Test = (contractsConfig, afterDeploy) => {
         var Controlled;
         var accountsArr;
         before(function(done) {
-            EmbarkSpec.deployAll(contractsConfig, async function(accounts) { 
+            config(contractsConfig, async function(accounts) { 
                 Controlled = Contract;
                 accountsArr = accounts; 
                 await afterDeploy(accounts, Contract);
