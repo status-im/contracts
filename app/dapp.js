@@ -21,7 +21,7 @@ class App extends React.Component {
   constructor(props) {
     super(props);
   }
-  state = { admin: false, pollOrder: 'NEWEST_ADDED', web3Provider: true };
+  state = { admin: false, pollOrder: 'NEWEST_ADDED', web3Provider: true, loading: true };
 
   componentDidMount(){
     EmbarkJS.onReady((err) => {
@@ -42,10 +42,11 @@ class App extends React.Component {
   }
 
   _getPolls = async () => {
+    this.setState({ loading: true })
     const { nPolls, poll } = PollManager.methods;
     const polls = await nPolls().call();
-    if (polls) getPolls(polls, poll).then(omitPolls).then(rawPolls => { this.setState({ rawPolls })});
-    else this.setState({ rawPolls: [] });
+    if (polls) getPolls(polls, poll).then(omitPolls).then(rawPolls => { this.setState({ rawPolls, loading: false })});
+    else this.setState({ rawPolls: [], loading: false });
   }
 
   _setAccounts() {
@@ -86,7 +87,7 @@ class App extends React.Component {
   }
 
   render(){
-    const { admin, web3Provider } = this.state;
+    const { admin, web3Provider, loading } = this.state;
     const { _getPolls, updatePoll, setPollOrder, appendToPoll } = this;
     const toggleAdmin = () => this.setState({ admin: true });
     const votingContext = { getPolls: _getPolls, toggleAdmin, updatePoll, appendToPoll, setPollOrder, ...this.state };

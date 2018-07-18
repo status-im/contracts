@@ -8,6 +8,7 @@ import StatusLogo from '../ui/components/StatusLogo';
 import Collapse from '@material-ui/core/Collapse';
 import Hidden from '@material-ui/core/Hidden';
 import Typography from '@material-ui/core/Typography';
+import LinearProgress from '@material-ui/core/LinearProgress';
 import { VotingContext } from '../context';
 
 class Voting extends PureComponent {
@@ -18,10 +19,11 @@ class Voting extends PureComponent {
     const togglePoll = () => { this.setState({ addPoll: !addPoll })};
     return (
       <VotingContext.Consumer>
-        {({ getPolls, rawPolls }) =>
+        {({ getPolls, rawPolls, loading }) =>
           <div>
             <CssBaseline />
             <AppBar togglePoll={togglePoll} />
+            {loading && <LinearProgress />}
             <div style={{ margin: '30px', textAlign: 'center' }}>
               <img src="images/logo.png" width="200" />
               <Hidden smUp>

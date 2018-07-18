@@ -18,22 +18,23 @@ export const getBalance = async (idPoll, token, startBlock) => {
 
 export const getVote = async(idPoll) => {
   const { fromWei } = web3.utils;
-
-  const votes = await PollManager.methods.getVote(idPoll, web3.eth.defaultAccount)
-                                         .call();
-                                    
+  const votes = await PollManager.methods.getVote(idPoll, web3.eth.defaultAccount).call();
   return parseInt(Math.sqrt(fromWei(votes)));
 }
 
-export const getPolls = async (number, pollMethod) => {
+const fetchPollData = async (index, pollMethod) => {
+  const poll = await pollMethod(index).call();
+  const balance = await getBalance(index, poll._token, poll._startBlock);
+  const votes = await getVote(index);
+  return { ...poll, idPoll: index, balance, votes };
+}
+
+export const getPolls = (number, pollMethod) => {
   const polls = [];
   for (let i = number-1; i >= 0; i--) {
-    const poll = await pollMethod(i).call();
-    const balance = await getBalance(i, poll._token, poll._startBlock);
-    const votes = await getVote(i);
-    polls.push({ ...poll, idPoll: i, balance, votes });
+    polls.push(fetchPollData(i, pollMethod));
   }
-  return polls.reverse();
+  return Promise.all(polls.reverse());
 }
 
 const excludedPolls = new Set(Object.values(excluded));
