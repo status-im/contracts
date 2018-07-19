@@ -11,7 +11,7 @@ module.exports = {
     maxpeers: 0, // Maximum number of network peers (network disabled if set to 0) (default: 25)
     rpcHost: "localhost", // HTTP-RPC server listening interface (default: "localhost")
     rpcPort: 8545, // HTTP-RPC server listening port (default: 8545)
-    rpcCorsDomain: "auto",  // Comma separated list of domains from which to accept cross origin requests (browser enforced)
+    rpcCorsDomain: "*",  // Comma separated list of domains from which to accept cross origin requests (browser enforced)
                             // When set to "auto", Embark will automatically set the cors to the address of the webserver
     proxy: true, // Proxy is used to present meaningful information about transactions
     account: {
@@ -20,7 +20,7 @@ module.exports = {
     },
     targetGasLimit: 8000000, // Target gas limit sets the artificial target gas floor for the blocks to mine
     wsRPC: true, // Enable the WS-RPC server
-    wsOrigins: "auto",  // Origins from which to accept websockets requests
+    wsOrigins: "*",  // Origins from which to accept websockets requests
                         // When set to "auto", Embark will automatically set the cors to the address of the webserver
     wsHost: "localhost", // WS-RPC server listening interface (default: "localhost")
     wsPort: 8546, // WS-RPC server listening port (default: 8546)
