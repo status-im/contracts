@@ -83,7 +83,10 @@ events.on('setup:complete', (settings) => {
                   powTime: config.node.whisper.powTime,
                   topic: web3.utils.toHex("relay-heartbeat-" + heartbeatPayload.symbol).slice(0, 10),
                   payload: web3.utils.toHex(JSON.stringify(heartbeatPayload))
-              }).catch(console.error);
+              }).catch((err) => {
+                console.error(err);
+                process.exit(-1);
+              });
             }, 60000);
 
           }
