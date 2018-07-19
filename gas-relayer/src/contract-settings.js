@@ -4,6 +4,7 @@ class ContractSettings {
         this.tokens = config.tokens;
         this.topics = [];
         this.contracts = config.contracts;
+        this.config = config;
         
         this.web3 = web3;
         this.events = eventEmitter;
@@ -51,7 +52,7 @@ class ContractSettings {
             this.pendingToLoad--;
             if(this.pendingToLoad == 0) this.events.emit("setup:complete", this);
             })
-        .catch(function(err){
+        .catch((err) => {
             console.error("Invalid contract for " + contractName);
             console.error(err);
             process.exit();
@@ -92,7 +93,8 @@ class ContractSettings {
 
             // Obtaining strategy
             if(this.contracts[topicName].strategy){
-                this.contracts[topicName].strategy = require(this.contracts[topicName].strategy);	
+                const strategy = require(this.contracts[topicName].strategy);	
+                this.contracts[topicName].strategy = new strategy(this.web3, this.config, this, this.contracts[topicName]);
             }
             
             this._obtainContractBytecode(topicName);

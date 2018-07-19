@@ -12,7 +12,7 @@
             "port": 8545
         },
         "blockchain": {
-            "account": "0x1847ab5a71eaa95315c3fc2d3dfb53b7e6e8f313"
+            "account": "0x47B9F15c410E2f254E5e065ca515379b090c63e1"
         },
         "whisper": {
             "symKey": "0xd0d905c1c62b810b787141430417caf2b3f54cffadb395b7bb39fdeb8f17266b",
@@ -51,7 +51,7 @@
         "IdentityGasRelay": {
             "abiFile": "../abi/IdentityGasRelay.json",
             "isIdentity": true,
-            "factoryAddress": "0x6202a2b202Ccf859fd93Ecee33C2D20f20462836",
+            "factoryAddress": "0x9AA17f02d8f6Bc2553d06c60f99Bcc97Cd5E5A89",
             "kernelVerification": "isKernel(bytes32)",
             "allowedFunctions": [
                 { 
