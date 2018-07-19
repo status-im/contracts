@@ -90,6 +90,11 @@ class ContractSettings {
             this.contracts[topicName].name = contractName;
             delete this.contracts[contractName];
 
+            // Obtaining strategy
+            if(this.contracts[topicName].strategy){
+                this.contracts[topicName].strategy = require(this.contracts[topicName].strategy);	
+            }
+            
             this._obtainContractBytecode(topicName);
 
             this._extractFunctions(topicName);

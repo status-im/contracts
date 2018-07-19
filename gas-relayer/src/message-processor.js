@@ -92,7 +92,7 @@ class MessageProcessor {
     _obtainParametersFunc(contract, input){
         const parameterList = this.web3.eth.abi.decodeParameters(contract.allowedFunctions[input.functionName].inputs, input.functionParameters);
         return function(parameterName){
-            return parameterList[contract.allowedFunctions[input.functionName][parameterName]];
+            return parameterList[parameterName];
         }
     }
 
@@ -149,40 +149,11 @@ class MessageProcessor {
 
             if(!await this._validateInput(message, input)) return; // TODO Log
 
-
-            if(contract.isIdentity){
-                let validInstance = await this._validateInstance(message, input);
-                if(!validInstance){
-                    return this._reply("Invalid identity instance", message);
+            if(contract.strategy){
+                let validationResult = contract.strategy(message, input)
+                if(validationResult.success){
+                    return this._reply(validationResult.message, message);
                 }
-            }
-                
-            const params = this._obtainParametersFunc(contract, input);
-
-            const token = this.settings.getToken(params('gasToken'));
-            if(token == undefined)
-                return this._reply("Token not allowed", message);
-
-            const gasPrice = this.web3.utils.toBN(params('gasPrice'));
-            const gasLimit = this.web3.utils.toBN(params('gasLimit'));
-
-            // Determine if enough balance for baseToken
-            if(contract.allowedFunctions[input.functionName].isToken){
-                const Token = new this.web3.eth.Contract(erc20ABI);
-                Token.options.address = params('token');
-                const baseToken = new this.web3.utils.BN(await Token.methods.balanceOf(input.address).call()); 
-                if(balance.lt(this.web3.utils.BN(params('value')))){
-                    this._reply("Identity has not enough balance for specified value", message);
-                    return;
-                }
-            }
-
-            const gasToken = params('gasToken');
-            const balance = await this.getBalance(token, input, gasToken);
-            
-            if(balance.lt(this.web3.utils.toBN(gasPrice.mul(gasLimit)))) {
-                this._reply("Identity has not enough tokens for gasPrice*gasLimit", message);
-                return;
             }
 
             const latestBlock = await this.web3.eth.getBlock("latest");

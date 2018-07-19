@@ -9,7 +9,7 @@
         "ganache": {
             "protocol": "http",
             "host": "localhost",
-            "port": "8545"
+            "port": 8545
         },
         "blockchain": {
             "account": "0x1847ab5a71eaa95315c3fc2d3dfb53b7e6e8f313"
@@ -56,26 +56,14 @@
             "allowedFunctions": [
                 { 
                     "function": "approveAndCallGasRelayed(address,address,uint256,bytes,uint256,uint256,uint256,address,bytes)", 
-                    "to": "_to",
-                    "value": "_value",
-                    "data": "_data",
-                    "gasPrice": "_gasPrice",
-                    "gasToken": "_gasToken",
-                    "gasLimit": "_gasLimit",
-                    "isToken": true,
-                    "token": "_baseToken"
+                    "isToken": true
                 },
                 {
                     "function": "callGasRelayed(address,uint256,bytes,uint256,uint256,uint256,address,bytes)",
-                    "to": "_to",
-                    "value": "_value",
-                    "data": "_data",
-                    "gasPrice": "_gasPrice",
-                    "gasToken": "_gasToken",
-                    "gasLimit": "_gasLimit",
                     "isToken": false
                 }
-            ]
+            ],
+            "strategy": "../src/strategy/IdentityGasRelay.js"
         },
         "SNTController": {
             "abiFile": "../abi/SNTController.json",
@@ -83,14 +71,10 @@
             "address": "0x96f0811c6484c59c2674da1f64e725c01d82c1b5",
             "allowedFunctions": [
                 {
-                    "function":"transferSNT(address,uint256,uint256,uint256,bytes)",
-                    "to": "_to",
-                    "value": "_amount"
+                    "function":"transferSNT(address,uint256,uint256,uint256,bytes)"
                 },
                 {
-                    "function":"executeGasRelayed(address,bytes,uint256,uint256,uint256,bytes)",
-                    "to": "_to",
-                    "value": "_amount"
+                    "function":"executeGasRelayed(address,bytes,uint256,uint256,uint256,bytes)"
                 }
             ]   
         }
