@@ -14,7 +14,7 @@ class ApproveAndCallGasRelayed extends React.Component {
         account: '0x1847ab5a71eaa95315c3fc2d3dfb53b7e6e8f313',
         address: this.props.IdentityGasRelay.options.address,
         topic: '0x4964656e',
-        to: '0x00',
+        to: '0x0000000000000000000000000000000000000000',
         value: 0,
         data: '0x00',
         nonce: 0,
