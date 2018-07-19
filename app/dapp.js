@@ -10,6 +10,7 @@ import { VotingContext } from './context';
 import Web3Render from './components/standard/Web3Render';
 import fetchIdeas from './utils/fetchIdeas';
 import { getPolls, omitPolls } from './utils/polls';
+import DrawField from './components/draw/DrawField';
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -31,7 +32,7 @@ class App extends React.Component {
         this._setAccounts();
       }
       web3.eth.net.getId((err, netId) => {
-        if (netId !== MAINNET) this.setState({ web3Provider: false})
+        //if (netId !== MAINNET) this.setState({ web3Provider: false})
       })
       fetchIdeas().then(ideaSites => { this.setState({ ideaSites })});
     })
@@ -93,13 +94,14 @@ class App extends React.Component {
     const votingContext = { getPolls: _getPolls, toggleAdmin, updatePoll, appendToPoll, setPollOrder, ...this.state };
     return (
       <Web3Render ready={web3Provider}>
-        <VotingContext.Provider value={votingContext}>
+        <DrawField />
+        {false && <VotingContext.Provider value={votingContext}>
           <Fragment>
             {admin ?
              <AdminView setAccount={this.setAccount} /> :
              <Voting />}
           </Fragment>
-        </VotingContext.Provider>
+        </VotingContext.Provider>}
       </Web3Render>
     );
   }
