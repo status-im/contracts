@@ -26,7 +26,10 @@ contract DAppStore {
         uint256 SNTBalance;
         uint256 effectiveBalance;
         uint256 prevMinted;
+        
         Vote[] votes;
+        uint256 up;
+        uint256 down;
     }
 
     Dapp[] public dapps;
@@ -110,6 +113,7 @@ contract DAppStore {
 
         uint256 dappvotes = numVotesToMint(d, _amount);
         mint(d, dappvotes, true);
+        d.up += dappvotes;
 
         require(SNT.allowance(msg.sender, d.developer) >= _amount);
         require(SNT.transferFrom(msg.sender, d.developer, _amount));
@@ -124,6 +128,7 @@ contract DAppStore {
 
         uint dappvotes = numVotesToMint(d, _amount);
         mint(d, dappvotes, false);
+        d.down += dappvotes;
 
         require(SNT.allowance(msg.sender, d.developer) >= _amount);
         require(SNT.transferFrom(msg.sender, d.developer, _amount));
