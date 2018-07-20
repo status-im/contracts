@@ -245,6 +245,7 @@ class SketchFieldDemo extends React.Component {
   };
   render = () => {
     const { controlledValue } = this.state;
+    console.log(this._sketch && this._sketch.toJSON())
     return (
       <div className='container'>
         <div className='row'>
@@ -262,7 +263,6 @@ class SketchFieldDemo extends React.Component {
               backgroundColor={this.state.fillWithBackgroundColor ? this.state.backgroundColor : 'transparent'}
               width={this.state.controlledSize ? this.state.sketchWidth : null}
               height={this.state.controlledSize ? this.state.sketchHeight : null}
-              defaultValue={dataJson}
               value={controlledValue}
               forceValue={true}
               onChange={this._onSketchChange}
@@ -270,7 +270,7 @@ class SketchFieldDemo extends React.Component {
             />
           </div>
           <div className='row'>
-            <div className="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+            <div style={{ display: 'flex', alignItems: 'center' }} className="col-xs-12 col-sm-12 col-md-12 col-lg-12">
                 <Card style={{margin: '10px 10px 5px 0'}}>
                   <CardHeader title='Tools' />
                   <CardContent>
@@ -293,7 +293,6 @@ class SketchFieldDemo extends React.Component {
                 <Card style={{margin: '5px 10px 5px 0'}}>
                   <CardHeader title='Colors'/>
                   <CardContent>
-                    <label htmlFor='lineColor'>Line</label>
                     <CirclePicker
                       id='lineColor' color={this.state.lineColor}
                       onChange={(color) => this.setState({lineColor: color.hex})}/>
