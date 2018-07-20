@@ -108,7 +108,7 @@ class SketchFieldDemo extends React.Component {
     backgroundColor: 'transparent',
     shadowWidth: 0,
     shadowOffset: 0,
-    tool: Tools.Pencil,
+    tool: Tools.Line,
     fillWithColor: false,
     fillWithBackgroundColor: false,
     drawings: [],
@@ -123,9 +123,9 @@ class SketchFieldDemo extends React.Component {
     originX: 'left',
     originY: 'top'
   };
-  _selectTool = (event, index, value) => {
+  _selectTool = event => {
     this.setState({
-      tool: value
+      tool: event.target.value
     });
   };
   _save = () => {
@@ -271,34 +271,45 @@ class SketchFieldDemo extends React.Component {
           </div>
           <div className='row'>
             <div style={{ display: 'flex', alignItems: 'center' }} className="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                <Card style={{margin: '10px 10px 5px 0'}}>
-                  <CardHeader title='Tools' />
-                  <CardContent>
-                    <label htmlFor='zoom'>Zoom</label>
-                    <div>
-                      <IconButton
-                        ref='zoom'
-                        onClick={(e) => this._sketch.zoom(1.25)}>
-                        <ZoomInIcon/>
-                      </IconButton>
-                      <IconButton
-                        ref='zoom1'
-                        onClick={(e) => this._sketch.zoom(0.8)}>
-                        <ZoomOutIcon/>
-                      </IconButton>
-                      <br/>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card style={{margin: '5px 10px 5px 0'}}>
-                  <CardHeader title='Colors'/>
-                  <CardContent>
-                    <CirclePicker
-                      id='lineColor' color={this.state.lineColor}
-                      onChange={(color) => this.setState({lineColor: color.hex})}/>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card style={{margin: '10px 10px 5px 0'}}>
+                <CardHeader title='Tools' />
+                <CardContent>
+                  <label htmlFor='zoom'>Zoom</label>
+                  <div>
+                    <IconButton
+                      ref='zoom'
+                      onClick={(e) => this._sketch.zoom(1.25)}>
+                      <ZoomInIcon/>
+                    </IconButton>
+                    <IconButton
+                      ref='zoom1'
+                      onClick={(e) => this._sketch.zoom(0.8)}>
+                      <ZoomOutIcon/>
+                    </IconButton>
+                    <br/>
+                  </div>
+                </CardContent>
+                <CardContent>
+                  <label>Drawing</label>
+                  <Select value={this.state.tool} onChange={this._selectTool}>
+                    <MenuItem value={Tools.Select}>Select</MenuItem>
+                    <MenuItem value={Tools.Pencil}>Pencil</MenuItem>
+                    <MenuItem value={Tools.Line}>Line</MenuItem>
+                    <MenuItem value={Tools.Rectangle}>Rectangle</MenuItem>
+                    <MenuItem value={Tools.Circle}>Circle</MenuItem>
+                    <MenuItem value={Tools.Pan}>Pan</MenuItem>
+                  </Select>
+                </CardContent>
+              </Card>
+              <Card style={{margin: '5px 10px 5px 0'}}>
+                <CardHeader title='Colors'/>
+                <CardContent>
+                  <CirclePicker
+                    id='lineColor' color={this.state.lineColor}
+                    onChange={(color) => this.setState({lineColor: color.hex})}/>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
