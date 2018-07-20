@@ -1,6 +1,6 @@
 module.exports = {
   default: {
-    enabled: true,
+    enabled: false,
     provider: "whisper", // Communication provider. Currently, Embark only supports whisper
     available_providers: ["whisper"], // Array of available providers
     connection: {

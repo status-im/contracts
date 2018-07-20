@@ -1,6 +1,6 @@
 module.exports = {
   default: {
-    enabled: true,
+    enabled: false,
     ipfs_bin: "ipfs",
     provider: "ipfs",
     available_providers: ["ipfs"],
