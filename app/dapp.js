@@ -2,14 +2,8 @@ import React, { Fragment } from 'react';
 import ReactDOM from 'react-dom';
 import web3 from "Embark/web3"
 import EmbarkJS from 'Embark/EmbarkJS';
-import PollManager from 'Embark/contracts/PollManager';
-import AdminView from './components/AdminView';
-import Voting from './components/Voting';
 import SNT from  'Embark/contracts/SNT';
-import { VotingContext } from './context';
 import Web3Render from './components/standard/Web3Render';
-import fetchIdeas from './utils/fetchIdeas';
-import { getPolls, omitPolls } from './utils/polls';
 import DrawField from './components/draw/DrawField';
 import ContractClient from './contract_client'
 window['SNT'] = SNT;
