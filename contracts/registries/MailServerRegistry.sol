@@ -26,6 +26,7 @@ contract MailServerRegistry is IRegistry, Controlled {
     }
     
     function remove(bytes a) external onlyController {
+        require(servers[a]);
         delete servers[a];
         emit MailServerRemoved(a);
     }
