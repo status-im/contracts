@@ -4,6 +4,39 @@ import {
 } from 'loom-js'
 
 import Web3 from 'web3'
+import EmbarkJS from 'Embark/EmbarkJS';
+
+export const createContract = async () => {
+  const privateKey = CryptoUtils.generatePrivateKey()
+  const publicKey = CryptoUtils.publicKeyFromPrivateKey(privateKey)
+
+  const client = new Client(
+    'default',
+    'ws://127.0.0.1:46657/websocket',
+    'ws://127.0.0.1:9999/queryws',
+  )
+
+  const from = LocalAddress.fromPublicKey(publicKey).toString()
+  const web3 = new Web3(new LoomProvider(client, privateKey))
+  const ABI = [{"constant":false,"inputs":[{"name":"_tileState","type":"string"}],"name":"SetTileMapState","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"GetTileMapState","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"state","type":"string"}],"name":"OnTileMapStateUpdate","type":"event"}]
+
+  const loomContractAddress = await client.getContractAddressAsync('TilesChain')
+  const contractAddress = CryptoUtils.bytesToHexAddr(loomContractAddress.local.bytes)
+
+  const contract = new web3.eth.Contract(ABI, contractAddress, {from})
+
+
+  contract.events.OnTileMapStateUpdate({}, (err, event) => {
+    if (err) return;
+    if (this.onEvent) {
+      this.onEvent(event)
+    }
+  })
+
+  return contract;
+}
+
+
 
 export default class ContractClient {
   constructor() {}
@@ -33,6 +66,8 @@ export default class ContractClient {
         this.onEvent(event)
       }
     })
+
+    return this.contract;
   }
 
   async setTileMapState(data) {

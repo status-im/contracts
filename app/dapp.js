@@ -5,7 +5,7 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import SNT from  'Embark/contracts/SNT';
 import Web3Render from './components/standard/Web3Render';
 import DrawField from './components/draw/DrawField';
-import ContractClient from './contract_client'
+import ContractClient, { createContract } from './contract_client'
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -23,13 +23,38 @@ class App extends React.Component {
     EmbarkJS.onReady((err) => {
       if (err) this.setState({ web3Provider: false });
       else {
-        //this.contractClient = new ContractClient()
+        this.createContract();
         this._setAccounts();
       }
       web3.eth.net.getId((err, netId) => {
         //if (netId !== MAINNET) this.setState({ web3Provider: false})
       })
     })
+  }
+
+  async createContract() {
+    this.contractClient = await createContract();
+    this.createContractEventListener();
+    this.requestUpdateTilesOnCanvas();
+  }
+
+  createContractEventListener = async () => {
+    // THIS CURRENTLY DOES NOT WORK DUE POSSIBLE LOOM PROVIDER BUG
+    this.contractClient.onEvent = tileData => {
+      console.log('tiledata', tileData)
+    }
+  }
+
+  async requestUpdateTilesOnCanvas() {
+    const tileMapState = await this.contractClient.methods.GetTileMapState().call()
+    if (tileMapState) {
+      const canvasState = JSON.parse(tileMapState);
+      this.setState({ canvasState });
+    }
+  }
+
+  setTileMapState = async (data) => {
+    await this.contractClient.methods.SetTileMapState(data).send()
   }
 
   setAccount(_account){
@@ -45,10 +70,11 @@ class App extends React.Component {
   }
 
   render(){
-    const { web3Provider, loading } = this.state;
+    const { setTileMapState } = this;
+    const { web3Provider, loading, canvasState } = this.state;
     return (
       <Web3Render ready={web3Provider}>
-        <DrawField />
+        <DrawField setTileMapState={setTileMapState} canvasState={canvasState} />
       </Web3Render>
     );
   }

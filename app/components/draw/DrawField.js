@@ -101,28 +101,41 @@ function eventFire(el, etype) {
 }
 
 class SketchFieldDemo extends React.Component {
-  state = {
-    lineColor: 'black',
-    lineWidth: 1,
-    fillColor: '#68CCCA',
-    backgroundColor: 'transparent',
-    shadowWidth: 0,
-    shadowOffset: 0,
-    tool: Tools.Line,
-    fillWithColor: false,
-    fillWithBackgroundColor: false,
-    drawings: [],
-    canUndo: false,
-    canRedo: false,
-    controlledSize: false,
-    sketchWidth: 600,
-    sketchHeight: 600,
-    stretched: true,
-    stretchedX: false,
-    stretchedY: false,
-    originX: 'left',
-    originY: 'top'
-  };
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      lineColor: 'black',
+      lineWidth: 1,
+      fillColor: '#68CCCA',
+      backgroundColor: 'transparent',
+      controlledValue: props.canvasState,
+      shadowWidth: 0,
+      shadowOffset: 0,
+      tool: Tools.Line,
+      fillWithColor: false,
+      fillWithBackgroundColor: false,
+      drawings: [],
+      canUndo: false,
+      canRedo: false,
+      controlledSize: false,
+      sketchWidth: 600,
+      sketchHeight: 600,
+      stretched: true,
+      stretchedX: false,
+      stretchedY: false,
+      originX: 'left',
+      originY: 'top'
+    };
+  }
+
+  componentDidUpdate(prevProps) {
+    const { canvasState } = this.props;
+    if (canvasState && canvasState !== prevProps.canvasState) {
+      this.setState({ controlledValue: canvasState });
+    }
+  }
+
   _selectTool = event => {
     this.setState({
       tool: event.target.value
@@ -133,6 +146,13 @@ class SketchFieldDemo extends React.Component {
     drawings.push(this._sketch.toDataURL());
     this.setState({drawings: drawings});
   };
+
+  _saveToChain = () => {
+    const { setTileMapState } = this.props;
+    const current = JSON.stringify(this._sketch.toJSON());
+    setTileMapState(current);
+  }
+
   _download = () => {
     /*eslint-disable no-console*/
 
@@ -245,6 +265,7 @@ class SketchFieldDemo extends React.Component {
   };
   render = () => {
     const { controlledValue } = this.state;
+    const { canvasState } = this.props;
     console.log(this._sketch && this._sketch.toJSON())
     return (
       <div className='container'>
@@ -309,6 +330,7 @@ class SketchFieldDemo extends React.Component {
                     onChange={(color) => this.setState({lineColor: color.hex})}/>
                 </CardContent>
               </Card>
+              <Button variant="outlined" color="primary" onClick={this._saveToChain}>Save to chain</Button>
             </div>
           </div>
         </div>
