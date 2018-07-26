@@ -12,8 +12,8 @@ export const createContract = async () => {
 
   const client = new Client(
     'default',
-    'ws://127.0.0.1:46657/websocket',
-    'ws://127.0.0.1:9999/queryws',
+    'ws://188.166.96.93:46657/websocket',
+    'ws://188.166.96.93:9999/queryws',
   )
 
   const from = LocalAddress.fromPublicKey(publicKey).toString()
