@@ -33,16 +33,15 @@ class App extends React.Component {
   }
 
   async createContract() {
-    this.contractClient = await createContract();
-    this.createContractEventListener();
+    const { tileStateUpdateHandler } = this;
+    this.contractClient = await createContract(tileStateUpdateHandler);
     this.requestUpdateTilesOnCanvas();
   }
 
-  createContractEventListener = async () => {
-    // THIS CURRENTLY DOES NOT WORK DUE POSSIBLE LOOM PROVIDER BUG
-    this.contractClient.onEvent = tileData => {
-      console.log('tiledata', tileData)
-    }
+  tileStateUpdateHandler = tileData => {
+    const { returnValues: { state } } = tileData;
+    console.log('tile state update event received');
+    this.setState({ canvasState: state });
   }
 
   async requestUpdateTilesOnCanvas() {

@@ -6,7 +6,7 @@ import {
 import Web3 from 'web3'
 import EmbarkJS from 'Embark/EmbarkJS';
 
-export const createContract = async () => {
+export const createContract = async (tileStateUpdateHandler) => {
   const privateKey = CryptoUtils.generatePrivateKey()
   const publicKey = CryptoUtils.publicKeyFromPrivateKey(privateKey)
 
@@ -28,9 +28,7 @@ export const createContract = async () => {
 
   contract.events.OnTileMapStateUpdate({}, (err, event) => {
     if (err) return;
-    if (this.onEvent) {
-      this.onEvent(event)
-    }
+    tileStateUpdateHandler(event);
   })
 
   return contract;
