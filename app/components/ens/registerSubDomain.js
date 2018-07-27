@@ -1,11 +1,13 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import React from 'react';
+import { connect } from 'react-redux';
 import Hidden from '@material-ui/core/Hidden';
 import { Button, MobileSearch, MobileButton, Field } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32, formatPrice } from './utils';
+import { getStatusContactCode } from '../../reducers/accounts';
 import FieldGroup from '../standard/FieldGroup';
 import LinearProgress from '@material-ui/core/LinearProgress';
 
@@ -23,6 +25,7 @@ const InnerForm = ({
   subDomain,
   domainName,
   domainPrice,
+  statusContactCode
 }) => (
   <form onSubmit={handleSubmit}>
     {!subDomain &&
@@ -97,9 +100,9 @@ const InnerForm = ({
           name="statusAddress"
           style={{ marginTop: '10px' }}
           placeholder="Status Messenger Address"
-          label="test"
           value={values.statusAddress}
           onChange={handleChange}
+          paste={() => setFieldValue('statusAddress', statusContactCode)}
           wide />
       </Field>
       <Field label="Your Wallet Address">
@@ -173,4 +176,8 @@ const RegisterSubDomain = withFormik({
   }
 })(InnerForm);
 
-export default RegisterSubDomain;
+const mapStateToProps = state => ({
+  statusContactCode: getStatusContactCode(state)
+});
+
+export default connect(mapStateToProps)(RegisterSubDomain);
