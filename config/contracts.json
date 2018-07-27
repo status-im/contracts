@@ -84,7 +84,8 @@
       },
       "ENSSubdomainRegistry": {
         "address": "0xb1C47B61CDaeee3fA85Fe8B93FcE6311165E6291"
-      }
+      },
+      "ERC20Receiver": { "deploy": false }
     }
   },
   "rinkeby":{
