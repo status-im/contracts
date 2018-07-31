@@ -18,6 +18,7 @@ import EnsLogo from '../../ui/icons/logos/ens.png';
 import { formatPrice } from '../ens/utils';
 import CheckCircle from '../../ui/icons/components/baseline_check_circle_outline.png';
 const { getPrice, getExpirationTime } = ENSSubdomainRegistry.methods;
+import NotInterested from '@material-ui/icons/NotInterested';
 
 const invalidSuffix = '0000000000000000000000000000000000000000'
 const nullAddress = '0x0000000000000000000000000000000000000000'
@@ -59,17 +60,34 @@ class RenderAddresses extends PureComponent {
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
     return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b>{expirationTime && <i> (Expires {generatePrettyDate(expirationTime)})</i>} Resolves To:</Info.Action>
-        {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
-        <CopyToClipboard text={address} onCopy={markCopied}>
-          <div style={addressStyle}>{address}</div>
-        </CopyToClipboard>
-        {validStatusAddress(statusAccount) && <Text style={{ marginTop: '1em' }}>Status Address {renderCopied(statusAccount)}</Text>}
-        {validStatusAddress(statusAccount) && <CopyToClipboard text={statusAccount} onCopy={markCopied}>
-          <div style={{ ...addressStyle, color: isCopied ? theme.primary : null }}>{statusAccount}</div>
-        </CopyToClipboard>}
-      </div>
+      <Fragment>
+        <Hidden mdDown>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b>{expirationTime && <i> (Expires {generatePrettyDate(expirationTime)})</i>} Resolves To:</Info.Action>
+            {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
+            <CopyToClipboard text={address} onCopy={markCopied}>
+              <div style={addressStyle}>{address}</div>
+            </CopyToClipboard>
+            {validStatusAddress(statusAccount) && <Text style={{ marginTop: '1em' }}>Status Address {renderCopied(statusAccount)}</Text>}
+            {validStatusAddress(statusAccount) && <CopyToClipboard text={statusAccount} onCopy={markCopied}>
+              <div style={{ ...addressStyle, color: isCopied ? theme.primary : null }}>{statusAccount}</div>
+            </CopyToClipboard>}
+          </div>
+        </Hidden>
+        <Hidden mdUp>
+          <Info background="#000000" style={{ margin: '0.4em', boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.2)' }}>
+            <Typography variant="title" style={
+              { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
+            }>
+              <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>
+              <b>{formatName(domainName).toUpperCase()}</b>
+              <div style={{ fontWeight: 300 }}>
+                {expirationTime && <i>Expires {generatePrettyDate(expirationTime)}</i>}
+              </div>
+            </Typography>
+          </Info>
+        </Hidden>
+      </Fragment>
     )
   }
 }
