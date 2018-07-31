@@ -31,6 +31,7 @@
       "MiniMeTokenFactory": {
 
       },
+      "PollManager": { "deploy": false },
       "SNT": {
         "instanceOf": "MiniMeToken",
         "args": [
@@ -43,9 +44,28 @@
           true
         ]
       },
-      "PollManager": {
-        "args": ["$MiniMeTokenFactory", "$SNT"]
+      
+      
+      
+      "AddressUtils": { "deploy": false },
+      "SupportsInterfaceWithLookup": { "deploy": false },
+      "ERC721BasicToken": { "deploy": false },
+      "ERC721Token": { "deploy": false },
+      "RLP": { "deploy": false },
+      "SparseMerkleTree": { "deploy": false },
+      "ECVerify": { "deploy": false },
+      "Transaction": { "deploy": false },
+      "ValidatorManagerContract": {},
+      "RootChain": {
+        "args": ["$ValidatorManagerContract"]
+      },
+      "CryptoCards": {
+        "args": ["$RootChain"],
+        "onDeploy": ["ValidatorManagerContract.methods.toggleToken($CryptoCards).send()"]
       }
+
+
+
     }
   },
   "testnet":{
