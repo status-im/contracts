@@ -231,7 +231,7 @@ const InnerForm = ({
      <div>
        <LookupForm {...{ handleSubmit, values, handleChange }} justSearch />
        <ConnectedRegister
-         style={{ margin: '10px'}}
+         style={{ position: 'relative' }}
          setStatus={setStatus}
          domainName={values.domainName}  />
      </div>

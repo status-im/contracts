@@ -28,6 +28,7 @@ const InnerForm = ({
   statusContactCode
 }) => (
   <form onSubmit={handleSubmit}>
+    <div style={{ margin: '10px' }}>
     {!subDomain &&
      <FieldGroup
        id="subDomain"
@@ -120,6 +121,7 @@ const InnerForm = ({
         <MobileButton type="submit" text="Register with transaction" style={{ width: '100%' }}/>
       </div>
     </Hidden>
+    </div>
   </form>
 );
 

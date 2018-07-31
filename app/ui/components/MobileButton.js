@@ -6,7 +6,7 @@ import Button from '@material-ui/core/Button';
 const styles = theme => ({
   button: {
     borderRadius: '4px',
-    backgroundColor: 'rgb(67, 96, 223, 0.1)',
+    backgroundColor: 'rgba(67, 96, 223, 0.1)',
   }
 });
 const buttonText = { color: '#4360df', margin: '0 20px', fontWeight: 300 };

@@ -9,7 +9,7 @@ const styles = theme => ({
   button: {
     margin: theme.spacing.unit,
     borderRadius: '4px',
-    backgroundColor: 'rgb(67, 96, 223, 0.1)',
+    backgroundColor: 'rgba(67, 96, 223, 0.1)',
   }
 });
 
