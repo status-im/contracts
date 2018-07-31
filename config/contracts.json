@@ -63,8 +63,11 @@
       "PlasmaERC20":{ "deploy": false },
       "PlasmaSNT": {
         "instanceOf": "PlasmaERC20",
-        "args": ["$RootChain", "$SNT", "5000000000000000000", "PlasmaSNT", "PSNT"],
-        "onDeploy": ["ValidatorManagerContract.methods.toggleToken($PlasmaSNT).send()"]
+        "args": ["$RootChain", "$SNT", "PlasmaSNT", "PSNT"],
+        "onDeploy": [
+          "ValidatorManagerContract.methods.toggleToken($PlasmaSNT).send()",
+          "PlasmaSNT.methods.setExchangeRate(0, 5000000000000000000).send()"
+        ]
       }
     }
   },

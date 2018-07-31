@@ -8,11 +8,10 @@ contract PlasmaERC20 is ERC721Token, Owned {
 
     address plasma;
     ERC20Token token;
-    uint exchangeRate;
+    mapping(uint8 => uint) exchangeRate;
 
     constructor (address _plasma, 
                  address _token, 
-                 uint _exchangeRate,
                  string _name, 
                  string _symbol
                  ) 
@@ -20,17 +19,22 @@ contract PlasmaERC20 is ERC721Token, Owned {
     public {
         plasma = _plasma;
         token = ERC20Token(_token);
-        exchangeRate = _exchangeRate;
     }
 
+    mapping(uint => uint8) NFTTypes;
     mapping(uint => uint) ERC20Balances;
     
-    function depositERC20() public {
-        require(token.allowance(msg.sender, address(this)) >= exchangeRate);
-        require(token.transferFrom(msg.sender, address(this), exchangeRate));
+    function depositERC20(uint8 _NFTType) public {
+        uint rate = exchangeRate[_NFTType];
+
+        require(rate > 0);
+        require(token.allowance(msg.sender, address(this)) >= rate);
+        require(token.transferFrom(msg.sender, address(this), rate));
 
         uint256 tokenId = allTokens.length + 1;
-        ERC20Balances[tokenId] = exchangeRate;
+        ERC20Balances[tokenId] = rate;
+        NFTTypes[tokenId] = _NFTType;
+
         _mint(msg.sender, tokenId);
     }
 
@@ -56,8 +60,8 @@ contract PlasmaERC20 is ERC721Token, Owned {
         safeTransferFrom(msg.sender, plasma, tokenId);
     }
 
-    function setExchangeRate(uint _newRate) onlyOwner public {
-        exchangeRate = _newRate;
+    function setExchangeRate(uint _newRate, uint8 _NFTType) onlyOwner public {
+        exchangeRate[_NFTType] = _newRate;
     }
 
 }

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./RLP.sol";
+import "../common/RLP.sol";
 
 
 library Transaction {

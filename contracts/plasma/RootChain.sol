@@ -3,13 +3,13 @@ pragma solidity ^0.4.24;
 // Zeppelin Imports
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721Receiver.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 // Lib deps
 import "./Transaction.sol";
-import "./ECVerify.sol";
+import "../common/ECVerify.sol";
+import "../common/SafeMath.sol";
 
-import "./SparseMerkleTree.sol";
+import "../common/SparseMerkleTree.sol";
 import "./ValidatorManagerContract.sol";
 
 
