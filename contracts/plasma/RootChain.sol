@@ -614,12 +614,17 @@ contract RootChain is ERC721Receiver {
 
     /******************** ERC721 ********************/
 
-    function onERC721Received(address _from, uint256 _uid, bytes)
+    function onERC721Received(
+        address _operator,
+        address _from,
+        uint256 _tokenId,
+        bytes _data
+    )
         public
         isTokenApproved(msg.sender)
         returns(bytes4)
     {
-        deposit(_from, uint64(_uid), uint32(1));
+        deposit(_from, uint64(_tokenId), uint32(1));
         return ERC721_RECEIVED;
     }
 
