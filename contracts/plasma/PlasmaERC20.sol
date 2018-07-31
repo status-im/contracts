@@ -24,6 +24,17 @@ contract PlasmaERC20 is ERC721Token, Owned {
     mapping(uint => uint8) NFTTypes;
     mapping(uint => uint) ERC20Balances;
     
+
+    // TODO: this is only for the demo. Remove
+    function register() external {
+        // Give each new player 5 cards
+        for (int j = 0; j < 5; j++) {
+            uint256 tokenId = allTokens.length + 1;
+            _mint(msg.sender, tokenId);
+        }
+    }
+
+
     function depositERC20(uint8 _NFTType) public {
         uint rate = exchangeRate[_NFTType];
 
