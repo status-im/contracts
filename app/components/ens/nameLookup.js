@@ -50,6 +50,15 @@ const backButton = {
 
 const generatePrettyDate = (timestamp) => new Date(timestamp * 1000).toDateString();
 
+const DisplayBox = ({ displayType, pubKey }) => (
+  <div style={{ border: '1px solid #EEF2F5', borderRadius: '8px', margin: '1em', display: 'flex', flexDirection: 'column', justifyContent: 'space-around', minHeight: '4em' }}>
+    <div style={{ margin: '3%', wordBreak: 'break-word' }}>
+      <div style={{ fontSize: '14px', color: '#939BA1' }}>{displayType}</div>
+      <Typography type='body1'>{pubKey}</Typography>
+    </div>
+  </div>
+);
+
 class RenderAddresses extends PureComponent {
   state = { copied: false }
 
@@ -86,6 +95,10 @@ class RenderAddresses extends PureComponent {
               </div>
             </Typography>
           </Info>
+          <Typography type='subheading' style={{ textAlign: 'center', fontSize: '26px', marginTop: '0.5em' }}>Name is unavailable</Typography>
+          <Typography type='body2' style={{ textAlign: 'center' }}>It is pointed to the following addresses</Typography>
+          <DisplayBox displayType='Wallet Address' pubKey={address} />
+          {validStatusAddress(statusAccount) && <DisplayBox displayType='Contact Code' pubKey={statusAccount} />}
         </Hidden>
       </Fragment>
     )
