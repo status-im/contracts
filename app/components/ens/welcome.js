@@ -22,36 +22,36 @@ const WelcomeContent = () => (
   <div style={{ marginTop: '20px', textAlign: 'center' }}>
     <div>
       <Typography variant="title" style={sectionTitleStyle}>
-        Secure
+        Deposit 100 SNT to reserve
       </Typography>
       <Typography variant="subheading" style={subTextStyle}>
-        Search for vacant names in domains .stateofus.eth and .eth
+        After a year, renew your name or release it and get your SNT back.
       </Typography>
     </div>
     <div>
       <Typography variant="title" style={sectionTitleStyle}>
-        Decentralized
+        Attach wallet & contact code
       </Typography>
       <Typography variant="subheading" style={subTextStyle}>
-        Search for vacant names in domains .stateofus.eth and .eth
+        Your long, complex wallet address and contact code become a single, easy-to-remember username.
       </Typography>
     </div>
     <div>
       <Typography variant="title" style={sectionTitleStyle}>
-        Amazing
+        Connect & get paid
       </Typography>
       <Typography variant="subheading" style={subTextStyle}>
-        Search for vacant names in domains .stateofus.eth and .eth
+        Share your username to chat on Status or receive payments from anywhere.
       </Typography>
     </div>
   </div>
 );
 
 const Welcome = ({ classes, toggleSearch }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '16px' }}>
     <img src={StatusCards} />
     <Typography variant="title" style={textStyle}>
-      Get a human-readable name instead of long addresses
+      Get a personal domain name to replace those crazy-long codes
     </Typography>
     <Button size="large" className={classNames(classes.button)} onClick={toggleSearch}>
       <div style={buttonText}>Let's Go</div>
