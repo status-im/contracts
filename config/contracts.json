@@ -59,7 +59,6 @@
       "RootChain": {
         "args": ["$ValidatorManagerContract"]
       },
-      "CryptoCards": { "deploy": false },
       "PlasmaERC20":{ "deploy": false },
       "PlasmaSNT": {
         "instanceOf": "PlasmaERC20",
@@ -71,6 +70,12 @@
       }
     }
   },
+
+
+
+
+
+
   "testnet":{
     "contracts": {
       "TestToken": { "deploy": false },
