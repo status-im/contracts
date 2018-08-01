@@ -1,0 +1,3 @@
+{
+    "python.pythonPath": "${workspaceFolder}/erc721plasma/bin/python"
+}
