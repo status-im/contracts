@@ -14,6 +14,7 @@ import {
   Button,
   Select,
   TextField,
+  Toolbar,
 } from '@material-ui/core';
 import Slider from '@material-ui/lab/Slider';
 import UndoIcon from '@material-ui/icons/Undo';
@@ -23,7 +24,7 @@ import SaveIcon from '@material-ui/icons/Save';
 import RemoveIcon from '@material-ui/icons/Clear';
 import DownloadIcon from '@material-ui/icons/CloudDownload';
 import ZoomInIcon from '@material-ui/icons/ZoomIn';
-import ZoomOutIcon from '@material-ui/icons/ZoomOutMap';
+import ZoomOutIcon from '@material-ui/icons/ZoomOut';
 //TODO remove data assets
 import dataJson from './data.json';
 import dataJsonControlled from './data.json.controlled';
@@ -269,6 +270,20 @@ class SketchFieldDemo extends React.Component {
     console.log(this._sketch && this._sketch.toJSON())
     return (
       <div className='container'>
+        <AppBar position="static" color="default">
+          <Toolbar>
+            <IconButton
+              ref='zoom'
+              onClick={(e) => this._sketch.zoom(1.25)}>
+              <ZoomInIcon/>
+            </IconButton>
+            <IconButton
+              ref='zoom1'
+              onClick={(e) => this._sketch.zoom(0.8)}>
+              <ZoomOutIcon/>
+            </IconButton>
+          </Toolbar>
+        </AppBar>
         <div className='row'>
           <div className='col-xs-12 col-sm-12 col-md-12 col-lg-12'>
 
