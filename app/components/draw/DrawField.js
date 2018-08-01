@@ -84,7 +84,6 @@ const styles = {
   }
 };
 
-
 /**
  * Helper function to manually fire an event
  *
@@ -269,9 +268,9 @@ class SketchFieldDemo extends React.Component {
     const { canvasState } = this.props;
     console.log(this._sketch && this._sketch.toJSON())
     return (
-      <div className='container'>
+      <div className='container' style={{ width: '100vw' }}>
         <AppBar position="static" color="default">
-          <Toolbar>
+          <Toolbar style={{ display: 'flex', justifyContent: 'space-evenly' }}>
             <IconButton
               ref='zoom'
               onClick={(e) => this._sketch.zoom(1.25)}>
@@ -282,6 +281,15 @@ class SketchFieldDemo extends React.Component {
               onClick={(e) => this._sketch.zoom(0.8)}>
               <ZoomOutIcon/>
             </IconButton>
+            <Select value={this.state.tool} onChange={this._selectTool}>
+              <MenuItem value={Tools.Select}>Select</MenuItem>
+              <MenuItem value={Tools.Pencil}>Pencil</MenuItem>
+              <MenuItem value={Tools.Line}>Line</MenuItem>
+              <MenuItem value={Tools.Rectangle}>Rectangle</MenuItem>
+              <MenuItem value={Tools.Circle}>Circle</MenuItem>
+              <MenuItem value={Tools.Pan}>Pan</MenuItem>
+            </Select>
+            <Button variant="outlined" color="primary" onClick={this._saveToChain}>Submit</Button>
           </Toolbar>
         </AppBar>
         <div className='row'>
@@ -307,36 +315,6 @@ class SketchFieldDemo extends React.Component {
           </div>
           <div className='row'>
             <div style={{ display: 'flex', alignItems: 'center' }} className="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-              <Card style={{margin: '10px 10px 5px 0'}}>
-                <CardHeader title='Tools' />
-                <CardContent>
-                  <label htmlFor='zoom'>Zoom</label>
-                  <div>
-                    <IconButton
-                      ref='zoom'
-                      onClick={(e) => this._sketch.zoom(1.25)}>
-                      <ZoomInIcon/>
-                    </IconButton>
-                    <IconButton
-                      ref='zoom1'
-                      onClick={(e) => this._sketch.zoom(0.8)}>
-                      <ZoomOutIcon/>
-                    </IconButton>
-                    <br/>
-                  </div>
-                </CardContent>
-                <CardContent>
-                  <label>Drawing</label>
-                  <Select value={this.state.tool} onChange={this._selectTool}>
-                    <MenuItem value={Tools.Select}>Select</MenuItem>
-                    <MenuItem value={Tools.Pencil}>Pencil</MenuItem>
-                    <MenuItem value={Tools.Line}>Line</MenuItem>
-                    <MenuItem value={Tools.Rectangle}>Rectangle</MenuItem>
-                    <MenuItem value={Tools.Circle}>Circle</MenuItem>
-                    <MenuItem value={Tools.Pan}>Pan</MenuItem>
-                  </Select>
-                </CardContent>
-              </Card>
               <Card style={{margin: '5px 10px 5px 0'}}>
                 <CardHeader title='Colors'/>
                 <CardContent>
@@ -345,7 +323,6 @@ class SketchFieldDemo extends React.Component {
                     onChange={(color) => this.setState({lineColor: color.hex})}/>
                 </CardContent>
               </Card>
-              <Button variant="outlined" color="primary" onClick={this._saveToChain}>Save to chain</Button>
             </div>
           </div>
         </div>
