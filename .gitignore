@@ -17,6 +17,7 @@ dist/
 
 # pyenv
 .python-version
+erc721plasma/
 
 # dotenv
 .env

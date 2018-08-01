@@ -26,12 +26,25 @@
       "DelegationProxyKernel": { "deploy": false },
       "ProposalCuration": { "deploy": false },
       "Democracy": { "deploy": false },
-      "TestToken": {
+      "TestToken": { "deploy": false },
+      "AddressUtils": { "deploy": false },
+      "PollManager": { "deploy": false },
+      "ERC721BasicToken": { "deploy": false },
+      "ERC721Token": { "deploy": false },
+      "RLP": { "deploy": false },
+      "SparseMerkleTree": { "deploy": false },
+      "ECVerify": { "deploy": false },
+      "Transaction": { "deploy": false },
+      "ValidatorManagerContract": {},
+      "RootChain": {
+        "args": ["$ValidatorManagerContract"]
+      },
+      "CryptoCards":{
+        "args": ["$RootChain"]
       },
       "MiniMeTokenFactory": {
 
       },
-      "PollManager": { "deploy": false },
       "SNT": {
         "instanceOf": "MiniMeToken",
         "args": [
@@ -44,31 +57,16 @@
           true
         ]
       },
-      
-      
-      
-      "AddressUtils": { "deploy": false },
-      "SupportsInterfaceWithLookup": { "deploy": false },
-      "ERC721BasicToken": { "deploy": false },
-      "ERC721Token": { "deploy": false },
-      "RLP": { "deploy": false },
-      "SparseMerkleTree": { "deploy": false },
-      "ECVerify": { "deploy": false },
-      "Transaction": { "deploy": false },
-      "ValidatorManagerContract": {},
-      "RootChain": {
-        "args": ["$ValidatorManagerContract"]
-      },
       "PlasmaERC20":{ "deploy": false },
       "PlasmaSNT": {
         "instanceOf": "PlasmaERC20",
-        "args": ["$RootChain", "$SNT", "PlasmaSNT", "PSNT"],
-        "onDeploy": [
-          "ValidatorManagerContract.methods.toggleToken($PlasmaSNT).send()",
-          "PlasmaSNT.methods.setExchangeRate(0, 5000000000000000000).send()"
-        ]
+        "args": ["$RootChain", "$SNT", "PlasmaSNT", "PSNT"]
       }
-    }
+    },
+    "afterDeploy": [
+      "ValidatorManagerContract.methods.toggleToken('$CryptoCards').send()",
+      "PlasmaSNT.methods.setExchangeRate(0, 5000000000000000000).send()"
+    ]
   },
 
 

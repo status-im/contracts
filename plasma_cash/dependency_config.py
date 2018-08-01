@@ -8,7 +8,7 @@ class DependencyContainer(object):
     def __init__(self):
         self._child_chain = None
         self.root_chain_abi = '../dist/contracts/RootChain.json'
-        self.token_contract_abi = '../dist/contracts/PlasmaERC20.json'
+        self.token_contract_abi = '../dist/contracts/CryptoCards.json'
         self.endpoint = 'http://localhost:8545'
         self.root_chain = PlasmaCash(
             plasma_config['authority'],

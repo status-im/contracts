@@ -1,7 +1,8 @@
 plasma_config = dict(
-    validator_manager='0x494748735312D87C54Ff36E9dc71f90fb800D7Df',
-    root_chain='0xe5731c3df7a510fba6c5b2766251ce631C6B1d78',
+    validator_manager='0xd8a512EBD6fd82f44dFFD968EEB0835265497d20',
+    root_chain='0x494748735312D87C54Ff36E9dc71f90fb800D7Df',
     token_contract='0x6427A6200Bed37FC1e512BdeA49D25Aa9089CF47',
+
     authority='0xf942d5d524ec07158df4354402bfba8d928c99d0ab34d0799a6158d56156d986',
     alice='0x88f37cfbaed8c0c515c62a17a3a1ce2f397d08bbf20dcc788b69f11b5a5c9791',
     bob='0xf4ebc8adae40bfc741b0982c206061878bffed3ad1f34d67c94fa32c3d33eac8',
@@ -10,6 +11,7 @@ plasma_config = dict(
     mallory='0x130137aa9a7fbc7cadc98c079cda47a999ff41931d9feaab621855beceed71f7',
     eve='0xead83d04f741d2b3ab50be1299c18aa1a82c241606861a9a6d3122443496522d',
     trudy='0xe6e893ac9f1c1db066a8a83a376554084b0a786e4cdcd91559d68bd4a1dac396',
+    
     players=[
         '0x56901d80abc6953d1dc01de2f077b75260f49a3304f665b57ed13514a7e2a2bc',
         '0xedc63d0e14b29aaa26c7585e962f93abb59bd7d8b01b585e073dc03d052a000b',
