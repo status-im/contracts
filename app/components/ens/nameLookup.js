@@ -1,7 +1,7 @@
 import React, { Fragment, PureComponent } from 'react';
 import web3 from 'web3';
 import { connect } from 'react-redux';
-import { actions as accountActions } from '../../reducers/accounts';
+import { actions as accountActions, getDefaultAccount } from '../../reducers/accounts';
 import Hidden from '@material-ui/core/Hidden';
 import Typography from '@material-ui/core/Typography';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
@@ -59,11 +59,33 @@ const DisplayBox = ({ displayType, pubKey }) => (
   </div>
 );
 
+const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTime, defaultAccount }) => (
+  <Fragment>
+    <Info background="#000000" style={{ margin: '0.4em', boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.2)' }}>
+      <Typography variant="title" style={
+        { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
+      }>
+        <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>
+        <b>{formatName(domainName).toUpperCase()}</b>
+        <div style={{ fontWeight: 300 }}>
+          {expirationTime && <i>Expires {generatePrettyDate(expirationTime)}</i>}
+        </div>
+      </Typography>
+    </Info>
+    <Typography type='subheading' style={{ textAlign: 'center', fontSize: '26px', marginTop: '0.5em' }}>Name is unavailable</Typography>
+    <Typography type='body2' style={{ textAlign: 'center' }}>It is pointed to the following addresses</Typography>
+    <DisplayBox displayType='Wallet Address' pubKey={address} />
+    {validStatusAddress(statusAccount) && <DisplayBox displayType='Contact Code' pubKey={statusAccount} />}
+  </Fragment>
+)
+
 class RenderAddresses extends PureComponent {
   state = { copied: false }
 
   render() {
-    const { domainName, address, statusAccount, expirationTime } = this.props
+    const { domainName, address, statusAccount, expirationTime, defaultAccount } = this.props
+    // TODO ADD CONDITIONAL RENDER TO MobileAddressDisplay
+    console.log(defaultAccount)
     const { copied } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
@@ -84,21 +106,7 @@ class RenderAddresses extends PureComponent {
           </div>
         </Hidden>
         <Hidden mdUp>
-          <Info background="#000000" style={{ margin: '0.4em', boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.2)' }}>
-            <Typography variant="title" style={
-              { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
-            }>
-              <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>
-              <b>{formatName(domainName).toUpperCase()}</b>
-              <div style={{ fontWeight: 300 }}>
-                {expirationTime && <i>Expires {generatePrettyDate(expirationTime)}</i>}
-              </div>
-            </Typography>
-          </Info>
-          <Typography type='subheading' style={{ textAlign: 'center', fontSize: '26px', marginTop: '0.5em' }}>Name is unavailable</Typography>
-          <Typography type='body2' style={{ textAlign: 'center' }}>It is pointed to the following addresses</Typography>
-          <DisplayBox displayType='Wallet Address' pubKey={address} />
-          {validStatusAddress(statusAccount) && <DisplayBox displayType='Contact Code' pubKey={statusAccount} />}
+          <MobileAddressDisplay {...this.props} />
         </Hidden>
       </Fragment>
     )
@@ -179,9 +187,13 @@ const mapDispatchToProps = dispatch => ({
   },
 });
 
-const ConnectedRegister = connect(null, mapDispatchToProps)(Register);
+const mapStateToProps = state => ({
+  defaultAccount: getDefaultAccount(state)
+})
 
-const DisplayAddress = (props) => (
+const ConnectedRegister = connect(mapStateToProps, mapDispatchToProps)(Register);
+
+const DisplayAddress = connect(mapStateToProps)((props) => (
   <Fragment>
     {validAddress(props.address) ?
      <RenderAddresses {...props} />
@@ -194,7 +206,7 @@ const DisplayAddress = (props) => (
     }
     <div style={backButton} onClick={() => props.setStatus(null)}>&larr;</div>
   </Fragment>
-)
+))
 
 const LookupForm = ({ handleSubmit, values, handleChange, justSearch }) => (
   <Fragment>
