@@ -28,8 +28,8 @@ If installing the server from scratch:
  2. Follow the instructions from Embark for its installation, 
  3. `sudo apt install virtualenv python3 python3-dev libssl-dev build-essential` 
 
- _NOTE_: `nvm` and Embark must be installed with a normal user. Don't use `root`!
-
+_NOTE_: `nvm` and Embark must be installed with a normal user. Don't use `root`!
+_NOTE2_: The contract addresses are hardcoded in config.py. If you want to execute the demo after it has already executed, you need to restart both Embark and its simulator
 
 
 # Development Dependencies
