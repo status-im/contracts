@@ -12,8 +12,8 @@ export const createContract = async (tileStateUpdateHandler) => {
 
   const client = new Client(
     'default',
-    'wss://188.166.96.93:46657/websocket',
-    'wss://188.166.96.93:9999/queryws',
+    'wss://draw.status.im/websocket',
+    'wss://draw.status.im/queryws',
   )
 
   const from = LocalAddress.fromPublicKey(publicKey).toString()
