@@ -26,7 +26,7 @@ We would also like to gift a unique token collectible of the visual available fo
 Ultimately we are all able to help shape a communal identity for the conference using the technology and wrap this entire project and it's assets up in a DAO and let everyone who participates in it have a stake in the DAO so even after the conference they will continue to vote and decide what it does next, in that sense it will be dynamic living thing.
 
 
-Usage: 
+## Usage
  ```
  npm install -g embark
  git clone https://github.com/status-im/contracts.git
