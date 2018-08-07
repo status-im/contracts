@@ -19,6 +19,7 @@ import { formatPrice } from '../ens/utils';
 import CheckCircle from '../../ui/icons/components/baseline_check_circle_outline.png';
 const { getPrice, getExpirationTime } = ENSSubdomainRegistry.methods;
 import NotInterested from '@material-ui/icons/NotInterested';
+import Face from '@material-ui/icons/Face';
 
 const invalidSuffix = '0000000000000000000000000000000000000000'
 const nullAddress = '0x0000000000000000000000000000000000000000'
@@ -59,21 +60,21 @@ const DisplayBox = ({ displayType, pubKey }) => (
   </div>
 );
 
-const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTime, defaultAccount }) => (
+const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTime, defaultAccount, isOwner }) => (
   <Fragment>
-    <Info background="#000000" style={{ margin: '0.4em', boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.2)' }}>
+    <Info background={isOwner ? '#44D058' : '#000000'} style={{ margin: '0.4em', boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.2)' }}>
       <Typography variant="title" style={
         { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
       }>
-        <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>
+        {isOwner ? <Face style={{ marginBottom: '0.5em', fontSize: '2em' }} /> : <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>}
         <b>{formatName(domainName).toUpperCase()}</b>
         <div style={{ fontWeight: 300 }}>
-          {expirationTime && <i>Expires {generatePrettyDate(expirationTime)}</i>}
+          {expirationTime && <i>Locked until {generatePrettyDate(expirationTime)}</i>}
         </div>
       </Typography>
     </Info>
-    <Typography type='subheading' style={{ textAlign: 'center', fontSize: '26px', marginTop: '0.5em' }}>Name is unavailable</Typography>
-    <Typography type='body2' style={{ textAlign: 'center' }}>It is pointed to the following addresses</Typography>
+    <Typography type='subheading' style={{ textAlign: 'center', fontSize: '17px', margin: '1em 0 0.3em 0' }}>{isOwner ? 'You\'re the owner of this name' : 'Name is unavailable'}</Typography>
+    <Typography type='body2' style={{ textAlign: 'center' }}>registered to the addresses below</Typography>
     <DisplayBox displayType='Wallet Address' pubKey={address} />
     {validStatusAddress(statusAccount) && <DisplayBox displayType='Contact Code' pubKey={statusAccount} />}
   </Fragment>
@@ -84,12 +85,11 @@ class RenderAddresses extends PureComponent {
 
   render() {
     const { domainName, address, statusAccount, expirationTime, defaultAccount } = this.props
-    // TODO ADD CONDITIONAL RENDER TO MobileAddressDisplay
-    console.log(defaultAccount)
     const { copied } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
+    const isOwner = defaultAccount === address;
     return (
       <Fragment>
         <Hidden mdDown>
@@ -106,7 +106,7 @@ class RenderAddresses extends PureComponent {
           </div>
         </Hidden>
         <Hidden mdUp>
-          <MobileAddressDisplay {...this.props} />
+          <MobileAddressDisplay {...this.props} isOwner={isOwner} />
         </Hidden>
       </Fragment>
     )
