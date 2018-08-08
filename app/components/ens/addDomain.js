@@ -8,8 +8,6 @@ import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { debounce } from 'lodash/fp';
 
-setTimeout(() => { ENSSubdomainRegistry.methods.controller().call(console.log)}, 2000)
-
 const { methods: { owner } } = ENSRegistry;
 
 const delay = debounce(500);

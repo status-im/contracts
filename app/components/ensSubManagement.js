@@ -8,6 +8,7 @@ import AddDomain from './ens/addDomain';
 import RegisterSubDomain from './ens/registerSubDomain';
 import TokenPermissions from './standard/TokenPermission';
 import SetupENS from './ens/setupENS';
+import UpdateController from './ens/updateController';
 
 const FieldGroup = ({ id, label, help, ...props }) => (
   <FormGroup controlId={id}>
@@ -17,9 +18,11 @@ const FieldGroup = ({ id, label, help, ...props }) => (
   </FormGroup>
 )
 
-const ENSSubManagement = (props) => (
+const ENSSubManagement = props => (
   <Fragment>
-    <h2 style={{textAlign: 'center'}}>Subdomain Management</h2>
+    <h2 style={{ textAlign: 'center' }}>Subdomain Management</h2>
+    <h3>Change Registry Controller</h3>
+    <UpdateController />
     <h3>Add/Update Domain Price</h3>
     <AddDomain />
     <hr/>
