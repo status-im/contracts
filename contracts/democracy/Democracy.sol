@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
 import "../token/MiniMeTokenInterface.sol";
-import "./DelegationProxyFactory.sol";
+import "./DelegationFactory.sol";
 import "./TrustNetwork.sol";
 import "./ProposalCuration.sol";
 import "./ProposalManager.sol";
@@ -21,9 +21,9 @@ contract Democracy {
         mapping(bytes32 => bool) calls;
     }
 
-    constructor(MiniMeTokenInterface _token, DelegationProxyFactory _delegationProxyFactory) public {
+    constructor(MiniMeTokenInterface _token, DelegationFactory _DelegationFactory) public {
         token = _token;
-        trustNet = new TrustNetwork(_delegationProxyFactory);
+        trustNet = new TrustNetwork(_DelegationFactory);
         proposalManager = new ProposalCuration(_token, trustNet).proposalManager();
     }
 

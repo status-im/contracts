@@ -1,14 +1,14 @@
 pragma solidity ^0.4.21;
 
-import "./DelegationProxy.sol";
+import "./Delegation.sol";
 
 
 /**
- * @title DelegationProxy
+ * @title Delegation
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @dev Creates a delegation proxy layer for MiniMeTokenInterface. 
  */
-contract DelegationProxyView is DelegationProxy {
+contract DelegationView is Delegation {
 
     //storage of preprocessed view of FinalDelegate
     mapping(bytes32 => FinalDelegate) public delegationView;
@@ -18,7 +18,7 @@ contract DelegationProxyView is DelegationProxy {
         bool found;
     }
     
-    constructor(address _parentTopic) DelegationProxy(0x0) public {
+    constructor(address _parentDelegation) Delegation(_parentDelegation) public {
 
     }
     

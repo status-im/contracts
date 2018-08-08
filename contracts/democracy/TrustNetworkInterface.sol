@@ -1,11 +1,11 @@
 pragma solidity ^0.4.21;
 
-import "./DelegationProxyInterface.sol";
+import "./DelegationInterface.sol";
 
 contract TrustNetworkInterface {
 
     function addTopic(bytes32 topicId, bytes32 parentTopic) public;
-    function getTopic(bytes32 _topicId) public view returns (DelegationProxyInterface vote, DelegationProxyInterface veto);   
-    function getVoteDelegation(bytes32 _topicId) public view returns (DelegationProxyInterface voteDelegation);
-    function getVetoDelegation(bytes32 _topicId) public view returns (DelegationProxyInterface vetoDelegation);
+    function getTopic(bytes32 _topicId) public view returns (DelegationInterface vote, DelegationInterface veto);   
+    function getVoteDelegation(bytes32 _topicId) public view returns (DelegationInterface voteDelegation);
+    function getVetoDelegation(bytes32 _topicId) public view returns (DelegationInterface vetoDelegation);
 }

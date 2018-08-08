@@ -2,27 +2,27 @@ pragma solidity ^0.4.21;
 
 import "../common/Controlled.sol";
 import "./TrustNetworkInterface.sol";
-import "./DelegationProxyInterface.sol";
-import "./DelegationProxyFactory.sol";
+import "./DelegationInterface.sol";
+import "./DelegationFactory.sol";
 
 
 /**
  * @title TrustNetwork
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * Defines two contolled DelegationProxy chains: vote and veto chains.
+ * Defines two contolled Delegation chains: vote and veto chains.
  * New layers need to be defined under a unique topic address topic, and all fall back to root topic (topic 0x0)   
  */
 contract TrustNetwork is TrustNetworkInterface, Controlled {
     mapping (bytes32 => Topic) topics;
-    DelegationProxyFactory delegationFactory;
+    DelegationFactory delegationFactory;
     
     struct Topic {
-        DelegationProxyInterface voteDelegation;
-        DelegationProxyInterface vetoDelegation;
+        DelegationInterface voteDelegation;
+        DelegationInterface vetoDelegation;
     }
     
     constructor(address _delegationFactory) public {
-        delegationFactory = DelegationProxyFactory(_delegationFactory);
+        delegationFactory = DelegationFactory(_delegationFactory);
         topics[0x0] = newTopic(0x0, 0x0);
     }
     
@@ -40,7 +40,7 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
         topics[topicId] = newTopic(vote, veto);
     }
     
-    function getTopic(bytes32 _topicId) public view returns (DelegationProxyInterface vote, DelegationProxyInterface veto) {
+    function getTopic(bytes32 _topicId) public view returns (DelegationInterface vote, DelegationInterface veto) {
         Topic memory topic = topics[_topicId];
         vote = topic.voteDelegation;
         veto = topic.vetoDelegation;
@@ -51,7 +51,7 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     )
         public
         view
-        returns (DelegationProxyInterface voteDelegation) 
+        returns (DelegationInterface voteDelegation) 
     {
         return topics[_topicId].voteDelegation;
     }
@@ -61,7 +61,7 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     )
         public
         view 
-        returns (DelegationProxyInterface vetoDelegation)
+        returns (DelegationInterface vetoDelegation)
     {
         return topics[_topicId].vetoDelegation;
     }
@@ -69,8 +69,8 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     
     function newTopic(address _vote, address _veto) internal returns (Topic topic) {
         topic = Topic ({ 
-            voteDelegation: delegationFactory.createDelegationProxy(_vote),
-            vetoDelegation: delegationFactory.createDelegationProxy(_veto)
+            voteDelegation: delegationFactory.createDelegation(_vote),
+            vetoDelegation: delegationFactory.createDelegation(_veto)
         });
     }
 

@@ -1,30 +1,30 @@
 pragma solidity ^0.4.21;
 
 import "../deploy/InstanceStorage.sol";
-import "./DelegationProxyView.sol";
+import "./DelegationView.sol";
 
 /**
- * @title DelegationProxyKernel
+ * @title DelegationKernel
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @dev Creates a delegation proxy killable model for cheap redeploy and upgradability. 
  */
-contract DelegationProxyKernel is InstanceStorage, DelegationProxyView {
+contract DelegationKernel is InstanceStorage, DelegationView {
     bool private ready = false; //TODO: abstract initialized flag
 
     /**
      * @notice Constructor of the model - only knows about watchdog that can trigger upgrade
      */
-    constructor() DelegationProxyView(0x0) public {
+    constructor() DelegationView(0x0) public {
         ready = true; 
     }
 
     /**
-     * @notice Creates a new DelegationProxy with `_parentProxy` as default delegation.
+     * @notice Creates a new Delegation with `_parentDelegation` as default delegation.
      */
-    function initializeDelegationProxy(address _parentProxy) public {
+    function initializeDelegation(address _parentDelegation) public {
         require(!ready);
         ready = true;
-        parentProxy = _parentProxy;
+        parentDelegation = _parentDelegation;
     }
 
 }
