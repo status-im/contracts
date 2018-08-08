@@ -171,7 +171,7 @@ contract DelegationProxy is DelegationProxyInterface {
         returns(address finalDelegate)
     {
         finalDelegate = delegatedToAt(_who, _block);
-        if (finalDelegate != _who) { //_who is delegating?
+        if (finalDelegate != 0x0) { //_who is delegating?
             return delegationOfAt(finalDelegate, _block); //load the delegation of _who delegation
         } else {
             return _who; //reached the endpoint of delegation
@@ -202,7 +202,7 @@ contract DelegationProxy is DelegationProxyInterface {
         if (checkpoints.length == 0) {
             if (parentProxy != 0x0) {
                 return DelegationProxy(parentProxy).delegatedInfluenceFromAt(
-                    _from,
+                    _who,
                     _token,
                     _block,
                     _childProxy
@@ -216,7 +216,7 @@ contract DelegationProxy is DelegationProxyInterface {
         // Case user set delegate to parentProxy
         if (d.to == parentProxy && parentProxy != 0x0) {
             return DelegationProxy(parentProxy).delegatedInfluenceFromAt(
-                _from,
+                _who,
                 _token,
                 _block,
                 _childProxy
@@ -277,7 +277,7 @@ contract DelegationProxy is DelegationProxyInterface {
             _newFrom = fromHistory[fromHistory.length - 1]; //load to memory
             _newFrom.from = fromHistory[fromHistory.length - 1].from;
             if (toIndexes[_from] > 0) { //was delegating? remove old link
-                _removeDelegated(_newFrom.to, toIndexes[_from]);
+                _removeDelegatedOf(_newFrom.to, toIndexes[_from]);
             }
         }
         //Add the new delegation
@@ -320,13 +320,13 @@ contract DelegationProxy is DelegationProxyInterface {
 
     /**
      * @dev Removes delegation at `_toIndex` from `_to` address.
-     * @param _to Delegate address to remove delegation.
+     * @param _who Delegate address to remove delegation.
      * @param _toIndex Index of delegation being removed.
      */
-    function _removeDelegated(address _to, uint _toIndex) private {
-        Delegation[] storage oldTo = delegations[_to]; //load delegation storage
+    function _removeDelegatedOf(address _who, uint _toIndex) private {
+        Delegation[] storage oldTo = delegations[_who]; //load delegation storage
         uint _oldToLen = oldTo.length;
-        assert(_oldToLen > 0); //if code tried to remove from nothing this is absolutely bad
+        require(_oldToLen > 0, "unsupported"); //TODO: load from parent
         Delegation memory _newOldTo = oldTo[_oldToLen - 1];//copy to memory last result
         address replacer = _newOldTo.from[_newOldTo.from.length - 1];
         _newOldTo.from[_toIndex - 1] = replacer; //replace delegated address at `_toIndex`
@@ -338,17 +338,17 @@ contract DelegationProxy is DelegationProxyInterface {
     /**
      * @dev Add delegation of `_from` in delegate `_to`.
      * @param _from Delegator address delegating their influence.
-     * @param _to Delegate address receiving the influence;
-     * @return _toIndex The index of `_from` in `_to` delegate.
+     * @param _receiver Delegate address receiving the influence;
      */
-    function _addDelegated(address _from, address _to) private {
+    function _addDelegated(address _from, address _receiver) private {
         Delegation memory _newTo; // allocates space in memory
-        Delegation[] storage toHistory = delegations[_to]; //load delegation storage
+        Delegation[] storage toHistory = delegations[_receiver]; //load delegation storage
         uint toHistLen = toHistory.length; 
         if (toHistLen > 0) { //have data, should copy 'from' array.
             _newTo = toHistory[toHistLen - 1]; //copy to memory last one
         } else { 
             _newTo.to = parentProxy; // configure delegate of `_to` because it was never defined
+            require (parentProxy == 0, "unsupported"); // TODO: load from parentl
         }
         _newTo.fromBlock = uint128(block.number); //define the new block number
         toHistory.push(_newTo); //register `to` delegated from
