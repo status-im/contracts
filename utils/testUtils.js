@@ -1,3 +1,5 @@
+var EC = require('elliptic').ec;
+var ec = new EC('secp256k1');
 
 // This has been tested with the real Ethereum network and Testrpc.
 // Copied and edited from: https://gist.github.com/xavierlepretre/d5583222fde52ddfbc58b7cfa0d2d0a9
@@ -236,4 +238,20 @@ exports.increaseTime = async (amount) => {
         }
       )
     });
+}
+
+exports.generateXY = pub => {
+  const stripped = pub.slice(2);
+  const key = ec.keyFromPublic(stripped, 'hex');
+  const pubPoint = key.getPublic();
+  const x = '0x' + pubPoint.getX().toString(16);
+  const y = '0x'+ pubPoint.getY().toString(16);
+  return { x, y };
+}
+
+exports.keyFromXY = (X, Y) => {
+  const x = Buffer.from(X.substring(2), 'hex');
+  const y = Buffer.from(Y.substring(2), 'hex');
+  const keys = ec.keyFromPublic({ x, y }, 'hex');
+  return `0x${keys.getPublic().encode('hex')}`;
 }

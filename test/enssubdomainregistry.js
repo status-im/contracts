@@ -166,12 +166,13 @@ contract('ENSSubdomainRegistry', function () {
     let subdomain = 'bob2';
     let usernameHash = namehash.hash(subdomain + '.' + domains.free.name);
     let contactCode = '0x04dbb31252d9bddb4e4d362c7b9c80cba74732280737af97971f42ccbdc716f3f3efb1db366880e52d09b1bfd59842e833f3004088892b7d14b9ce9e957cea9a82';
+    let points = utils.generateXY(contactCode);
     let result = await ENSSubdomainRegistry.methods.register(
       web3Utils.sha3(subdomain),
       domains.free.namehash,
       registrant,
-      utils.zeroBytes32,
-      utils.zeroBytes32,
+      points.x,
+      points.y,
       contactCode
     ).send({from: registrant});
 
@@ -182,8 +183,8 @@ contract('ENSSubdomainRegistry', function () {
     result = await PublicResolver.methods.text(usernameHash, "statusAccount").call()
     assert.equal(result, contactCode, "Resolved contact code not set");
     result = await PublicResolver.methods.pubkey(usernameHash).call()
-    assert.equal(result[0], utils.zeroBytes32, "Unexpected resolved pubkey[0]");
-    assert.equal(result[1], utils.zeroBytes32, "Unexpected resolved pubkey[1]");
+    let pubKey = utils.keyFromXY(result[0], result[1]);
+    assert.equal(pubKey, contactCode, "pubKey does not match contract code");
   });
 
 
