@@ -85,6 +85,9 @@
       "ENSSubdomainRegistry": {
         "address": "0xb1C47B61CDaeee3fA85Fe8B93FcE6311165E6291"
       },
+      "SafeMath": {
+        "address": "0x0F9992f7737f9ba3aceD170D4D1259cb2CEcc050"
+      },
       "ERC20Receiver": { "deploy": false }
     }
   },

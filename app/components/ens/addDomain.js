@@ -70,6 +70,12 @@ const AddDomain = withFormik({
     const { methods: { domains, setDomainPrice, updateDomainPrice } } = ENSSubdomainRegistry;
     const hashedDomain = hash(domainName);
     const { state } = await getDomain(hashedDomain, domains);
+    console.log(
+      'Inputs for setPrice',
+      Number(state) ? 'updateDomainPrice' : 'setDomainPrice',
+      hashedDomain,
+      web3.utils.toWei(domainPrice.toString(), 'ether'),
+    );
     setPrice(
       Number(state) ? updateDomainPrice : setDomainPrice,
       hashedDomain,
