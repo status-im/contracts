@@ -89,6 +89,9 @@
         "address": "0x0F9992f7737f9ba3aceD170D4D1259cb2CEcc050"
       },
       "ERC20Receiver": { "deploy": false }
+    },
+    "SafeMath": {
+      "address": "0x0F9992f7737f9ba3aceD170D4D1259cb2CEcc050"
     }
   },
   "rinkeby":{
