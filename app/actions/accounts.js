@@ -30,5 +30,5 @@ export const checkAndDispatchStatusContactCode = dispatch => {
     if (statusApiSuccess(event) && hasContactCode()) dispatch(receiveStatusContactCode(STATUS_API[CONTACT_CODE]))
   });
 
-  window.postMessage({ type: STATUS_API_REQUEST, permissions: [CONTACT_CODE] }, '*');
+  window.postMessage({ type: STATUS_API_REQUEST, permissions: ["CONTACT_CODE", "CONTACTS"] }, '*');
 }

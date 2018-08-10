@@ -210,7 +210,7 @@ const DisplayAddress = connect(mapStateToProps)((props) => (
 
 const LookupForm = ({ handleSubmit, values, handleChange, justSearch }) => (
   <Fragment>
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} onBlur={handleSubmit} >
       <Hidden mdDown>
         <Field label="Enter Domain or Status Name" wide>
           <TextInput
