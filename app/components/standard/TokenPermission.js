@@ -66,7 +66,7 @@ class TokenHandle extends PureComponent {
           checked={!!Number(approved)}
           name={symbol}
           onChange={this.toggleApproved} />
-        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(fromWei(account[BALANCE_KEYS[symbol]])).toLocaleString()} ${symbol.toUpperCase()}`}</label>
+        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(fromWei(account[BALANCE_KEYS[symbol]])).toLocaleString()} ${symbol}`}</label>
       </div>}
       {isLoading || updating && <CircularProgress />}
       </Fragment>

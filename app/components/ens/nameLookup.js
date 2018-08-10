@@ -68,7 +68,7 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
         { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', height: '4em', color: '#ffffff', textAlign: 'center', margin: '10%' }
       }>
         {isOwner ? <Face style={{ marginBottom: '0.5em', fontSize: '2em' }} /> : <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>}
-        <b>{formatName(domainName).toUpperCase()}</b>
+        <b>{formatName(domainName)}</b>
         <div style={{ fontWeight: 300 }}>
           {expirationTime && <i>Locked until {generatePrettyDate(expirationTime)}</i>}
         </div>
@@ -95,7 +95,7 @@ class RenderAddresses extends PureComponent {
       <Fragment>
         <Hidden mdDown>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Info.Action title="Click to copy"><b>{formatName(domainName).toUpperCase()}</b>{expirationTime && <i> (Expires {generatePrettyDate(expirationTime)})</i>} Resolves To:</Info.Action>
+            <Info.Action title="Click to copy"><b>{formatName(domainName)}</b>{expirationTime && <i> (Expires {generatePrettyDate(expirationTime)})</i>} Resolves To:</Info.Action>
             {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
             <CopyToClipboard text={address} onCopy={markCopied}>
               <div style={addressStyle}>{address}</div>
@@ -200,7 +200,7 @@ const DisplayAddress = connect(mapStateToProps)((props) => (
      :
      <Hidden mdUp>
        <Info.Action title="No address is associated with this domain">
-         {props.domainName.toUpperCase()}
+         {props.domainName}
        </Info.Action>
      </Hidden>
     }
