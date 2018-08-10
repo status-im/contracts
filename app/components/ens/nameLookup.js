@@ -7,6 +7,7 @@ import Typography from '@material-ui/core/Typography';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import { Button, Field, TextInput, MobileSearch, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
+import { keyFromXY } from '../../utils/ecdsa';
 import theme from '../../ui/theme'
 import { withFormik } from 'formik';
 import PublicResolver from 'Embark/contracts/PublicResolver';
@@ -286,10 +287,11 @@ const NameLookup = withFormik({
   mapPropsToValues: props => ({ domainName: '' }),
   async handleSubmit(values, { status, setSubmitting, setStatus }) {
     const { domainName } = values;
-    const { addr, text } = PublicResolver.methods;
+    const { addr, pubkey } = PublicResolver.methods;
     const lookupHash = hash(formatName(domainName));
     const address = await addr(lookupHash).call();
-    const statusAccount = await text(lookupHash, 'statusAccount').call();
+    const keys = await pubkey(lookupHash).call();
+    const statusAccount = keyFromXY(keys[0], keys[1]);
     const expirationTime = await getExpirationTime(lookupHash).call();
     setStatus({ address, statusAccount, expirationTime });
   }

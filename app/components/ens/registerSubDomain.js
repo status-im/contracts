@@ -10,6 +10,7 @@ import { zeroAddress, zeroBytes32, formatPrice } from './utils';
 import { getStatusContactCode } from '../../reducers/accounts';
 import FieldGroup from '../standard/FieldGroup';
 import LinearProgress from '@material-ui/core/LinearProgress';
+import { generateXY } from '../../utils/ecdsa';
 
 const { soliditySha3, fromWei } = web3.utils;
 
@@ -142,15 +143,14 @@ const RegisterSubDomain = withFormik({
     const subdomainHash = soliditySha3(subDomain);
     const domainNameHash = hash(domainName);
     const resolveToAddr = address || zeroAddress;
-    const resolveToStatusAddr = statusAddress || zeroBytes32;
+    const points = statusAddress ? generateXY(statusAddress) : null;
 
     const toSend = register(
       subdomainHash,
       domainNameHash,
       resolveToAddr,
-      zeroBytes32,
-      zeroBytes32,
-      resolveToStatusAddr,
+      points ? points.x : zeroBytes32,
+      points ? points.y : zeroBytes32
     );
     toSend.estimateGas().then(gasEstimated => {
       console.log("Register would work. :D Gas estimated: "+gasEstimated)
@@ -167,7 +167,7 @@ const RegisterSubDomain = withFormik({
         console.dir(err)
       }).finally(() => {
         // REQUIRED UNTIL THIS ISSUES IS RESOLVED: https://github.com/jaredpalmer/formik/issues/597
-        setTimeout(() => { registeredCallbackFn(resolveToAddr, resolveToStatusAddr); }, 200);
+        setTimeout(() => { registeredCallbackFn(resolveToAddr, statusAddress || zeroBytes32); }, 200);
         setSubmitting(false);
       });
     }).catch(err => {
