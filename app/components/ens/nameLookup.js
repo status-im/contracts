@@ -176,7 +176,6 @@ class Register extends PureComponent {
              registeredCallbackFn={this.onRegistered} />
          </Fragment> :
          <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
-        <div style={backButton} onClick={() => setStatus(null)}>&larr;</div>
       </div>
     )
   }
@@ -205,7 +204,6 @@ const DisplayAddress = connect(mapStateToProps)((props) => (
        </Info.Action>
      </Hidden>
     }
-    <div style={backButton} onClick={() => props.setStatus(null)}>&larr;</div>
   </Fragment>
 ))
 
