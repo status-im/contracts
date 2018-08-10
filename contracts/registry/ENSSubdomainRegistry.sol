@@ -69,15 +69,13 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _account optional address to set at public resolver
      * @param _pubkeyA optional pubkey part A to set at public resolver
      * @param _pubkeyB optional pubkey part B to set at public resolver
-     * @param _statusAccount optional contact code to set at text in public resolver
      */
     function register(
         bytes32 _userHash,
         bytes32 _domainHash,
         address _account,
         bytes32 _pubkeyA,
-        bytes32 _pubkeyB,
-        string _statusAccount
+        bytes32 _pubkeyB
     ) 
         external 
         returns(bytes32 subdomainHash) 
@@ -101,9 +99,6 @@ contract ENSSubdomainRegistry is Controlled {
             }
             if (resolvePubkey) {
                 resolver.setPubkey(subdomainHash, _pubkeyA, _pubkeyB);
-            }
-            if (bytes(_statusAccount).length != 0) {
-              resolver.setText(subdomainHash, "statusAccount", _statusAccount);
             }
             ens.setOwner(subdomainHash, msg.sender);
         }else {
