@@ -5,6 +5,7 @@ import TestToken from 'Embark/contracts/TestToken';
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
 import AddDomain from './ens/addDomain';
+import MoveDomain from './ens/moveDomain';
 import RegisterSubDomain from './ens/registerSubDomain';
 import TokenPermissions from './standard/TokenPermission';
 import SetupENS from './ens/setupENS';
@@ -25,6 +26,8 @@ const ENSSubManagement = props => (
     <UpdateController />
     <h3>Add/Update Domain Price</h3>
     <AddDomain />
+    <h3>Move Domain To Another Registry</h3>
+    <MoveDomain />
     <hr/>
     <h3>Register Sub-Domain</h3>
     <RegisterSubDomain />
