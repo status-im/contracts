@@ -5,7 +5,8 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import SNT from  'Embark/contracts/SNT';
 import Web3Render from './components/standard/Web3Render';
 import DrawField from './components/draw/DrawField';
-import ContractClient, { createContract } from './contract_client'
+//import ContractClient, { createContract } from './contract_client'
+import ContractClient from './client_contractgo'
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -34,7 +35,8 @@ class App extends React.Component {
 
   async createContract() {
     const { tileStateUpdateHandler } = this;
-    this.contractClient = await createContract(tileStateUpdateHandler);
+    this.contractClient = await new ContractClient();
+    await this.contractClient.createContract();
     this.requestUpdateTilesOnCanvas();
   }
 
@@ -45,15 +47,17 @@ class App extends React.Component {
   }
 
   async requestUpdateTilesOnCanvas() {
-    const tileMapState = await this.contractClient.methods.GetTileMapState().call()
-    if (tileMapState) {
-      const canvasState = JSON.parse(tileMapState);
+    const tileMapState = await this.contractClient.getTileMapState()
+    const tileData = tileMapState.getData()
+    debugger
+    if (tileData) {
+      const canvasState = JSON.parse(tileData);
       this.setState({ canvasState });
     }
   }
 
   setTileMapState = async (data) => {
-    await this.contractClient.methods.SetTileMapState(data).send()
+    await this.contractClient.setTileMapState(JSON.stringify(data))
   }
 
   setAccount(_account){
@@ -73,7 +77,7 @@ class App extends React.Component {
     const { web3Provider, loading, canvasState } = this.state;
     return (
       <Web3Render ready={web3Provider}>
-        <DrawField setTileMapState={setTileMapState} canvasState={canvasState} />
+        <DrawField setTileMapState={setTileMapState} canvasState={canvasState} request={this.requestUpdateTilesOnCanvas.bind(this)}/>
       </Web3Render>
     );
   }

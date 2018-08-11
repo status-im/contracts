@@ -322,6 +322,7 @@ class SketchFieldDemo extends React.Component {
                     id='lineColor' color={this.state.lineColor}
                     onChange={(color) => this.setState({lineColor: color.hex})}/>
                 </CardContent>
+                <Button onClick={this.props.request}>Get Content</Button>
               </Card>
             </div>
           </div>
