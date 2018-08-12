@@ -8,6 +8,7 @@ import DrawField from './components/draw/DrawField';
 //import ContractClient, { createContract } from './contract_client'
 import ContractClient from './client_contractgo';
 import Events from './chain_client/events';
+import Toaster from './components/toaster';
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -45,6 +46,7 @@ class App extends React.Component {
 
   tileStateUpdateHandler = tileData => {
     console.log('tile state update event received');
+    this.showValidatedToast();
     this.setState({ canvasState: tileData });
   }
 
@@ -73,12 +75,26 @@ class App extends React.Component {
     })
   }
 
+  showValidatedToast = () => {
+    this.setState({ validationToast: true })
+  }
+
+  closeValidationToast = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    this.setState({ validationToast: false });
+  }
+
+
+
   render(){
-    const { setTileMapState } = this;
-    const { web3Provider, loading, canvasState } = this.state;
+    const { setTileMapState, closeValidationToast } = this;
+    const { web3Provider, loading, canvasState, validationToast } = this.state;
     return (
       <Web3Render ready={web3Provider}>
         <DrawField setTileMapState={setTileMapState} canvasState={canvasState} request={this.requestUpdateTilesOnCanvas.bind(this)}/>
+        <Toaster open={validationToast} handleClose={closeValidationToast}/>
       </Web3Render>
     );
   }
