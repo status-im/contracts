@@ -6,7 +6,8 @@ import SNT from  'Embark/contracts/SNT';
 import Web3Render from './components/standard/Web3Render';
 import DrawField from './components/draw/DrawField';
 //import ContractClient, { createContract } from './contract_client'
-import ContractClient from './client_contractgo'
+import ContractClient from './client_contractgo';
+import Events from './chain_client/events';
 window['SNT'] = SNT;
 
 import './dapp.css';
@@ -36,20 +37,20 @@ class App extends React.Component {
   async createContract() {
     const { tileStateUpdateHandler } = this;
     this.contractClient = await new ContractClient();
+    this.events = new Events();
     await this.contractClient.createContract();
+    this.events.onEvent = tileData => this.tileStateUpdateHandler(tileData)
     this.requestUpdateTilesOnCanvas();
   }
 
   tileStateUpdateHandler = tileData => {
-    const { returnValues: { state } } = tileData;
     console.log('tile state update event received');
-    this.setState({ canvasState: state });
+    this.setState({ canvasState: tileData });
   }
 
   async requestUpdateTilesOnCanvas() {
     const tileMapState = await this.contractClient.getTileMapState()
     const tileData = tileMapState.getData()
-    debugger
     if (tileData) {
       const canvasState = JSON.parse(tileData);
       this.setState({ canvasState });
