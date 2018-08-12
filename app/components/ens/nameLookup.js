@@ -207,7 +207,7 @@ const DisplayAddress = connect(mapStateToProps)((props) => (
   </Fragment>
 ))
 
-const LookupForm = ({ handleSubmit, values, handleChange, justSearch }) => (
+const LookupForm = ({ handleSubmit, values, handleChange, justSearch, setFieldValue }) => (
   <Fragment>
     <form onSubmit={handleSubmit} onBlur={handleSubmit} >
       <Hidden mdDown>
@@ -226,7 +226,7 @@ const LookupForm = ({ handleSubmit, values, handleChange, justSearch }) => (
           name="domainName"
           placeholder='Search for vacant name'
           value={values.domainName}
-          onChange={handleChange}
+          onChange={ev => onDomainNameChange(ev, setFieldValue)}
           required
           wide />
         {!justSearch && <Typography variant="subheading" style={{ color: '#939ba1', textAlign: 'center', marginTop: '25vh' }}>
@@ -252,7 +252,8 @@ const InnerForm = ({
   handleSubmit,
   isSubmitting,
   status,
-  setStatus
+  setStatus,
+  setFieldValue
 }) => (
   <div>
     <Hidden mdDown>
@@ -262,7 +263,7 @@ const InnerForm = ({
       </span>
     </Hidden>
     {!status
-     ? <LookupForm {...{ handleSubmit, values, handleChange }} />
+     ? <LookupForm {...{ handleSubmit, values, handleChange, setFieldValue }} />
      : validAddress(status.address) ?
      <DisplayAddress
        domainName={values.domainName}
@@ -280,6 +281,11 @@ const InnerForm = ({
     }
   </div>
 )
+
+const onDomainNameChange = (e, setFieldValue) => {
+  const domain = e.target.value.toLowerCase();
+  setFieldValue('domainName', domain, false)
+}
 
 const NameLookup = withFormik({
   mapPropsToValues: props => ({ domainName: '' }),
