@@ -31,7 +31,7 @@ class SimpleSnackbar extends React.Component {
           }}
           message={<span id="message-id">Transaction Validated</span>}
           action={[
-            <Button key="undo" color="secondary" size="small" onClick={handleClose}>
+            <Button key="undo" color="secondary" size="small" onClick={(e) => handleClose(e, 'UNDO')}>
               UNDO
             </Button>,
             <IconButton

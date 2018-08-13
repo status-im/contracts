@@ -80,8 +80,14 @@ class App extends React.Component {
   }
 
   closeValidationToast = (event, reason) => {
+    console.log({event, reason})
     if (reason === 'clickaway') {
       return;
+    }
+    if (reason === 'UNDO') {
+      const { canvasState } = this.state;
+      console.log(canvasState, JSON.parse(canvasState))
+
     }
     this.setState({ validationToast: false });
   }
@@ -93,7 +99,7 @@ class App extends React.Component {
     const { web3Provider, loading, canvasState, validationToast } = this.state;
     return (
       <Web3Render ready={web3Provider}>
-        <DrawField setTileMapState={setTileMapState} canvasState={canvasState} request={this.requestUpdateTilesOnCanvas.bind(this)}/>
+        <DrawField setTileMapState={setTileMapState} canvasState={canvasState} />
         <Toaster open={validationToast} handleClose={closeValidationToast}/>
       </Web3Render>
     );
