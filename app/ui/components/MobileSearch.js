@@ -41,10 +41,10 @@ const MobileInput = styled.input`
 const MobileSearch = props => (
   <div style={{ position: 'relative' }}>
     {props.search && <div style={searchWrapper}>
-      <SearchIcon style={{ color: theme.accent }}/>
+      <SearchIcon style={{ color: theme.accent }} />
     </div>}
     <div style={{ display: 'flex' }}>
-      <MobileInput {...props} />
+      <MobileInput {...props} autoCapitalize="none" />
       {!props.value && props.paste && <Button style={{ color: theme.accent }} onClick={props.paste}>Paste</Button>}
     </div>
   </div>
