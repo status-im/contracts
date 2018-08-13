@@ -22,7 +22,7 @@
       },
       "ENSSubdomainRegistry": {
         "args": [
-          "$TestToken", 
+          "$TestToken",
           "$ENSRegistry",
           "$PublicResolver",
           "0x0"
@@ -49,16 +49,16 @@
       },
       "ENSSubdomainRegistry": {
         "args": [
-          "$TestToken", 
+          "$TestToken",
           "$ENSRegistry",
           "$PublicResolver",
           "0x0"
-        ], 
+        ],
         "onDeploy": [
           "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0xbd99f8d5e7f81d2d7c1da34b67a2bb3a94dd8c9b0ab40ddc077621b98405983b', ENSSubdomainRegistry.address).send()",
           "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0x7b4768a525e733422bf968587a91b4036e5176d36f44a9fb5b29d0bca03ab3a3', ENSSubdomainRegistry.address).send()"
         ]
-      }  
+      }
     }
   },
   "livenet":{
@@ -83,7 +83,7 @@
         "address": "0xc55cF4B03948D7EBc8b9E8BAD92643703811d162"
       },
       "ENSSubdomainRegistry": {
-        "address": "0x304bd15cc8833D12475c4df2c9bA42498540b644"
+        "address": "0x3e4f716EcD9F2D54E71A83588d0fC85E7b83c89d"
       },
       "SafeMath": {
         "address": "0x0F9992f7737f9ba3aceD170D4D1259cb2CEcc050"
