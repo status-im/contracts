@@ -1,4 +1,8 @@
-import ERC20Token from 'Embark/contracts/ERC20Token';
+import ERC20Token from 'Embark/contracts/ERC20Token'
+import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry'
+import TestToken from 'Embark/contracts/TestToken'
+
+import { getDefaultAccount } from '../utils/web3Helpers'
 import { actions as accountActions } from '../reducers/accounts'
 import { isNil } from 'lodash'
 
@@ -34,4 +38,15 @@ export const checkAndDispatchStatusContactCode = dispatch => {
     () => { window.postMessage({ type: STATUS_API_REQUEST, permissions: ["CONTACT_CODE", "CONTACTS"] }, '*') },
     1000
   )
+}
+
+export const fetchAndDispatchSNTAllowance = dispatch => {
+  const { methods: { allowance } } = TestToken;
+  const { receiveSntAllowance } = accountActions;
+  const spender = ENSSubdomainRegistry._address;
+  allowance(getDefaultAccount(), spender)
+    .call()
+    .then(allowance => {
+      dispatch(receiveSntAllowance(allowance))
+    })
 }

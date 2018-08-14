@@ -6,14 +6,16 @@ export const types = createTypes([
   'UPDATE_DEFAULT_ACCOUNT',
   'ADD_TO_SNT_TOKEN_BALANCE',
   'SUBTRACT_FROM_SNT_TOKEN_BALANCE',
-  'RECEIVE_STATUS_CONTACT_CODE'
+  'RECEIVE_STATUS_CONTACT_CODE',
+  'RECEIVE_SNT_ALLOWANCE'
 ], 'ACCOUNTS')
 export const actions = {
   receiveAccounts: actionCreator(types.RECEIVE_ACCOUNTS, 'defaultAccount','accounts'),
   updateDefaultAccount: actionCreator(types.UPDATE_DEFAULT_ACCOUNT, 'defaultAccount'),
   addToSntTokenBalance: actionCreator(types.ADD_TO_SNT_TOKEN_BALANCE, 'amount'),
   subtractfromSntTokenBalance: actionCreator(types.SUBTRACT_FROM_SNT_TOKEN_BALANCE, 'amount'),
-  receiveStatusContactCode: actionCreator(types.RECEIVE_STATUS_CONTACT_CODE, 'statusContactCode')
+  receiveStatusContactCode: actionCreator(types.RECEIVE_STATUS_CONTACT_CODE, 'statusContactCode'),
+  receiveSntAllowance: actionCreator(types.RECEIVE_SNT_ALLOWANCE, 'SNTAllowance')
 }
 
 export default function(state = { loading: true, accounts: [] }, action) {
@@ -56,6 +58,10 @@ export default function(state = { loading: true, accounts: [] }, action) {
   case types.RECEIVE_STATUS_CONTACT_CODE: {
     const { statusContactCode } = action.payload
     return { ...state, statusContactCode }
+  }
+  case types.RECEIVE_SNT_ALLOWANCE: {
+    const { SNTAllowance } = action.payload
+    return { ...state, SNTAllowance }
   }
   default:
     return state;
