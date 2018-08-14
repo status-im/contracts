@@ -73,6 +73,7 @@ export const getAccounts = state => state.accounts.accounts;
 export const getDefaultAccount = state => state.accounts.defaultAccount;
 export const accountsIsLoading = state => state.accounts.loading;
 export const getStatusContactCode = state => state.accounts.statusContactCode;
+export const getSNTAllowance = state => state.accounts.SNTAllowance;
 export const getCurrentAccount = createSelector(
   getDefaultAccount,
   getAccounts,

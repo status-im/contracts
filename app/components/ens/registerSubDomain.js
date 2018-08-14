@@ -1,5 +1,6 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import TestToken from 'Embark/contracts/TestToken';
 import React from 'react';
 import { connect } from 'react-redux';
 import Hidden from '@material-ui/core/Hidden';
@@ -7,10 +8,12 @@ import { Button, MobileSearch, MobileButton, Field } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32, formatPrice } from './utils';
-import { getStatusContactCode } from '../../reducers/accounts';
+import { getStatusContactCode, getSNTAllowance } from '../../reducers/accounts';
 import FieldGroup from '../standard/FieldGroup';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import { generateXY } from '../../utils/ecdsa';
+
+console.log(TestToken)
 
 const { soliditySha3, fromWei } = web3.utils;
 
@@ -179,7 +182,8 @@ const RegisterSubDomain = withFormik({
 })(InnerForm);
 
 const mapStateToProps = state => ({
-  statusContactCode: getStatusContactCode(state)
+  statusContactCode: getStatusContactCode(state),
+  SNTAllowance: getSNTAllowance(state),
 });
 
 export default connect(mapStateToProps)(RegisterSubDomain);
