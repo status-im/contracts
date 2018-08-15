@@ -5,6 +5,12 @@ import { BigNumber } from './utils'
 import "react-toggle/style.css";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Tooltip from '@material-ui/core/Tooltip';
+import FormLabel from '@material-ui/core/FormLabel';
+import FormControl from '@material-ui/core/FormControl';
+import FormGroup from '@material-ui/core/FormGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import Switch from '@material-ui/core/Switch';
 
 // We set an allowance to be "unlimited" by setting it to
 // it's maximum possible value -- namely, 2^256 - 1.
@@ -46,29 +52,40 @@ class TokenHandle extends PureComponent {
       spender,
       amountToApprove
     )
-           .send()
-           .then(approval => {
-             const { events: { Approval: { returnValues: { _value } } } } = approval
-             this.setState({ ...this.state, approved: _value, updating: false })
-           }).catch(err => {
-             console.log("Approve failed: " + err);
-             this.setState({ updating: false });
-           })
+      .send()
+      .then(approval => {
+        const { events: { Approval: { returnValues: { _value } } } } = approval
+        this.setState({ ...this.state, approved: _value, updating: false })
+      }).catch(err => {
+        console.log("Approve failed: " + err);
+        this.setState({ updating: false });
+      })
   }
 
   render() {
-    const { symbol, account, isLoading } = this.props;
+    const { symbol, account, isLoading, mobile } = this.props;
     const { approved, updating } = this.state;
     return (
       <Fragment>
-      {!updating && !isLoading && !!account && <div style={{ display: 'flex', justifyContent: 'center', margin: '10px', paddingLeft: '60px' }}>
-        <Toggle
-          checked={!!Number(approved)}
-          name={symbol}
-          onChange={this.toggleApproved} />
-        <label style={{ margin: '2px 0px 0px 10px', fontWeight: 400 }}>{`${Number(fromWei(account[BALANCE_KEYS[symbol]])).toLocaleString()} ${symbol}`}</label>
-      </div>}
-      {isLoading || updating && <CircularProgress />}
+        {!updating && !isLoading && !!account && <div>
+          <FormControl component="fieldset">
+            <FormLabel component="legend" style={{ textAlign: 'center' }}>Token Permissions</FormLabel>
+            <FormGroup style={{ alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!Number(approved)}
+                            onChange={this.toggleApproved}
+                            value={symbol}
+                  />
+                }
+                label={`${Number(fromWei(account[BALANCE_KEYS[symbol]])).toLocaleString()} ${symbol}`}
+              />
+            </FormGroup>
+            <FormHelperText style={{ textAlign: 'center' }}>Registry needs permission to transfer SNT from your account prior to registration</FormHelperText>
+          </FormControl>
+        </div>}
+        {isLoading || updating && <CircularProgress style={{ marginLeft: mobile ? '45%' : null }} />}
       </Fragment>
     )
   }
@@ -76,10 +93,12 @@ class TokenHandle extends PureComponent {
 
 const TokenPermissions = (props) => (
   <Fragment>
-    <Tooltip title="Turn on permissions for a token to enable its use with the ENS subdomain registry">
-      <h3>Token Permissions</h3>
-    </Tooltip>
-    <hr/>
+    {!props.mobile && <Fragment>
+      <Tooltip title="Turn on permissions for a token to enable its use with the ENS subdomain registry">
+        <h3>Token Permissions</h3>
+      </Tooltip>
+      <hr/>
+    </Fragment>}
     <TokenHandle {...props} />
   </Fragment>
 )
