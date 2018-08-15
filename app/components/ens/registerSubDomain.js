@@ -1,5 +1,6 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import TestToken from 'Embark/contracts/TestToken';
 import React from 'react';
 import { connect } from 'react-redux';
 import Hidden from '@material-ui/core/Hidden';
