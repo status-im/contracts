@@ -1,4 +1,5 @@
 import React, { Fragment, PureComponent } from 'react';
+import { connect } from 'react-redux';
 import web3 from "Embark/web3"
 import Toggle from 'react-toggle';
 import { BigNumber } from './utils'
@@ -11,6 +12,7 @@ import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import Switch from '@material-ui/core/Switch';
+import { actions, getSNTAllowance } from '../../reducers/accounts';
 
 // We set an allowance to be "unlimited" by setting it to
 // it's maximum possible value -- namely, 2^256 - 1.
@@ -23,27 +25,12 @@ const BALANCE_KEYS = { 'SNT': 'SNTBalance', 'STT': 'SNTBalance' };
 class TokenHandle extends PureComponent {
   constructor(props){
     super(props);
-    this.state = { approved: 0 };
-  }
-
-  componentDidMount() {
-    __embarkContext.execWhenReady(() => {
-      this.getAllowance();
-    });
-  }
-
-  getAllowance = () => {
-    const { methods, spender } = this.props;
-    methods.allowance(getDefaultAccount(), spender)
-           .call()
-           .then(approved => {
-             this.setState({ ...this.state, approved })
-           })
+    this.state = {};
   }
 
   toggleApproved = () => {
     const { approved } = this.state;
-    const { methods: { approve }, spender } = this.props;
+    const { methods: { approve }, spender, receiveSntAllowance } = this.props;
     const isApproved = !!Number(approved);
     let amountToApprove = isApproved ? 0 : unlimitedAllowance;
     console.log("approve(\""+spender+"\",\"" +amountToApprove +"\")")
@@ -55,7 +42,8 @@ class TokenHandle extends PureComponent {
       .send()
       .then(approval => {
         const { events: { Approval: { returnValues: { _value } } } } = approval
-        this.setState({ ...this.state, approved: _value, updating: false })
+        receiveSntAllowance(_value)
+        this.setState({ ...this.state, updating: false })
       }).catch(err => {
         console.log("Approve failed: " + err);
         this.setState({ updating: false });
@@ -63,8 +51,8 @@ class TokenHandle extends PureComponent {
   }
 
   render() {
-    const { symbol, account, isLoading, mobile } = this.props;
-    const { approved, updating } = this.state;
+    const { symbol, account, isLoading, mobile, SNTAllowance } = this.props;
+    const { updating } = this.state;
     return (
       <Fragment>
         {!updating && !isLoading && !!account && <div>
@@ -74,7 +62,7 @@ class TokenHandle extends PureComponent {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={!!Number(approved)}
+                    checked={!!Number(SNTAllowance)}
                             onChange={this.toggleApproved}
                             value={symbol}
                   />
@@ -103,4 +91,13 @@ const TokenPermissions = (props) => (
   </Fragment>
 )
 
-export default TokenPermissions;
+const mapDispatchToProps = dispatch => ({
+  receiveSntAllowance(amount) {
+    dispatch(actions.receiveSntAllowance(amount));
+  },
+});
+
+const mapStateToProps = state => ({
+  SNTAllowance: getSNTAllowance(state),
+});
+export default connect(mapStateToProps, mapDispatchToProps)(TokenPermissions);
