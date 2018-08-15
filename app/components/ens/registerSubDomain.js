@@ -1,6 +1,5 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
-import TestToken from 'Embark/contracts/TestToken';
 import React from 'react';
 import { connect } from 'react-redux';
 import Hidden from '@material-ui/core/Hidden';
@@ -12,8 +11,6 @@ import { getStatusContactCode, getSNTAllowance } from '../../reducers/accounts';
 import FieldGroup from '../standard/FieldGroup';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import { generateXY } from '../../utils/ecdsa';
-
-console.log(TestToken)
 
 const { soliditySha3, fromWei } = web3.utils;
 
@@ -29,7 +26,7 @@ const InnerForm = ({
   subDomain,
   domainName,
   domainPrice,
-  statusContactCode
+  statusContactCode,
 }) => (
   <form onSubmit={handleSubmit}>
     <div style={{ margin: '10px' }}>
@@ -107,7 +104,7 @@ const InnerForm = ({
           placeholder="Status Messenger Address"
           value={values.statusAddress}
           onChange={handleChange}
-          paste={() => setFieldValue('statusAddress', statusContactCode)}
+          onClick={() => setFieldValue('statusAddress', '')}
           wide />
       </Field>
       <Field label="Your Wallet Address">
@@ -117,7 +114,7 @@ const InnerForm = ({
           placeholder="Ethereum Address"
           value={values.address}
           onChange={handleChange}
-          paste={() => setFieldValue('address', web3.eth.defaultAccount)}
+          onClick={() => setFieldValue('address', '')}
           required
           wide />
       </Field>
@@ -130,7 +127,7 @@ const InnerForm = ({
 );
 
 const RegisterSubDomain = withFormik({
-  mapPropsToValues: props => ({ subDomain: '', domainName: '', price: '' }),
+  mapPropsToValues: props => ({ subDomain: '', domainName: '', price: '', statusAddress: props.statusContactCode, address: web3.eth.defaultAccount }),
   validate(values, props) {
     const errors = {};
     const { address } = values;
