@@ -5,7 +5,7 @@ import { actions as accountActions, getDefaultAccount } from '../../reducers/acc
 import Hidden from '@material-ui/core/Hidden';
 import Typography from '@material-ui/core/Typography';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
-import { Button, Field, TextInput, MobileSearch, Card, Info, Text } from '../../ui/components'
+import { Button, Field, TextInput, MobileSearch, MobileButton, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
 import { keyFromXY } from '../../utils/ecdsa';
 import theme from '../../ui/theme'
@@ -108,6 +108,7 @@ class RenderAddresses extends PureComponent {
         </Hidden>
         <Hidden mdUp>
           <MobileAddressDisplay {...this.props} isOwner={isOwner} />
+          {isOwner && <MobileButton type="submit" text="Edit" style={{ marginLeft: '35%' }} />}
         </Hidden>
       </Fragment>
     )
