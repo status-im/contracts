@@ -10,9 +10,9 @@ const styles = theme => ({
   }
 });
 const buttonText = { color: '#4360df', margin: '0 20px', fontWeight: 300 };
-const MobileButton = ({ classes, text, type, style }) => (
+const MobileButton = ({ classes, text, type, style, ...props }) => (
   <Fragment>
-    <Button type={type} size="large" className={classNames(classes.button)} style={style}>
+    <Button type={type} size="large" className={classNames(classes.button)} style={style} {...props} >
       <div style={buttonText}>{text}</div>
     </Button>
   </Fragment>
