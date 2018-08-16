@@ -4,6 +4,7 @@ import TestToken from 'Embark/contracts/TestToken';
 import React from 'react';
 import { connect } from 'react-redux';
 import Hidden from '@material-ui/core/Hidden';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import { Button, MobileSearch, MobileButton, Field } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
@@ -127,7 +128,7 @@ const InnerForm = ({
             methods={TestToken.methods}
             mobile
           />
-          : <MobileButton type="submit" text="Register with transaction" style={{ width: '100%' }}/>}
+          : !isSubmitting ? <MobileButton type="submit" text="Register with transaction" style={{ width: '100%' }} /> : <CircularProgress style={{ marginLeft: '45%' }} />}
         </div>
       </Hidden>
     </div>
