@@ -8,6 +8,7 @@ import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
 import { Button, Field, TextInput, MobileSearch, MobileButton, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
 import { keyFromXY } from '../../utils/ecdsa';
+import EditOptions from './EditOptions';
 import theme from '../../ui/theme'
 import { withFormik } from 'formik';
 import PublicResolver from 'Embark/contracts/PublicResolver';
@@ -82,11 +83,11 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
 )
 
 class RenderAddresses extends PureComponent {
-  state = { copied: false }
+  state = { copied: false, editMenu: false }
 
   render() {
     const { domainName, address, statusAccount, expirationTime, defaultAccount } = this.props
-    const { copied } = this.state
+    const { copied, editMenu } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
@@ -108,7 +109,8 @@ class RenderAddresses extends PureComponent {
         </Hidden>
         <Hidden mdUp>
           <MobileAddressDisplay {...this.props} isOwner={isOwner} />
-          {isOwner && <MobileButton type="submit" text="Edit" style={{ marginLeft: '35%' }} />}
+          {isOwner && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
+          {editMenu && <EditOptions open={editMenu} />}
         </Hidden>
       </Fragment>
     )
