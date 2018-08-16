@@ -8,7 +8,7 @@ import { Button, MobileSearch, MobileButton, Field } from '../../ui/components';
 import { withFormik } from 'formik';
 import { hash } from 'eth-ens-namehash';
 import { zeroAddress, zeroBytes32, formatPrice } from './utils';
-import { getStatusContactCode, getSNTAllowance } from '../../reducers/accounts';
+import { getStatusContactCode, getSNTAllowance, getCurrentAccount } from '../../reducers/accounts';
 import FieldGroup from '../standard/FieldGroup';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import TokenPermissions from '../standard/TokenPermissionConnect';
@@ -28,6 +28,7 @@ const InnerForm = ({
   domainName,
   domainPrice,
   SNTAllowance,
+  SNTBalance,
 }) => (
   <form onSubmit={handleSubmit}>
     <div style={{ margin: '10px' }}>
@@ -120,7 +121,7 @@ const InnerForm = ({
             wide />
         </Field>
         <div style={{ position: 'relative', left: 0, right: 0, bottom: 0 }}>
-          {!Number(SNTAllowance) ? <TokenPermissions
+          {!Number(SNTAllowance) || (Number(domainPrice) && !Number(SNTBalance)) ? <TokenPermissions
             symbol="SNT"
             spender={ENSSubdomainRegistry.address}
             methods={TestToken.methods}
@@ -157,7 +158,7 @@ const RegisterSubDomain = withFormik({
       domainNameHash,
       resolveToAddr,
       points ? points.x : zeroBytes32,
-      points ? points.y : zeroBytes32
+      points ? points.y : zeroBytes32,
     );
     toSend.estimateGas().then(gasEstimated => {
       console.log("Register would work. :D Gas estimated: "+gasEstimated)
@@ -188,6 +189,7 @@ const RegisterSubDomain = withFormik({
 const mapStateToProps = state => ({
   statusContactCode: getStatusContactCode(state),
   SNTAllowance: getSNTAllowance(state),
+  SNTBalance: getCurrentAccount(state) && getCurrentAccount(state).SNTBalance,
 });
 
 export default connect(mapStateToProps)(RegisterSubDomain);
