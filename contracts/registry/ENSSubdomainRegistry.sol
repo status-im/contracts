@@ -16,7 +16,7 @@ contract ENSSubdomainRegistry is Controlled {
     PublicResolver public resolver;
     address public parentRegistry;
 
-    uint256 public releaseDelay = 1 years;
+    uint256 public releaseDelay = 365 days;
     mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => Account) public accounts;
     
@@ -134,7 +134,7 @@ contract ENSSubdomainRegistry is Controlled {
         require(account.creationTime > 0);
         if (isDomainController) {
             require(msg.sender == ens.owner(subdomainHash));
-            require(account.creationTime + releaseDelay >= block.timestamp);
+            require(block.timestamp >= account.creationTime + releaseDelay);
             ens.setSubnodeOwner(_domainHash, _userHash, address(this));
             ens.setResolver(subdomainHash, address(0));
             ens.setOwner(subdomainHash, address(0));
