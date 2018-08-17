@@ -92,6 +92,7 @@ class RenderAddresses extends PureComponent {
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
     const isOwner = defaultAccount === address;
+    const onClose = value => { this.setState({ editAction: value, editMenu: false }) }
     return (
       <Fragment>
         <Hidden mdDown>
@@ -110,7 +111,7 @@ class RenderAddresses extends PureComponent {
         <Hidden mdUp>
           <MobileAddressDisplay {...this.props} isOwner={isOwner} />
           {isOwner && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
-          {editMenu && <EditOptions open={editMenu} />}
+          {editMenu && <EditOptions open={editMenu} onClose={onClose} />}
         </Hidden>
       </Fragment>
     )

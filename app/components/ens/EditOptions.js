@@ -47,7 +47,7 @@ class SimpleDialog extends React.Component {
             </ListItemAvatar>
             <ListItemText primary="Edit Contact Code" />
           </ListItem>
-          <ListItem button onClick={() => this.handleListItemClick('addAccount')}>
+          <ListItem button onClick={() => this.handleListItemClick('release')}>
             <ListItemAvatar>
               <Avatar>
                 <DeleteOutline />
