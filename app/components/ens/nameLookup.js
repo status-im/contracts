@@ -2,6 +2,7 @@ import React, { Fragment, PureComponent } from 'react';
 import web3 from 'web3';
 import { connect } from 'react-redux';
 import { actions as accountActions, getDefaultAccount } from '../../reducers/accounts';
+import { hash } from 'eth-ens-namehash';
 import Hidden from '@material-ui/core/Hidden';
 import Typography from '@material-ui/core/Typography';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
@@ -13,14 +14,13 @@ import ReleaseDomainAlert from './ReleaseDomain';
 import theme from '../../ui/theme'
 import { withFormik } from 'formik';
 import PublicResolver from 'Embark/contracts/PublicResolver';
-import { hash } from 'eth-ens-namehash';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import RegisterSubDomain from '../ens/registerSubDomain';
 import StatusLogo from '../../ui/icons/components/StatusLogo'
 import EnsLogo from '../../ui/icons/logos/ens.png';
 import { formatPrice } from '../ens/utils';
 import CheckCircle from '../../ui/icons/components/baseline_check_circle_outline.png';
-const { getPrice, getExpirationTime } = ENSSubdomainRegistry.methods;
+const { getPrice, getExpirationTime, release } = ENSSubdomainRegistry.methods;
 import NotInterested from '@material-ui/icons/NotInterested';
 import Face from '@material-ui/icons/Face';
 
@@ -31,7 +31,8 @@ const validStatusAddress = address => !address.includes(invalidSuffix);
 const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
 const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join('.');
 const hashedDomain = domainName => hash(getDomain(domainName));
-const { fromWei } = web3.utils;
+const { soliditySha3, fromWei } = web3.utils;
+
 
 const cardStyle = {
   width: '100%',
@@ -94,7 +95,16 @@ class RenderAddresses extends PureComponent {
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
     const isOwner = defaultAccount === address;
     const onClose = value => { this.setState({ editAction: value, editMenu: false }) }
-    const closeReleaseAlert = value => { this.setState({ editAction: null }) }
+    const closeReleaseAlert = value => {
+      if (value) {
+        release(
+          soliditySha3(domainName),
+          hash('stateofus.eth'),
+        )
+          .send()
+      }
+      this.setState({ editAction: null })
+    }
     return (
       <Fragment>
         <Hidden mdDown>
