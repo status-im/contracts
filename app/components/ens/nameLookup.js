@@ -135,7 +135,7 @@ class RenderAddresses extends PureComponent {
         </Hidden>
         <Hidden mdUp>
           <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} />
-          {isOwner && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
+          {isOwner && editAction !== 'edit' && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
           <EditOptions open={editMenu} onClose={onClose} />
           <ReleaseDomainAlert open={editAction === 'release'} handleClose={closeReleaseAlert} />
         </Hidden>
