@@ -319,12 +319,16 @@ const NameLookup = withFormik({
     const { addr, pubkey } = PublicResolver.methods;
     const { methods: { owner } } = ENSRegistry;
     const lookupHash = hash(formatName(domainName));
-    const address = await addr(lookupHash).call();
-    const keys = await pubkey(lookupHash).call();
-    const ownerAddress = await owner(lookupHash).call();
-    const statusAccount = keyFromXY(keys[0], keys[1]);
-    const expirationTime = await getExpirationTime(lookupHash).call();
-    setStatus({ address, statusAccount, expirationTime, ownerAddress });
+    const address = addr(lookupHash).call();
+    const keys = pubkey(lookupHash).call();
+    const ownerAddress = owner(lookupHash).call();
+    const expirationTime = getExpirationTime(lookupHash).call();
+    Promise.all([address, keys, ownerAddress, expirationTime])
+           .then(results => {
+             const [ address, keys, ownerAddress, expirationTime ] = results;
+             const statusAccount = keyFromXY(keys[0], keys[1]);
+             setStatus({ address, statusAccount, expirationTime, ownerAddress });
+           })
   }
 })(InnerForm)
 

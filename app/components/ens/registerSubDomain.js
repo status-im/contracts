@@ -138,7 +138,7 @@ const InnerForm = ({
 );
 
 const RegisterSubDomain = withFormik({
-  mapPropsToValues: props => ({ subDomain: '', domainName: '', price: '', statusAddress: props.statusContactCode, address: web3.eth.defaultAccount }),
+  mapPropsToValues: props => ({ subDomain: '', domainName: '', price: '', statusAddress: props.statusContactCode || '', address: web3.eth.defaultAccount || '' }),
   validate(values, props) {
     const errors = {};
     const { address } = values;
