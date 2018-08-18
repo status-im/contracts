@@ -1,5 +1,6 @@
 import web3 from "Embark/web3"
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import PublicResolver from 'Embark/contracts/PublicResolver';
 import TestToken from 'Embark/contracts/TestToken';
 import React from 'react';
 import { connect } from 'react-redux';
@@ -28,6 +29,7 @@ const InnerForm = ({
   subDomain,
   domainName,
   domainPrice,
+  editAccount,
   SNTAllowance,
   SNTBalance,
 }) => (
@@ -128,7 +130,7 @@ const InnerForm = ({
             methods={TestToken.methods}
             mobile
           />
-          : !isSubmitting ? <MobileButton type="submit" text="Register with transaction" style={{ width: '100%' }} /> : <CircularProgress style={{ marginLeft: '45%' }} />}
+          : !isSubmitting ? <MobileButton type="submit" text={`${editAccount ? 'Save' : 'Register'} with transaction`} style={{ width: '100%' }} /> : <CircularProgress style={{ marginLeft: '45%' }} />}
         </div>
       </Hidden>
     </div>
@@ -149,41 +151,50 @@ const RegisterSubDomain = withFormik({
     const { address, statusAddress } = values;
     const { subDomain, domainName, registeredCallbackFn } = props || values;
     const { methods: { register } } = ENSSubdomainRegistry;
+    const { methods: { setAddr, setPubkey } } = PublicResolver;
     const subdomainHash = soliditySha3(subDomain);
     const domainNameHash = hash(domainName);
     const resolveToAddr = address || zeroAddress;
     const points = statusAddress ? generateXY(statusAddress) : null;
+    const node = hash(`${subDomain}.${domainName}`);
 
-    const toSend = register(
+    const funcsToSend = [];
+    const args = [
       subdomainHash,
       domainNameHash,
       resolveToAddr,
       points ? points.x : zeroBytes32,
       points ? points.y : zeroBytes32,
-    );
-    toSend.estimateGas().then(gasEstimated => {
-      console.log("Register would work. :D Gas estimated: "+gasEstimated)
-      console.log("Trying: register(\""+subdomainHash+"\",\""+domainNameHash+"\",\""+resolveToAddr+"\",\""+zeroBytes32+"\",\""+zeroBytes32+"\")")
-      toSend.send({gas: gasEstimated+1000}).then(txId => {
-        if(txId.status == "0x1" || txId.status == "0x01"){
-          console.log("Register send success. :)")
-        } else {
-          console.log("Register send errored. :( Out of gas? ")
-        }
-        console.dir(txId)
+    ];
+    props.editAccount
+      ? funcsToSend.push(setAddr(node, resolveToAddr), setPubkey(node, args[3], args[4]))
+      : funcsToSend.push(register(...args));
+    while (funcsToSend.length) {
+      const toSend = funcsToSend.pop();
+      toSend.estimateGas().then(gasEstimated => {
+        console.log("Register would work. :D Gas estimated: "+gasEstimated)
+        console.log("Trying: register(\""+subdomainHash+"\",\""+domainNameHash+"\",\""+resolveToAddr+"\",\""+zeroBytes32+"\",\""+zeroBytes32+"\")")
+        toSend.send({gas: gasEstimated+1000}).then(txId => {
+          if(txId.status == "0x1" || txId.status == "0x01"){
+            console.log("Register send success. :)")
+          } else {
+            console.log("Register send errored. :( Out of gas? ")
+          }
+          console.dir(txId)
+        }).catch(err => {
+          console.log("Register send errored. :( Out of gas?")
+          console.dir(err)
+        }).finally(() => {
+          // REQUIRED UNTIL THIS ISSUES IS RESOLVED: https://github.com/jaredpalmer/formik/issues/597
+          setTimeout(() => { registeredCallbackFn(resolveToAddr, statusAddress || zeroBytes32); }, 200);
+          setSubmitting(false);
+        });
       }).catch(err => {
-        console.log("Register send errored. :( Out of gas?")
+        console.log("Register would error. :/ Already Registered? Have Token Balance? Is Allowance set?")
         console.dir(err)
-      }).finally(() => {
-        // REQUIRED UNTIL THIS ISSUES IS RESOLVED: https://github.com/jaredpalmer/formik/issues/597
-        setTimeout(() => { registeredCallbackFn(resolveToAddr, statusAddress || zeroBytes32); }, 200);
         setSubmitting(false);
       });
-    }).catch(err => {
-      console.log("Register would error. :/ Already Registered? Have Token Balance? Is Allowance set?")
-      console.dir(err)
-      setSubmitting(false);
-    });
+    }
   }
 })(InnerForm);
 
