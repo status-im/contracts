@@ -62,7 +62,7 @@ class App extends React.Component {
           <div>
             <NameLookup />
             <Hidden mdDown>
-              <div style={{ textAlign: 'center' }}>
+              <div style={{ textAlign: 'center', margin: '0px 40px' }}>
                 <TokenPermissions
                   symbol={symbols[network] || 'SNT'}
                   spender={ENSSubdomainRegistry._address}

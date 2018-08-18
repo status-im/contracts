@@ -241,7 +241,7 @@ const LookupForm = ({ handleSubmit, values, handleChange, justSearch }) => (
   <Fragment>
     <form onSubmit={handleSubmit} onBlur={handleSubmit} >
       <Hidden mdDown>
-        <Field label="Enter Domain or Status Name" wide>
+        <Field label="Enter Domain or Status Name" style={{ margin: 50 }}>
           <TextInput
             value={values.domainName}
             name="domainName"
@@ -265,7 +265,7 @@ const LookupForm = ({ handleSubmit, values, handleChange, justSearch }) => (
         </Typography>}
       </Hidden>
       <Hidden mdDown>
-        <Button mode="strong" type="submit" wide>
+        <Button mode="strong" type="submit" style={{ marginLeft: '3%', maxWidth: '95%' }} wide>
           Lookup Address
         </Button>
       </Hidden>
@@ -286,7 +286,7 @@ const InnerForm = ({
 }) => (
   <div>
     <Hidden mdDown>
-      <span style={{ display: 'flex', justifyContent: 'space-evenly', marginBottom: '10px' }}>
+      <span style={{ display: 'flex', justifyContent: 'space-evenly', margin: '50 0 10 0' }}>
         <StatusLogo />
         <img  style={{ maxWidth: '150px', alignSelf: 'center' }} src={EnsLogo} alt="Ens Logo"/>
       </span>
