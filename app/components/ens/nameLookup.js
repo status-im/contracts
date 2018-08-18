@@ -6,6 +6,7 @@ import { hash } from 'eth-ens-namehash';
 import Hidden from '@material-ui/core/Hidden';
 import Typography from '@material-ui/core/Typography';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import { Button, Field, TextInput, MobileSearch, MobileButton, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
 import { keyFromXY } from '../../utils/ecdsa';
@@ -100,13 +101,13 @@ class RenderAddresses extends PureComponent {
   state = { copied: false, editMenu: false, editAction: false }
 
   render() {
-    const { domainName, address, statusAccount, expirationTime, defaultAccount } = this.props
+    const { domainName, address, statusAccount, expirationTime, defaultAccount, ownerAddress } = this.props
     const { copied, editMenu, editAction } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
-    const isOwner = defaultAccount === address;
     const onClose = value => { this.setState({ editAction: value, editMenu: false }) }
+    const isOwner = defaultAccount === ownerAddress;
     const closeReleaseAlert = value => {
       if (value) {
         release(
@@ -281,7 +282,7 @@ const InnerForm = ({
   handleSubmit,
   isSubmitting,
   status,
-  setStatus
+  setStatus,
 }) => (
   <div>
     <Hidden mdDown>
@@ -298,6 +299,7 @@ const InnerForm = ({
        address={status.address}
        statusAccount={status.statusAccount}
        expirationTime={status.expirationTime}
+       ownerAddress={status.ownerAddress}
        setStatus={setStatus} /> :
      <div>
        <LookupForm {...{ handleSubmit, values, handleChange }} justSearch />
@@ -315,12 +317,14 @@ const NameLookup = withFormik({
   async handleSubmit(values, { status, setSubmitting, setStatus }) {
     const { domainName } = values;
     const { addr, pubkey } = PublicResolver.methods;
+    const { methods: { owner } } = ENSRegistry;
     const lookupHash = hash(formatName(domainName));
     const address = await addr(lookupHash).call();
     const keys = await pubkey(lookupHash).call();
+    const ownerAddress = await owner(lookupHash).call();
     const statusAccount = keyFromXY(keys[0], keys[1]);
     const expirationTime = await getExpirationTime(lookupHash).call();
-    setStatus({ address, statusAccount, expirationTime });
+    setStatus({ address, statusAccount, expirationTime, ownerAddress });
   }
 })(InnerForm)
 
