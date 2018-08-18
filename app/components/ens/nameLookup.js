@@ -64,7 +64,7 @@ const DisplayBox = ({ displayType, pubKey }) => (
   </div>
 );
 
-const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTime, defaultAccount, isOwner }) => (
+const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTime, defaultAccount, isOwner, edit }) => (
   <Fragment>
     <Info background={isOwner ? '#44D058' : '#000000'} style={{ margin: '0.4em', boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.2)' }}>
       <Typography variant="title" style={
@@ -77,15 +77,27 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
         </div>
       </Typography>
     </Info>
-    <Typography type='subheading' style={{ textAlign: 'center', fontSize: '17px', margin: '1em 0 0.3em 0' }}>{isOwner ? 'You\'re the owner of this name' : 'Name is unavailable'}</Typography>
-    <Typography type='body2' style={{ textAlign: 'center' }}>registered to the addresses below</Typography>
-    <DisplayBox displayType='Wallet Address' pubKey={address} />
-    {validStatusAddress(statusAccount) && <DisplayBox displayType='Contact Code' pubKey={statusAccount} />}
+    <Typography type='subheading' style={{ textAlign: 'center', fontSize: '17px', margin: '1em 0 0.3em 0' }}>
+      {isOwner
+       ? edit ? 'Edit Contact Code' : 'You\'re the owner of this name'
+       : 'Name is unavailable'}
+    </Typography>
+    <Typography type='body2' style={{ textAlign: 'center', margin: 10 }}>
+      {edit ? 'The contact code connects the domain with a unique Status account' : 'registered to the addresses below'}
+    </Typography>
+    {edit && <RegisterSubDomain
+      subDomain={domainName}
+      domainName="stateofus.eth"
+      domainPrice={60}
+      editAccount={true}
+      registeredCallbackFn={console.log} />}
+    {!edit && <DisplayBox displayType='Wallet Address' pubKey={address} />}
+    {!edit && validStatusAddress(statusAccount) && <DisplayBox displayType='Contact Code' pubKey={statusAccount} />}
   </Fragment>
 )
 
 class RenderAddresses extends PureComponent {
-  state = { copied: false, editMenu: false }
+  state = { copied: false, editMenu: false, editAction: false }
 
   render() {
     const { domainName, address, statusAccount, expirationTime, defaultAccount } = this.props
@@ -121,9 +133,9 @@ class RenderAddresses extends PureComponent {
           </div>
         </Hidden>
         <Hidden mdUp>
-          <MobileAddressDisplay {...this.props} isOwner={isOwner} />
+          <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} />
           {isOwner && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
-          {editMenu && <EditOptions open={editMenu} onClose={onClose} />}
+          <EditOptions open={editMenu} onClose={onClose} />
           <ReleaseDomainAlert open={editAction === 'release'} handleClose={closeReleaseAlert} />
         </Hidden>
       </Fragment>

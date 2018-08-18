@@ -30,7 +30,7 @@ const ReleaseDomainAlert = ({ open, handleClose }) => (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} color="primary">
+        <Button onClick={() => handleClose(null)} color="primary">
           Cancel
         </Button>
         <Button onClick={() => handleClose(true)} color="primary">
