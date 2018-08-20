@@ -3,7 +3,7 @@
     "Black Ash": "#3B3B3B",
     "Dim Grey": "#707070",
     "Dust Grey": "#969696",
-    "Light Grey": "#B3B3B3",
+    "Light Grey": "#939ba1",
     "Gainsboro": "#E6E6E6",
     "Alabaster": "#F2F2F2"
   },
@@ -61,7 +61,8 @@
     "Secondary": "=Sea.Turquoise",
     "Black Ash": "=Grey.Black Ash",
     "Gradient Start": "=Eagle.Cerulean",
-    "Gradient End": "=Eagle.Opal"
+    "Gradient End": "=Eagle.Opal",
+    "SubText": "=Grey.Light Grey"
   },
   "Status UI": {
     "gradientStart": "=Blue.Main",

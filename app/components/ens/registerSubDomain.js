@@ -174,6 +174,7 @@ const RegisterSubDomain = withFormik({
       toSend.estimateGas().then(gasEstimated => {
         console.log("Register would work. :D Gas estimated: "+gasEstimated)
         console.log("Trying: register(\""+subdomainHash+"\",\""+domainNameHash+"\",\""+resolveToAddr+"\",\""+zeroBytes32+"\",\""+zeroBytes32+"\")")
+        props.preRegisteredCallback && props.preRegisteredCallback();
         toSend.send({gas: gasEstimated+1000}).then(txId => {
           if(txId.status == "0x1" || txId.status == "0x01"){
             console.log("Register send success. :)")

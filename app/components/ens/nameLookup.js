@@ -24,6 +24,7 @@ import CheckCircle from '../../ui/icons/components/baseline_check_circle_outline
 const { getPrice, getExpirationTime, release } = ENSSubdomainRegistry.methods;
 import NotInterested from '@material-ui/icons/NotInterested';
 import Face from '@material-ui/icons/Face';
+import Copy from './copy';
 
 const invalidSuffix = '0000000000000000000000000000000000000000'
 const nullAddress = '0x0000000000000000000000000000000000000000'
@@ -172,6 +173,19 @@ const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
   </Fragment>
 )
 
+const TransactionComplete = ({ type }) => (
+  <div style={{ textAlign: 'center', margin: '40% 15 10' }}>
+    <Typography variant="title" style={{ marginBottom: '1rem' }}>
+      {Copy[type]['title']['sub']}<br/>
+      {Copy[type]['title']['body']}
+    </Typography>
+    <Typography variant="subheading" style={{ color: '#939BA1' }}>
+      {Copy[type]['subheading']}
+    </Typography>
+    <MobileButton text="Main Page" style={{ marginTop: '12rem' }} />
+  </div>
+);
+
 class Register extends PureComponent {
   state = { domainPrice: null };
 
@@ -191,21 +205,22 @@ class Register extends PureComponent {
 
   render() {
     const { domainName, setStatus, style } = this.props;
-    const { domainPrice, registered } = this.state;
+    const { domainPrice, registered, submitted } = this.state;
     const formattedDomain = formatName(domainName);
-    const formattedDomainArray = formattedDomain.split('.')
+    const formattedDomainArray = formattedDomain.split('.');
     return (
       <div style={style}>
-        {!registered ?
+        {!registered && !submitted ?
          <Fragment>
            <RegisterInfoCard {...{ formattedDomain, domainPrice }}/>
            <RegisterSubDomain
              subDomain={formattedDomainArray[0]}
              domainName={formattedDomainArray.slice(1).join('.')}
              domainPrice={domainPrice}
+             preRegisteredCallback={() => { this.setState({ submitted: true }) }}
              registeredCallbackFn={this.onRegistered} />
          </Fragment> :
-         <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
+         submitted && !registered ? <TransactionComplete type="registered" /> : <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
       </div>
     )
   }
