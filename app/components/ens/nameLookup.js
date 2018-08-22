@@ -66,7 +66,7 @@ const DisplayBox = ({ displayType, pubKey }) => (
   </div>
 );
 
-const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTime, defaultAccount, isOwner, edit }) => (
+const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTime, defaultAccount, isOwner, edit, onSubmit }) => (
   <Fragment>
     <Info background={isOwner ? '#44D058' : '#000000'} style={{ margin: '0.4em', boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.2)' }}>
       <Typography variant="title" style={
@@ -92,6 +92,7 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
       domainName="stateofus.eth"
       domainPrice={60}
       editAccount={true}
+      preRegisteredCallback={onSubmit}
       registeredCallbackFn={console.log} />}
     {!edit && <DisplayBox displayType='Wallet Address' pubKey={address} />}
     {!edit && validStatusAddress(statusAccount) && <DisplayBox displayType='Contact Code' pubKey={statusAccount} />}
@@ -103,7 +104,7 @@ class RenderAddresses extends PureComponent {
 
   render() {
     const { domainName, address, statusAccount, expirationTime, defaultAccount, ownerAddress } = this.props
-    const { copied, editMenu, editAction } = this.state
+    const { copied, editMenu, editAction, submitted } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
@@ -135,7 +136,7 @@ class RenderAddresses extends PureComponent {
           </div>
         </Hidden>
         <Hidden mdUp>
-          <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} />
+          {submitted ? <TransactionComplete type='edit' /> : <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} onSubmit={() => { this.setState({ submitted: true}) }}/>}
           {isOwner && editAction !== 'edit' && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
           <EditOptions open={editMenu} onClose={onClose} />
           <ReleaseDomainAlert open={editAction === 'release'} handleClose={closeReleaseAlert} />

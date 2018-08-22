@@ -12,5 +12,12 @@ export default {
       body: 'The name is yours once the transaction is complete'
     },
     subheading: 'Follow the progress in the Transaction History section of your wallet.'
+  },
+  edit: {
+    title: {
+      sub: 'Done!',
+      body: 'Your changes will be saved when the transaction is complete'
+    },
+    subheading: 'Follow the progress in the Transaction History section of your wallet.'
   }
 }
