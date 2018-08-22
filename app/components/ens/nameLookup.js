@@ -103,7 +103,7 @@ class RenderAddresses extends PureComponent {
   state = { copied: false, editMenu: false, editAction: false }
 
   render() {
-    const { domainName, address, statusAccount, expirationTime, defaultAccount, ownerAddress } = this.props
+    const { domainName, address, statusAccount, expirationTime, defaultAccount, ownerAddress, setStatus } = this.props
     const { copied, editMenu, editAction, submitted } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
@@ -112,13 +112,13 @@ class RenderAddresses extends PureComponent {
     const isOwner = defaultAccount === ownerAddress;
     const closeReleaseAlert = value => {
       if (value) {
+        this.setState({ submitted: true })
         release(
           soliditySha3(domainName),
           hash('stateofus.eth'),
         )
           .send()
       }
-      this.setState({ editAction: null })
     }
     return (
       <Fragment>
@@ -136,10 +136,10 @@ class RenderAddresses extends PureComponent {
           </div>
         </Hidden>
         <Hidden mdUp>
-          {submitted ? <TransactionComplete type='edit' /> : <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} onSubmit={() => { this.setState({ submitted: true}) }}/>}
-          {isOwner && editAction !== 'edit' && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
+          {submitted ? <TransactionComplete type={editAction} setStatus={setStatus} /> : <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} onSubmit={() => { this.setState({ submitted: true}) }}/>}
+          {isOwner && !editAction && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
           <EditOptions open={editMenu} onClose={onClose} />
-          <ReleaseDomainAlert open={editAction === 'release'} handleClose={closeReleaseAlert} />
+          <ReleaseDomainAlert open={editAction === 'release' && !submitted} handleClose={closeReleaseAlert} />
         </Hidden>
       </Fragment>
     )
@@ -174,7 +174,7 @@ const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
   </Fragment>
 )
 
-const TransactionComplete = ({ type }) => (
+const TransactionComplete = ({ type, setStatus }) => (
   <div style={{ textAlign: 'center', margin: '40% 15 10' }}>
     <Typography variant="title" style={{ marginBottom: '1rem' }}>
       {Copy[type]['title']['sub']}<br/>
@@ -183,7 +183,7 @@ const TransactionComplete = ({ type }) => (
     <Typography variant="subheading" style={{ color: '#939BA1' }}>
       {Copy[type]['subheading']}
     </Typography>
-    <MobileButton text="Main Page" style={{ marginTop: '12rem' }} />
+    <MobileButton text="Main Page" style={{ marginTop: '12rem' }} onClick={() => { setStatus(null) } } />
   </div>
 );
 
@@ -221,7 +221,7 @@ class Register extends PureComponent {
              preRegisteredCallback={() => { this.setState({ submitted: true }) }}
              registeredCallbackFn={this.onRegistered} />
          </Fragment> :
-         submitted && !registered ? <TransactionComplete type="registered" /> : <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
+         submitted && !registered ? <TransactionComplete type="registered"  setStatus={setStatus} /> : <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
       </div>
     )
   }
