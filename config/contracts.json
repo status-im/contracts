@@ -18,6 +18,7 @@
         "deploy": true
       },
       "PublicResolver": {
+        "args": ["$ENSRegistry"],
         "deploy": true
       },
       "ENSSubdomainRegistry": {
@@ -77,7 +78,7 @@
         "address": "0x112234455c3a32fd11230c42e7bccd4a84e02010"
       },
       "PublicResolver": {
-        "address": "0x5FfC014343cd971B7eb70732021E26C35B744cc4"
+        "address": "0x29754bADB2640b98F6deF0f52D41418b0d2e0C51"
       },
       "TestToken": {
         "address": "0xc55cF4B03948D7EBc8b9E8BAD92643703811d162"
