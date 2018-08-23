@@ -1,5 +1,6 @@
 import React, { Fragment, PureComponent } from 'react';
 import web3 from 'web3';
+import EmbarkJS from 'Embark/EmbarkJS';
 import { connect } from 'react-redux';
 import { actions as accountActions, getDefaultAccount } from '../../reducers/accounts';
 import { hash } from 'eth-ens-namehash';
@@ -332,9 +333,13 @@ const NameLookup = withFormik({
   mapPropsToValues: props => ({ domainName: '' }),
   async handleSubmit(values, { status, setSubmitting, setStatus }) {
     const { domainName } = values;
-    const { addr, pubkey } = PublicResolver.methods;
-    const { methods: { owner } } = ENSRegistry;
+    const { methods: { owner, resolver } } = ENSRegistry;
     const lookupHash = hash(formatName(domainName));
+    const resolverAddress = await resolver(lookupHash).call();
+    const resolverContract = resolverAddress !== nullAddress
+                           ? new EmbarkJS.Contract({ abi: PublicResolver._jsonInterface, address: resolverAddress })
+                           : PublicResolver;
+    const { addr, pubkey } = resolverContract.methods;
     const address = addr(lookupHash).call();
     const keys = pubkey(lookupHash).call();
     const ownerAddress = owner(lookupHash).call();
