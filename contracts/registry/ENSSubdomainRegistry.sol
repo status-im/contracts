@@ -1,5 +1,6 @@
 pragma solidity ^0.4.23;
 
+import "../common/MerkleProof.sol";
 import "../common/Controlled.sol";
 import "../token/ERC20Token.sol";
 import "../ens/ENS.sol";
@@ -19,7 +20,8 @@ contract ENSSubdomainRegistry is Controlled {
     uint256 public releaseDelay = 365 days;
     mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => Account) public accounts;
-    
+    bytes32 public unallowedCharactersMerkleRoot;
+
     event FundsOwner(bytes32 indexed subdomainhash, address fundsOwner);
     event DomainPrice(bytes32 indexed namehash, uint256 price);
     event DomainMoved(bytes32 indexed namehash, address newRegistry);
@@ -52,6 +54,7 @@ contract ENSSubdomainRegistry is Controlled {
         ERC20Token _token,
         ENS _ens,
         PublicResolver _resolver,
+        bytes32 _unallowedCharactersMerkleRoot,
         address _parentRegistry
     ) 
         public 
@@ -59,6 +62,7 @@ contract ENSSubdomainRegistry is Controlled {
         token = _token;
         ens = _ens;
         resolver = _resolver;
+        unallowedCharactersMerkleRoot = _unallowedCharactersMerkleRoot;
         parentRegistry = _parentRegistry;
     }
 
@@ -166,6 +170,51 @@ contract ENSSubdomainRegistry is Controlled {
         accounts[subdomainHash].fundsOwner = msg.sender;
         emit FundsOwner(subdomainHash, msg.sender);
     }    
+
+
+    /**
+     * @notice removes account of invalid subdomain, and send funds to reporter
+     * @param _subdomain raw value of offending subdomain
+     * @param _offendingPos position of invalid character
+     * @param _rangeStart start of invalid character range
+     * @param _rangeEnd end of invalid character range
+     * @param _proof merkle proof that range is defined in merkle root
+     */
+    function slashSubdomain(
+        bytes _subdomain,
+        bytes32 _domainHash,
+        uint256 _offendingPos,
+        uint256 _rangeStart,
+        uint256 _rangeEnd,
+        bytes32[] _proof
+    ) 
+        external
+    {
+        require(_subdomain.length > _offendingPos, "Invalid position.");
+        
+        bytes32 userHash = keccak256(_subdomain);
+        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, userHash));
+        require(accounts[subdomainHash].creationTime == 0, "Username not registered.");
+        
+        uint256 offendingChar = uint256(_subdomain[_offendingPos]);
+        require(offendingChar >= _rangeStart && offendingChar <= _rangeEnd, "Invalid range.");
+        require(
+            MerkleProof.verifyProof(
+                _proof,
+                unallowedCharactersMerkleRoot,
+                keccak256(abi.encodePacked(rangeStart, rangeEnd))
+            ),
+            "Invalid Proof."
+        );
+
+        ens.setSubnodeOwner(_domainHash, userHash, address(this));
+        ens.setResolver(subdomainHash, address(0));
+        ens.setOwner(subdomainHash, address(0));
+        
+        uint256 amountToTransfer = accounts[subdomainHash].tokenBalance;
+        delete accounts[subdomainHash];
+        require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
+    }
 
     /**
      * @notice Migrate account to new registry
