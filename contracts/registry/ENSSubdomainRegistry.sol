@@ -37,7 +37,7 @@ contract ENSSubdomainRegistry is Controlled {
     }
 
     modifier onlyParentRegistry {
-        require(msg.sender == parentRegistry);
+        require(msg.sender == parentRegistry, "Migration only.");
         _;
     }
 
@@ -81,13 +81,23 @@ contract ENSSubdomainRegistry is Controlled {
         returns(bytes32 subdomainHash) 
     {
         Domain memory domain = domains[_domainHash];
-        require(domain.state == NodeState.Owned);
-        subdomainHash = keccak256(_domainHash, _userHash);
-        require(ens.owner(subdomainHash) == address(0));
-        require(accounts[subdomainHash].creationTime == 0);
+        require(domain.state == NodeState.Owned, "Domain unavailable.");
+        subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
+        require(ens.owner(subdomainHash) == address(0), "ENS node already owned.");
+        require(accounts[subdomainHash].creationTime == 0, "Username already registered.");
         accounts[subdomainHash] = Account(domain.price, block.timestamp, msg.sender);
-        require(domain.price == 0 || token.allowance(msg.sender, address(this)) >= domain.price);
-        
+        if(domain.price > 0) {
+            require(token.allowance(msg.sender, address(this)) >= domain.price, "Unallowed to spend.");
+            require(
+                token.transferFrom(
+                    address(msg.sender),
+                    address(this),
+                    domain.price
+                ),
+                "Transfer failed"
+            );
+        } 
+    
         bool resolvePubkey = _pubkeyA != 0 || _pubkeyB != 0;
         bool resolveAccount = _account != address(0);
         if (resolvePubkey || resolveAccount) {
@@ -105,16 +115,6 @@ contract ENSSubdomainRegistry is Controlled {
             //transfer ownship of subdone to registrant
             ens.setSubnodeOwner(_domainHash, _userHash, msg.sender);
         }
-        if (domain.price > 0) {   
-            //get payment
-            require(
-                token.transferFrom(
-                    address(msg.sender),
-                    address(this),
-                    domain.price
-                )
-            );
-        }
     }
     
     /** 
@@ -129,27 +129,27 @@ contract ENSSubdomainRegistry is Controlled {
         external 
     {
         bool isDomainController = ens.owner(_domainHash) == address(this);
-        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
+        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
         Account memory account = accounts[subdomainHash];
-        require(account.creationTime > 0);
+        require(account.creationTime > 0, "Username not registered.");
         if (isDomainController) {
-            require(msg.sender == ens.owner(subdomainHash));
-            require(block.timestamp >= account.creationTime + releaseDelay);
+            require(msg.sender == ens.owner(subdomainHash), "Not owner of ENS node.");
+            require(block.timestamp > account.creationTime + releaseDelay, "Release period not reached.");
             ens.setSubnodeOwner(_domainHash, _userHash, address(this));
             ens.setResolver(subdomainHash, address(0));
             ens.setOwner(subdomainHash, address(0));
         } else {
-            require(msg.sender == account.fundsOwner);
+            require(msg.sender == account.fundsOwner, "Not the former account owner.");
         }
         delete accounts[subdomainHash];
         if (account.tokenBalance > 0) {
-            require(token.transfer(msg.sender, account.tokenBalance));
+            require(token.transfer(msg.sender, account.tokenBalance), "Transfer failed");
         }
         
     }
 
     /** 
-     * @notice updates funds owner useful to move subdomain account to new registry.
+     * @notice updates funds owner, useful to move subdomain account to new registry.
      * @param _userHash `msg.sender` owned subdomain hash 
      * @param _domainHash choosen contract owned domain hash
      **/
@@ -159,13 +159,12 @@ contract ENSSubdomainRegistry is Controlled {
     ) 
         external 
     {
-        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        require(accounts[subdomainHash].creationTime > 0);
-        require(msg.sender == ens.owner(subdomainHash));
-        require(ens.owner(_domainHash) == address(this));
+        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
+        require(accounts[subdomainHash].creationTime > 0, "Username not registered.");
+        require(msg.sender == ens.owner(subdomainHash), "Caller not owner of ENS node.");
+        require(ens.owner(_domainHash) == address(this), "Registry not owner of domain.");
         accounts[subdomainHash].fundsOwner = msg.sender;
         emit FundsOwner(subdomainHash, msg.sender);
-
     }    
 
     /**
@@ -179,19 +178,25 @@ contract ENSSubdomainRegistry is Controlled {
     ) 
         external 
     {
-        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
-        require(msg.sender == accounts[subdomainHash].fundsOwner);
+        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
+        require(msg.sender == accounts[subdomainHash].fundsOwner, "Callable only by account owner.");
         ENSSubdomainRegistry _newRegistry = ENSSubdomainRegistry(ens.owner(_domainHash));
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
-        require(address(this) == _newRegistry.parentRegistry()); 
+        require(address(this) == _newRegistry.parentRegistry(), "Wrong update."); 
         token.approve(_newRegistry, account.tokenBalance);
-        _newRegistry.migrateAccount(_userHash, _domainHash, account.tokenBalance, account.creationTime, account.fundsOwner);
+        _newRegistry.migrateAccount(
+            _userHash,
+            _domainHash,
+            account.tokenBalance,
+            account.creationTime,
+            account.fundsOwner
+        );
     }
     
     /**
-        @dev callabe only by parent registry to continue migration of domain
-     */
+     * @dev callabe only by parent registry to continue migration of domain
+     **/
     function migrateDomain(
         bytes32 _domain,
         uint256 _price
@@ -199,10 +204,11 @@ contract ENSSubdomainRegistry is Controlled {
         external
         onlyParentRegistry
     {
-        require(domains[_domain].state == NodeState.Free);
-        require(ens.owner(_domain) == address(this));
+        require(ens.owner(_domain) == address(this), "ENS domain owner not transfered.");
+        assert(domains[_domain].state == NodeState.Free);
         domains[_domain] = Domain(NodeState.Owned, _price);
     }
+
     /**
      * @dev callable only by parent registry for continue user opt-in migration
      * @param _userHash any subdomain hash coming from parent
@@ -221,15 +227,22 @@ contract ENSSubdomainRegistry is Controlled {
         external
         onlyParentRegistry
     {
-        bytes32 subdomainHash = keccak256(_domainHash, _userHash);
+        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
         accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _fundsOwner);
         if (_tokenBalance > 0) {
-            require(token.transferFrom(parentRegistry, address(this), _tokenBalance));
+            require(
+                token.transferFrom(
+                    parentRegistry,
+                    address(this),
+                    _tokenBalance
+                ), 
+                "Error moving funds from old registar."
+            );
         }
         
     }
      
-    /**
+        /**
      * @notice moves a domain to other Registry (will not move subdomains accounts)
      * @param _newRegistry new registry hodling this domain
      * @param _domain domain being moved
@@ -241,8 +254,8 @@ contract ENSSubdomainRegistry is Controlled {
         external
         onlyController
     {
-        require(ens.owner(_domain) == address(this));
-        require(domains[_domain].state == NodeState.Owned);
+        require(domains[_domain].state == NodeState.Owned, "Wrong domain");
+        require(ens.owner(_domain) == address(this), "Domain not owned anymore.");
         uint256 price = domains[_domain].price;
         domains[_domain].state = NodeState.Moved;
         ens.setOwner(_domain, _newRegistry);
@@ -281,7 +294,7 @@ contract ENSSubdomainRegistry is Controlled {
         onlyController
     {
         Domain storage domain = domains[_domain];
-        require(domain.state == NodeState.Owned);
+        require(domain.state == NodeState.Owned, "Domain not owned");
         domain.price = _price;
         emit DomainPrice(_domain, _price);
     }
@@ -332,11 +345,11 @@ contract ENSSubdomainRegistry is Controlled {
     }
 
     function getExpirationTime(bytes32 _subdomainHash)
-      external
-      view
-      returns(uint256 expirationTime)
+        external
+        view
+        returns(uint256 expirationTime)
     {
-      expirationTime = accounts[_subdomainHash].creationTime + releaseDelay;
+        expirationTime = accounts[_subdomainHash].creationTime + releaseDelay;
     }
 
 }
