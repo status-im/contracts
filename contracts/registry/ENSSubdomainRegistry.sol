@@ -183,7 +183,7 @@ contract ENSSubdomainRegistry is Controlled {
         ENSSubdomainRegistry _newRegistry = ENSSubdomainRegistry(ens.owner(_domainHash));
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
-        require(address(this) == _newRegistry.parentRegistry(), "Wrong update."); 
+        //require(address(this) == _newRegistry.parentRegistry(), "Wrong update."); 
         token.approve(_newRegistry, account.tokenBalance);
         _newRegistry.migrateAccount(
             _userHash,
