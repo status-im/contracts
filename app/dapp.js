@@ -20,6 +20,7 @@ import Typography from '@material-ui/core/Typography';
 import Welcome from './components/ens/welcome';
 import Fade from '@material-ui/core/Fade';
 import Hidden from '@material-ui/core/Hidden';
+import Web3Render from './components/standard/Web3Render';
 
 import './dapp.css';
 
@@ -47,6 +48,7 @@ class App extends React.Component {
   render() {
     const { admin, network, searching } = this.state;
     const toggleSearch = () => { this.setState({ searching: !searching }) };
+    const isRopsten = network === 'ropsten';
     return (
       <div>
         <CssBaseline />
@@ -59,21 +61,23 @@ class App extends React.Component {
           </div>
         </Fade>}
         {searching && <Fade in={searching}>
-          <div>
-            <NameLookup />
-            <Hidden mdDown>
-              <div style={{ textAlign: 'center', margin: '0px 40px' }}>
-                <TokenPermissions
-                  symbol={symbols[network] || 'SNT'}
-                  spender={ENSSubdomainRegistry._address}
-                  methods={TestToken.methods} />
-                <hr/>
-                <Toggle onChange={() => { this.setState({ admin: !admin })}} />
-                <br/>
-                <span>Admin Mode</span>
-              </div>
-            </Hidden>
-          </div>
+          <Web3Render ready={isRopsten} network="ropsten">
+            <div>
+              <NameLookup />
+              <Hidden mdDown>
+                <div style={{ textAlign: 'center', margin: '0px 40px' }}>
+                  <TokenPermissions
+                    symbol={symbols[network] || 'SNT'}
+                    spender={ENSSubdomainRegistry._address}
+                    methods={TestToken.methods} />
+                  <hr/>
+                  <Toggle onChange={() => { this.setState({ admin: !admin })}} />
+                  <br/>
+                  <span>Admin Mode</span>
+                </div>
+              </Hidden>
+            </div>
+          </Web3Render>
         </Fade>}
       </div>
     );
