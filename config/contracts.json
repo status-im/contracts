@@ -69,6 +69,16 @@
       },
       "PublicResolver": {
         "address": "0x5FfC014343cd971B7eb70732021E26C35B744cc4"
+      },
+      "TestToken": {
+        "address": "0x744d70fdbe2ba4cf95131626614a1763df805b9e"
+      },
+      "ENSSubdomainRegistry": {
+        "address": "0xDBf9038cf5Aaa030890790dB87E746E00Fc352b3"
+      },
+      "ERC20Receiver": { "deploy": false },
+      "SafeMath": {
+        "address": "0xA115a57952D3337e2a1aB3Cb82bA376EEcDDc469"
       }
     }
   },
@@ -90,9 +100,6 @@
         "address": "0x0F9992f7737f9ba3aceD170D4D1259cb2CEcc050"
       },
       "ERC20Receiver": { "deploy": false }
-    },
-    "SafeMath": {
-      "address": "0x0F9992f7737f9ba3aceD170D4D1259cb2CEcc050"
     }
   },
   "rinkeby":{
