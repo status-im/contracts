@@ -202,7 +202,7 @@ contract ENSSubdomainRegistry is Controlled {
             MerkleProof.verifyProof(
                 _proof,
                 unallowedCharactersMerkleRoot,
-                keccak256(abi.encodePacked(rangeStart, rangeEnd))
+                keccak256(abi.encodePacked(_rangeStart, _rangeEnd))
             ),
             "Invalid Proof."
         );
