@@ -121,8 +121,8 @@ class MerkleTree {
     if (arr.some(el => !Buffer.isBuffer(el))) {
       throw new Error("Array is not an array of buffers");
     }
-
-    return "0x" + arr.map(el => el.toString("hex")).join("");
+    
+    return arr.map(el => '0x' + el.toString('hex'));
   }
 
   sortAndConcat(...args) {
