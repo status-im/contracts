@@ -25,6 +25,7 @@ contract ENSSubdomainRegistry is Controlled {
     event FundsOwner(bytes32 indexed subdomainhash, address fundsOwner);
     event DomainPrice(bytes32 indexed namehash, uint256 price);
     event DomainMoved(bytes32 indexed namehash, address newRegistry);
+    event SlashedSubdomain(bytes32 namehash, address reporter);
 
     enum NodeState { Free, Owned, Moved }
     struct Domain {
@@ -194,15 +195,15 @@ contract ENSSubdomainRegistry is Controlled {
         
         bytes32 userHash = keccak256(_subdomain);
         bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, userHash));
-        require(accounts[subdomainHash].creationTime == 0, "Username not registered.");
+        require(accounts[subdomainHash].creationTime > 0, "Username not registered.");
         
         uint256 offendingChar = uint256(_subdomain[_offendingPos]);
-        require(offendingChar >= _rangeStart && offendingChar <= _rangeEnd, "Invalid range.");
+        require(_rangeStart < offendingChar && _rangeEnd > offendingChar, "Invalid range.");
         require(
             MerkleProof.verifyProof(
                 _proof,
                 unallowedCharactersMerkleRoot,
-                keccak256(abi.encodePacked(_rangeStart, _rangeEnd))
+                keccak256(abi.encodePacked(keccak256(abi.encodePacked(_rangeStart, _rangeEnd))))
             ),
             "Invalid Proof."
         );
@@ -213,7 +214,10 @@ contract ENSSubdomainRegistry is Controlled {
         
         uint256 amountToTransfer = accounts[subdomainHash].tokenBalance;
         delete accounts[subdomainHash];
-        require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
+        if(amountToTransfer > 0){
+            require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
+        }
+        emit SlashedSubdomain(subdomainHash, msg.sender);
     }
 
     /**
