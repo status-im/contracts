@@ -5,6 +5,32 @@ const TestToken = require('Embark/contracts/TestToken');
 const ENSRegistry = require('Embark/contracts/ENSRegistry');
 const PublicResolver = require('Embark/contracts/PublicResolver');
 const ENSSubdomainRegistry = require('Embark/contracts/ENSSubdomainRegistry');
+const { MerkleTree } = require('../utils/merkleTree.js');
+
+/**
+ * 
+ * Unicode decimal ranges unallowed:
+ * 0-47 (C0 + ASCII Punctuation & Symbols)
+ * 58-96 (ASCII Punctuation & Symbols + Latin Alphabet: Uppercase)
+ * 123-1023 (ASCII Punctuation & Symbols + C1 + Latin-1 Punctuation & Symbols, (...))
+ * 1023-115792089237316195423570985008687907853269984665640564039457584007913129639935 (Everything else)
+ * Unicode decimal ranges allowed:
+ * 48-57 (ASCII Digits; 0-9)
+ * 97-122 (Latin Alphabet: Lowercase; a-z)
+ */
+
+
+const unallowedRanges = [
+  web3Utils.soliditySha3(0,47),
+  web3Utils.soliditySha3(58,96),
+  web3Utils.soliditySha3(123,1023),
+  web3Utils.soliditySha3(1023,9999999999)
+];
+const merkleTree = new MerkleTree(unallowedRanges);
+const merkleRoot = merkleTree.getHexRoot();
+
+
+
 
 var contractsConfig = {
   "TestToken": {
@@ -25,7 +51,7 @@ var contractsConfig = {
       "$TestToken",
       "$ENSRegistry",
       "$PublicResolver",
-      "0x0", 
+      merkleRoot, 
       "0x0"
     ],
     "onDeploy": [
@@ -39,6 +65,7 @@ var contractsConfig = {
       "$TestToken",
       "$ENSRegistry",
       "$PublicResolver",
+      merkleRoot,
       "$ENSSubdomainRegistry"
     ]
   }
@@ -446,6 +473,46 @@ contract('ENSSubdomainRegistry', function () {
 
   xit('should migrate paid subdomain to new registry by funds owner', async () => {
 
+  });
+
+
+  
+  it('should slash free subdomain', async () => {
+    let subdomain = 'alicé';
+    let usernameHash = namehash.hash(subdomain + '.' + domains.free.name);
+    let registrant = accountsArr[1];
+    let result = await ENSSubdomainRegistry.methods.register(
+      web3Utils.sha3(subdomain),
+      domains.free.namehash,
+      utils.zeroAddress,
+      utils.zeroBytes32,
+      utils.zeroBytes32
+    ).send({from: registrant});
+
+    //TODO: check events
+    
+    
+    
+
+
+    result = await ens.methods.owner(usernameHash).call()
+    
+    assert.equal(result, registrant);
+    
+    let accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime > 0);
+    
+
+    const proof = merkleTree.getHexProof(unallowedRanges[2]);
+
+    result = await ENSSubdomainRegistry.methods.slashSubdomain(web3Utils.toHex(subdomain), domains.free.namehash, 4, 123, 1023, proof).send()
+  
+    accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime == 0);
+
+    result = await ens.methods.owner(usernameHash).call()
+    
+    assert.equal(result, utils.zeroAddress);
   });
 
 });
