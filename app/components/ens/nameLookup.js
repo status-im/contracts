@@ -4,6 +4,7 @@ import EmbarkJS from 'Embark/EmbarkJS';
 import { connect } from 'react-redux';
 import { actions as accountActions, getDefaultAccount } from '../../reducers/accounts';
 import { hash } from 'eth-ens-namehash';
+import { isNil } from 'lodash';
 import Hidden from '@material-ui/core/Hidden';
 import Typography from '@material-ui/core/Typography';
 import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
@@ -91,7 +92,7 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
     {edit && <RegisterSubDomain
       subDomain={domainName}
       domainName="stateofus.eth"
-      domainPrice={60}
+      domainPrice="DO NOT SHOW"
       editAccount={true}
       preRegisteredCallback={onSubmit}
       registeredCallbackFn={console.log} />}
@@ -112,13 +113,15 @@ class RenderAddresses extends PureComponent {
     const onClose = value => { this.setState({ editAction: value, editMenu: false }) }
     const isOwner = defaultAccount === ownerAddress;
     const closeReleaseAlert = value => {
-      if (value) {
+      if (!isNil(value)) {
         this.setState({ submitted: true })
         release(
           soliditySha3(domainName),
           hash('stateofus.eth'),
         )
           .send()
+      } else {
+        this.setState({ editAction: null })
       }
     }
     return (
