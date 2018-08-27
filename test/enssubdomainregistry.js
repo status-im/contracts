@@ -25,6 +25,7 @@ var contractsConfig = {
       "$TestToken",
       "$ENSRegistry",
       "$PublicResolver",
+      "0x0", 
       "0x0"
     ],
     "onDeploy": [
