@@ -35,6 +35,7 @@ const validStatusAddress = address => !address.includes(invalidSuffix);
 const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
 const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join('.');
 const hashedDomain = domainName => hash(getDomain(domainName));
+const registryIsOwner = address => address == ENSSubdomainRegistry._address;
 const { soliditySha3, fromWei } = web3.utils;
 
 
@@ -346,12 +347,13 @@ const NameLookup = withFormik({
     const address = addr(lookupHash).call();
     const keys = pubkey(lookupHash).call();
     const ownerAddress = owner(lookupHash).call();
+    const suffixOwner = owner(hash(getDomain(domainName))).call();
     const expirationTime = getExpirationTime(lookupHash).call();
-    Promise.all([address, keys, ownerAddress, expirationTime])
-           .then(results => {
-             const [ address, keys, ownerAddress, expirationTime ] = results;
+    Promise.all([address, keys, ownerAddress, expirationTime, suffixOwner])
+           .then(([ address, keys, ownerAddress, expirationTime, suffixOwner ]) => {
              const statusAccount = keyFromXY(keys[0], keys[1]);
-             setStatus({ address, statusAccount, expirationTime, ownerAddress });
+             const registryOwnsDomain = registryIsOwner(suffixOwner)
+             setStatus({ address, statusAccount, expirationTime, ownerAddress, registryOwnsDomain });
            })
   }
 })(InnerForm)
