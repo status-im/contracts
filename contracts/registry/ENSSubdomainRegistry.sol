@@ -20,7 +20,12 @@ contract ENSSubdomainRegistry is Controlled {
     uint256 public releaseDelay = 365 days;
     mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => Account) public accounts;
-    bytes32 public unallowedCharactersMerkleRoot;
+    
+    //slashing conditions
+    uint256 public subdomainMinLenght;
+    bytes32[] public reservedSubdomainsMerkleRoots;
+    
+
 
     event FundsOwner(bytes32 indexed subdomainhash, address fundsOwner);
     event DomainPrice(bytes32 indexed namehash, uint256 price);
@@ -49,13 +54,16 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _token fee token base 
      * @param _ens Ethereum Name Service root address 
      * @param _resolver Default resolver to use in initial settings
+     * @param _subdomainMinLenght Minimum length of usernames 
+     * @param _reservedSubdomainsMerkleRoots Merkle Roots of reserved subdomains 
      * @param _parentRegistry Address of old registry (if any) for account migration.
      */
     constructor(
         ERC20Token _token,
         ENS _ens,
         PublicResolver _resolver,
-        bytes32 _unallowedCharactersMerkleRoot,
+        uint256 _subdomainMinLenght,
+        bytes32[] _reservedSubdomainsMerkleRoots,
         address _parentRegistry
     ) 
         public 
@@ -63,7 +71,8 @@ contract ENSSubdomainRegistry is Controlled {
         token = _token;
         ens = _ens;
         resolver = _resolver;
-        unallowedCharactersMerkleRoot = _unallowedCharactersMerkleRoot;
+        subdomainMinLenght = _subdomainMinLenght;
+        reservedSubdomainsMerkleRoots = _reservedSubdomainsMerkleRoots;
         parentRegistry = _parentRegistry;
     }
 
@@ -170,44 +179,96 @@ contract ENSSubdomainRegistry is Controlled {
         require(ens.owner(_domainHash) == address(this), "Registry not owner of domain.");
         accounts[subdomainHash].fundsOwner = msg.sender;
         emit FundsOwner(subdomainHash, msg.sender);
-    }    
-
+    }  
+    
+    /**
+     * @notice slash account due too length restriction 
+     * @param _subdomain raw value of offending subdomain
+     * @param _domainHash domain hash
+     */
+    function slashSmallSubdomain(
+        bytes _subdomain,
+        bytes32 _domainHash
+    ) 
+        external 
+    {
+        require(_subdomain.length < subdomainMinLenght, "Not a small subdomain.");
+        slashSubdomain(_subdomain, _domainHash);
+    }
 
     /**
-     * @notice removes account of invalid subdomain, and send funds to reporter
+     * @notice slash account due look like an address 
      * @param _subdomain raw value of offending subdomain
-     * @param _offendingPos position of invalid character
-     * @param _rangeStart start of invalid character range
-     * @param _rangeEnd end of invalid character range
-     * @param _proof merkle proof that range is defined in merkle root
+     * @param _domainHash domain hash
      */
-    function slashSubdomain(
+    function slashAddressLikeSubdomain(
+        string _subdomain,
+        bytes32 _domainHash
+    ) 
+        external 
+    {
+        bytes memory subdomain = bytes(_subdomain);
+        require(subdomain.length > 7, "Too small to look like an address.");
+        require(subdomain[0] == byte("0"), "First character need to be 0");
+        require(subdomain[1] == byte("x"), "Second character need to be x");
+        for(uint i = 2; i < 7; i++){
+            byte b = subdomain[i];
+            require((b >= 48 && b <= 57) || (b >= 97 && b <= 102), "Does not look like an address");
+        }
+        slashSubdomain(subdomain, _domainHash);
+    }  
+
+    /**
+     * @notice slash account due reserved name
+     * @param _subdomain raw value of offending subdomain
+     * @param _domainHash domain hash
+     */
+    function slashReservedSubdomain(
         bytes _subdomain,
         bytes32 _domainHash,
-        uint256 _offendingPos,
-        uint256 _rangeStart,
-        uint256 _rangeEnd,
+        uint256 _rootPos,
         bytes32[] _proof
     ) 
-        external
+        external 
     {
+        require(reservedSubdomainsMerkleRoots.length > _rootPos, "Invalid Merkle Root");
+        require(
+            MerkleProof.verifyProof(
+                _proof,
+                reservedSubdomainsMerkleRoots[_rootPos],
+                keccak256(_subdomain)
+            ),
+            "Invalid Proof."
+        );
+        slashSubdomain(_subdomain, _domainHash);
+    }
+
+    /**
+     * @notice slash account of invalid subdomain
+     * @param _subdomain raw value of offending subdomain
+     * @param _domainHash domain hash
+     * @param _offendingPos position of invalid character
+     */
+    function slashInvalidSubdomain(
+        bytes _subdomain,
+        bytes32 _domainHash,
+        uint256 _offendingPos
+    ) 
+        external
+    { 
         require(_subdomain.length > _offendingPos, "Invalid position.");
+        byte b = _subdomain[_offendingPos];
         
+        require(!((b >= 48 && b <= 57) || (b >= 97 && b <= 122)), "Not invalid character.");
+    
+        slashSubdomain(_subdomain, _domainHash);
+    }
+
+    function slashSubdomain(bytes _subdomain, bytes32 _domainHash) internal {
         bytes32 userHash = keccak256(_subdomain);
         bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, userHash));
         require(accounts[subdomainHash].creationTime > 0, "Username not registered.");
         
-        uint256 offendingChar = uint256(_subdomain[_offendingPos]);
-        require(_rangeStart < offendingChar && _rangeEnd > offendingChar, "Invalid range.");
-        require(
-            MerkleProof.verifyProof(
-                _proof,
-                unallowedCharactersMerkleRoot,
-                keccak256(abi.encodePacked(keccak256(abi.encodePacked(_rangeStart, _rangeEnd))))
-            ),
-            "Invalid Proof."
-        );
-
         ens.setSubnodeOwner(_domainHash, userHash, address(this));
         ens.setResolver(subdomainHash, address(0));
         ens.setOwner(subdomainHash, address(0));

@@ -20,13 +20,15 @@ const { MerkleTree } = require('../utils/merkleTree.js');
  */
 
 
-const unallowedRanges = [
-  web3Utils.soliditySha3(0,47),
-  web3Utils.soliditySha3(58,96),
-  web3Utils.soliditySha3(123,1023),
-  web3Utils.soliditySha3(1023,9999999999)
-];
-const merkleTree = new MerkleTree(unallowedRanges);
+
+
+const reservedNames = [
+  'administrator',
+  'support',
+  'status',
+  'network',
+]
+const merkleTree = new MerkleTree(reservedNames);
 const merkleRoot = merkleTree.getHexRoot();
 
 
@@ -51,7 +53,8 @@ var contractsConfig = {
       "$TestToken",
       "$ENSRegistry",
       "$PublicResolver",
-      merkleRoot, 
+      "3", 
+      [merkleRoot],
       "0x0"
     ],
     "onDeploy": [
@@ -65,7 +68,8 @@ var contractsConfig = {
       "$TestToken",
       "$ENSRegistry",
       "$PublicResolver",
-      merkleRoot,
+      "3", 
+      [merkleRoot],
       "$ENSSubdomainRegistry"
     ]
   }
@@ -338,42 +342,42 @@ contract('ENSSubdomainRegistry', function () {
 
 
   it('should release subdomain with cost', async () => {;
-                                                        let registrant = accountsArr[6];
-                                                        let subdomain = 'frank';
-                                                        let usernameHash = namehash.hash(subdomain + '.' + domains.paid.name);
-                                                        let labelHash = web3Utils.sha3(subdomain);
-                                                        let domainPrice = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
-                                                        await TestToken.methods.mint(domainPrice).send({from: registrant});
-                                                        await TestToken.methods.approve(ENSSubdomainRegistry.address, domainPrice).send({from: registrant});
-                                                        let result = await ENSSubdomainRegistry.methods.register(
-                                                          labelHash,
-                                                          domains.paid.namehash,
-                                                          utils.zeroAddress,
-                                                          utils.zeroBytes32,
-                                                          utils.zeroBytes32
-                                                        ).send({from: registrant});
+    let registrant = accountsArr[6];
+    let subdomain = 'frank';
+    let usernameHash = namehash.hash(subdomain + '.' + domains.paid.name);
+    let labelHash = web3Utils.sha3(subdomain);
+    let domainPrice = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
+    await TestToken.methods.mint(domainPrice).send({from: registrant});
+    await TestToken.methods.approve(ENSSubdomainRegistry.address, domainPrice).send({from: registrant});
+    let result = await ENSSubdomainRegistry.methods.register(
+      labelHash,
+      domains.paid.namehash,
+      utils.zeroAddress,
+      utils.zeroBytes32,
+      utils.zeroBytes32
+    ).send({from: registrant});
 
-                                                        //TODO: check events
+    //TODO: check events
 
-                                                        let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
-                                                        utils.increaseTime(releaseDelay)
+    let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
+    utils.increaseTime(releaseDelay)
 
-                                                        let initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
-                                                        let initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
-                                                        let initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
+    let initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
+    let initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
+    let initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
 
-                                                        await ENSSubdomainRegistry.methods.release(
-                                                          web3Utils.sha3(subdomain),
-                                                          domains.paid.namehash
-                                                        ).send({from: registrant});
-                                                        let finalAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
-                                                        assert(finalAccountBalance, 0, "Final balance didnt zeroed");
-                                                        let finalRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
-                                                        assert(finalRegistrantBalance, +initialRegistrantBalance+initialAccountBalance, "Releaser token balance didnt increase")
-                                                        let finalRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
-                                                        assert(finalRegistryBalance, +initialRegistryBalance-initialAccountBalance, "Registry token balance didnt decrease")
+    await ENSSubdomainRegistry.methods.release(
+      web3Utils.sha3(subdomain),
+      domains.paid.namehash
+    ).send({from: registrant});
+    let finalAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(usernameHash).call();
+    assert(finalAccountBalance, 0, "Final balance didnt zeroed");
+    let finalRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
+    assert(finalRegistrantBalance, +initialRegistrantBalance+initialAccountBalance, "Releaser token balance didnt increase")
+    let finalRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
+    assert(finalRegistryBalance, +initialRegistryBalance-initialAccountBalance, "Registry token balance didnt decrease")
 
-                                                       });
+  });
 
   it('should release transfered subdomain with cost', async () => {
     let registrant = accountsArr[7];
@@ -477,7 +481,7 @@ contract('ENSSubdomainRegistry', function () {
 
 
   
-  it('should slash free subdomain', async () => {
+  it('should slash invalid free subdomain', async () => {
     let subdomain = 'alicé';
     let usernameHash = namehash.hash(subdomain + '.' + domains.free.name);
     let registrant = accountsArr[1];
@@ -490,29 +494,86 @@ contract('ENSSubdomainRegistry', function () {
     ).send({from: registrant});
 
     //TODO: check events
-    
-    
-    
-
-
     result = await ens.methods.owner(usernameHash).call()
-    
     assert.equal(result, registrant);
     
     let accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
     assert(accountCreationTime > 0);
-    
-
-    const proof = merkleTree.getHexProof(unallowedRanges[2]);
-
-    result = await ENSSubdomainRegistry.methods.slashSubdomain(web3Utils.toHex(subdomain), domains.free.namehash, 4, 123, 1023, proof).send()
+  
+    result = await ENSSubdomainRegistry.methods.slashInvalidSubdomain(web3Utils.toHex(subdomain), domains.free.namehash, 4).send()
   
     accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
     assert(accountCreationTime == 0);
 
-    result = await ens.methods.owner(usernameHash).call()
-    
+    result = await ens.methods.owner(usernameHash).call()  
     assert.equal(result, utils.zeroAddress);
   });
+
+  it('should slash reserved name subdomain', async () => {
+    let subdomain = reservedNames[0];
+    let usernameHash = namehash.hash(subdomain + '.' + domains.free.name);
+    let registrant = accountsArr[1];
+    let result = await ENSSubdomainRegistry.methods.register(
+      web3Utils.sha3(subdomain),
+      domains.free.namehash,
+      utils.zeroAddress,
+      utils.zeroBytes32,
+      utils.zeroBytes32
+    ).send({from: registrant});
+
+    //TODO: check events
+
+    let accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime > 0);
+
+    const proof = merkleTree.getHexProof(reservedNames[0]);
+
+    result = await ENSSubdomainRegistry.methods.slashReservedSubdomain(web3Utils.toHex(subdomain), domains.free.namehash, 0, proof).send()  
+    accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime == 0);
+  });
+
+  it('should slash small subdomain', async () => {
+    let subdomain = 'a';
+    let usernameHash = namehash.hash(subdomain + '.' + domains.free.name);
+    let registrant = accountsArr[1];
+    let result = await ENSSubdomainRegistry.methods.register(
+      web3Utils.sha3(subdomain),
+      domains.free.namehash,
+      utils.zeroAddress,
+      utils.zeroBytes32,
+      utils.zeroBytes32
+    ).send({from: registrant});
+    
+    let accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime > 0);
+    result = await ENSSubdomainRegistry.methods.slashSmallSubdomain(web3Utils.toHex(subdomain), domains.free.namehash).send()    
+    accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime == 0);
+
+  });
+
+
+  xit('should slash address like subdomain', async () => {
+    let subdomain = "0xc6b95bd26";
+    let usernameHash = web3Utils.soliditySha3(namehash.hash(domains.free.name), web3Utils.sha3(subdomain));
+    let registrant = accountsArr[1];
+    let result = await ENSSubdomainRegistry.methods.register(
+      web3Utils.sha3(subdomain),
+      domains.free.namehash,
+      utils.zeroAddress,
+      utils.zeroBytes32,
+      utils.zeroBytes32
+    ).send({from: registrant});
+    
+    let accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime > 0);
+    result = await ENSSubdomainRegistry.methods.slashAddressLikeSubdomain(subdomain, domains.free.namehash).send()    
+    accountCreationTime = await ENSSubdomainRegistry.methods.getCreationTime(usernameHash).call();
+    assert(accountCreationTime == 0);
+
+  });
+
+
 
 });
