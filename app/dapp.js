@@ -49,6 +49,7 @@ class App extends React.Component {
     const { admin, network, searching } = this.state;
     const toggleSearch = () => { this.setState({ searching: !searching }) };
     const isRopsten = network === 'ropsten';
+    const isMainnet = network === 'main';
     return (
       <div>
         <CssBaseline />

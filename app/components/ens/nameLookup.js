@@ -106,7 +106,7 @@ class RenderAddresses extends PureComponent {
   state = { copied: false, editMenu: false, editAction: false }
 
   render() {
-    const { domainName, address, statusAccount, expirationTime, defaultAccount, ownerAddress, setStatus } = this.props
+    const { domainName, address, statusAccount, expirationTime, defaultAccount, ownerAddress, setStatus, registryOwnsDomain } = this.props
     const { copied, editMenu, editAction, submitted } = this.state
     const markCopied = (v) => { this.setState({ copied: v }) }
     const isCopied = address => address == copied;
@@ -210,10 +210,11 @@ class Register extends PureComponent {
   }
 
   render() {
-    const { domainName, setStatus, style } = this.props;
+    const { domainName, setStatus, style, registryOwnsDomain } = this.props;
     const { domainPrice, registered, submitted } = this.state;
     const formattedDomain = formatName(domainName);
     const formattedDomainArray = formattedDomain.split('.');
+    console.log({registryOwnsDomain})
     return (
       <div style={style}>
         {!registered && !submitted ?
@@ -321,12 +322,14 @@ const InnerForm = ({
        statusAccount={status.statusAccount}
        expirationTime={status.expirationTime}
        ownerAddress={status.ownerAddress}
+       registryOwnsDomain={status.registryOwnsDomain}
        setStatus={setStatus} /> :
      <div>
        <LookupForm {...{ handleSubmit, values, handleChange }} justSearch />
        <ConnectedRegister
          style={{ position: 'relative' }}
          setStatus={setStatus}
+         registryOwnsDomain={status.registryOwnsDomain}
          domainName={values.domainName}  />
      </div>
     }
