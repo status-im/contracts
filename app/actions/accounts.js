@@ -10,7 +10,8 @@ const { receiveAccounts, receiveStatusContactCode } = accountActions
 const CONTACT_CODE = 'CONTACT_CODE'
 const STATUS_API_REQUEST = 'STATUS_API_REQUEST'
 const hasContactCode = () => !isNil(STATUS_API) && !isNil(STATUS_API[CONTACT_CODE])
-const statusApiSuccess = event => event.data.type === 'STATUS_API_SUCCESS'
+const statusApiSuccess = event => event.detail.permissions[0] === CONTACT_CODE
+const getContactCode = event => event.detail.data[CONTACT_CODE]
 
 export const fetchAndDispatchAccountsWithBalances = (web3, dispatch) => {
   web3.eth.getAccounts((err, addresses) => {
@@ -27,11 +28,9 @@ export const fetchAndDispatchAccountsWithBalances = (web3, dispatch) => {
     }
   })
 }
-
 export const checkAndDispatchStatusContactCode = dispatch => {
-  window.addEventListener('message', function (event) {
-    if (!event.data || !event.data.type) return
-    if (statusApiSuccess(event) && hasContactCode()) dispatch(receiveStatusContactCode(STATUS_API[CONTACT_CODE]))
+  window.addEventListener('statusapi', function (event) {
+    if (statusApiSuccess(event)) dispatch(receiveStatusContactCode(getContactCode(event)))
   });
 
   setTimeout(
