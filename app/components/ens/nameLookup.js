@@ -151,7 +151,7 @@ class RenderAddresses extends PureComponent {
   }
 }
 
-const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
+const RegisterInfoCard = ({ formattedDomain, domainPrice, registryOwnsDomain }) => (
   <Fragment>
     <Hidden mdDown>
       <Info.Action title="No address is associated with this domain">
@@ -173,7 +173,9 @@ const RegisterInfoCard = ({ formattedDomain, domainPrice }) => (
     </Hidden>
     <Hidden mdUp>
       <Typography style={{ textAlign: 'center', padding: '1.5em' }}>
-        This name will be pointed to the wallet address and contact code below
+        {registryOwnsDomain ?
+         'This name will be pointed to the wallet address and contact code below' :
+         'This domain is not owned by the registy'}
       </Typography>
     </Hidden>
   </Fragment>
@@ -214,18 +216,18 @@ class Register extends PureComponent {
     const { domainPrice, registered, submitted } = this.state;
     const formattedDomain = formatName(domainName);
     const formattedDomainArray = formattedDomain.split('.');
-    console.log({registryOwnsDomain})
     return (
       <div style={style}>
         {!registered && !submitted ?
          <Fragment>
-           <RegisterInfoCard {...{ formattedDomain, domainPrice }}/>
-           <RegisterSubDomain
+           <RegisterInfoCard {...{ formattedDomain, domainPrice, registryOwnsDomain }}/>
+           {registryOwnsDomain &&
+            <RegisterSubDomain
              subDomain={formattedDomainArray[0]}
              domainName={formattedDomainArray.slice(1).join('.')}
              domainPrice={domainPrice}
              preRegisteredCallback={() => { this.setState({ submitted: true }) }}
-             registeredCallbackFn={this.onRegistered} />
+             registeredCallbackFn={this.onRegistered} />}
          </Fragment> :
          submitted && !registered ? <TransactionComplete type="registered"  setStatus={setStatus} /> : <RenderAddresses {...this.props} address={registered.address} statusAccount={registered.statusAccount} />}
       </div>
