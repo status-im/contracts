@@ -8,37 +8,35 @@ import "../ens/PublicResolver.sol";
 
 /** 
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
- * @notice Sell ENS subdomains of owned domains.
+ * @notice Sell ENS usernames of a ENS registry.
  */
-contract ENSSubdomainRegistry is Controlled {
+contract UsernameRegistrar is Controlled {
     
     ERC20Token public token;
-    ENS public ens;
+    ENS public ensRegistry;
     PublicResolver public resolver;
     address public parentRegistry;
 
     uint256 public releaseDelay = 365 days;
-    mapping (bytes32 => Domain) public domains;
     mapping (bytes32 => Account) public accounts;
     
     //slashing conditions
-    uint256 public subdomainMinLenght;
-    bytes32[] public reservedSubdomainsMerkleRoots;
+    uint256 public usernameMinLenght;
+    bytes32[] public reservedUsernamesMerkleRoots;
     
-    event DomainPrice(bytes32 indexed namehash, uint256 price);
-    event DomainMoved(bytes32 indexed namehash, address newRegistry);
-    event SubdomainOwner(bytes32 subdomainHash, address accountOwner);
+    event RegistryPrice(uint256 price);
+    event RegistryMoved(address newRegistry);
+    event UsernameOwner(bytes32 indexed nameHash, address owner);
 
-    enum NodeState { Free, Owned, Moved }
-    struct Domain {
-        NodeState state;
-        uint256 price;
-    }
-
+    enum RegistrarState { Unactive, Active, Moved }
+    bytes32 public ensNode;
+    uint256 public price;
+    RegistrarState public state;
+    
     struct Account {
-        uint256 tokenBalance;
+        uint256 balance;
         uint256 creationTime;
-        address accountOwner;
+        address owner;
     }
 
     modifier onlyParentRegistry {
@@ -49,61 +47,61 @@ contract ENSSubdomainRegistry is Controlled {
     /** 
      * @notice Initializes a UserRegistry contract 
      * @param _token fee token base 
-     * @param _ens Ethereum Name Service root address 
+     * @param _ensRegistry Ethereum Name Service root address 
      * @param _resolver Default resolver to use in initial settings
-     * @param _subdomainMinLenght Minimum length of usernames 
-     * @param _reservedSubdomainsMerkleRoots Merkle Roots of reserved subdomains 
+     * @param _ensNode ENS node (registry) being used for usernames subnodes (subregistry)
+     * @param _usernameMinLenght Minimum length of usernames 
+     * @param _reservedUsernamesMerkleRoots Merkle Roots of reserved usernames 
      * @param _parentRegistry Address of old registry (if any) for account migration.
      */
     constructor(
         ERC20Token _token,
-        ENS _ens,
+        ENS _ensRegistry,
         PublicResolver _resolver,
-        uint256 _subdomainMinLenght,
-        bytes32[] _reservedSubdomainsMerkleRoots,
+        bytes32 _ensNode,
+        uint256 _usernameMinLenght,
+        bytes32[] _reservedUsernamesMerkleRoots,
         address _parentRegistry
     ) 
         public 
     {
         token = _token;
-        ens = _ens;
+        ensRegistry = _ensRegistry;
         resolver = _resolver;
-        subdomainMinLenght = _subdomainMinLenght;
-        reservedSubdomainsMerkleRoots = _reservedSubdomainsMerkleRoots;
+        ensNode = _ensNode;
+        usernameMinLenght = _usernameMinLenght;
+        reservedUsernamesMerkleRoots = _reservedUsernamesMerkleRoots;
         parentRegistry = _parentRegistry;
     }
 
     /**
-     * @notice Registers `_userHash` subdomain to `_domainHash` setting msg.sender as owner.
-     * @param _userHash choosen unowned subdomain hash 
-     * @param _domainHash choosen contract owned domain hash
+     * @notice Registers `_label` username to `ensNode` setting msg.sender as owner.
+     * @param _label choosen unowned username hash 
      * @param _account optional address to set at public resolver
      * @param _pubkeyA optional pubkey part A to set at public resolver
      * @param _pubkeyB optional pubkey part B to set at public resolver
      */
     function register(
-        bytes32 _userHash,
-        bytes32 _domainHash,
+        bytes32 _label,
         address _account,
         bytes32 _pubkeyA,
         bytes32 _pubkeyB
     ) 
         external 
-        returns(bytes32 subdomainHash) 
+        returns(bytes32 namehash) 
     {
-        Domain memory domain = domains[_domainHash];
-        require(domain.state == NodeState.Owned, "Domain unavailable.");
-        subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
-        require(ens.owner(subdomainHash) == address(0), "ENS node already owned.");
-        require(accounts[subdomainHash].creationTime == 0, "Username already registered.");
-        accounts[subdomainHash] = Account(domain.price, block.timestamp, msg.sender);
-        if(domain.price > 0) {
-            require(token.allowance(msg.sender, address(this)) >= domain.price, "Unallowed to spend.");
+        require(state == RegistrarState.Active, "Registry unavailable.");
+        namehash = keccak256(abi.encodePacked(ensNode, _label));
+        require(ensRegistry.owner(namehash) == address(0), "ENS node already owned.");
+        require(accounts[_label].creationTime == 0, "Username already registered.");
+        accounts[_label] = Account(price, block.timestamp, msg.sender);
+        if(price > 0) {
+            require(token.allowance(msg.sender, address(this)) >= price, "Unallowed to spend.");
             require(
                 token.transferFrom(
                     address(msg.sender),
                     address(this),
-                    domain.price
+                    price
                 ),
                 "Transfer failed"
             );
@@ -113,222 +111,205 @@ contract ENSSubdomainRegistry is Controlled {
         bool resolveAccount = _account != address(0);
         if (resolvePubkey || resolveAccount) {
             //set to self the ownship to setup initial resolver
-            ens.setSubnodeOwner(_domainHash, _userHash, address(this));
-            ens.setResolver(subdomainHash, resolver); //default resolver
+            ensRegistry.setSubnodeOwner(ensNode, _label, address(this));
+            ensRegistry.setResolver(namehash, resolver); //default resolver
             if (resolveAccount) {
-                resolver.setAddr(subdomainHash, _account);
+                resolver.setAddr(namehash, _account);
             }
             if (resolvePubkey) {
-                resolver.setPubkey(subdomainHash, _pubkeyA, _pubkeyB);
+                resolver.setPubkey(namehash, _pubkeyA, _pubkeyB);
             }
-            ens.setOwner(subdomainHash, msg.sender);
+            ensRegistry.setOwner(namehash, msg.sender);
         }else {
             //transfer ownship of subdone directly to registrant
-            ens.setSubnodeOwner(_domainHash, _userHash, msg.sender);
+            ensRegistry.setSubnodeOwner(ensNode, _label, msg.sender);
         }
-        emit SubdomainOwner(subdomainHash, msg.sender);
+        emit UsernameOwner(namehash, msg.sender);
     }
     
     /** 
-     * @notice release subdomain and retrieve locked fee, needs to be called after `releasePeriod` from creation time.
-     * @param _userHash `msg.sender` owned subdomain hash 
-     * @param _domainHash choosen contract owned domain hash
+     * @notice release username and retrieve locked fee, needs to be called after `releasePeriod` from creation time.
+     * @param _label `msg.sender` owned username hash 
      */
     function release(
-        bytes32 _userHash,
-        bytes32 _domainHash
+        bytes32 _label
     )
         external 
     {
-        bool isDomainController = ens.owner(_domainHash) == address(this);
-        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
-        Account memory account = accounts[subdomainHash];
+        bool isRegistryController = ensRegistry.owner(ensNode) == address(this);
+        bytes32 namehash = keccak256(abi.encodePacked(ensNode, _label));
+        Account memory account = accounts[_label];
         require(account.creationTime > 0, "Username not registered.");
-        if (isDomainController) {
-            require(msg.sender == ens.owner(subdomainHash), "Not owner of ENS node.");
+        if (isRegistryController) {
+            require(msg.sender == ensRegistry.owner(namehash), "Not owner of ENS node.");
             require(block.timestamp > account.creationTime + releaseDelay, "Release period not reached.");
-            ens.setSubnodeOwner(_domainHash, _userHash, address(this));
-            ens.setResolver(subdomainHash, address(0));
-            ens.setOwner(subdomainHash, address(0));
+            ensRegistry.setSubnodeOwner(ensNode, _label, address(this));
+            ensRegistry.setResolver(namehash, address(0));
+            ensRegistry.setOwner(namehash, address(0));
         } else {
-            require(msg.sender == account.accountOwner, "Not the former account owner.");
+            require(msg.sender == account.owner, "Not the former account owner.");
         }
-        delete accounts[subdomainHash];
-        if (account.tokenBalance > 0) {
-            require(token.transfer(msg.sender, account.tokenBalance), "Transfer failed");
+        delete accounts[_label];
+        if (account.balance > 0) {
+            require(token.transfer(msg.sender, account.balance), "Transfer failed");
         }
-        emit SubdomainOwner(subdomainHash, address(0));
+        emit UsernameOwner(_label, address(0));
         
     }
 
     /** 
-     * @notice updates funds owner, useful to move subdomain account to new registry.
-     * @param _userHash `msg.sender` owned subdomain hash 
-     * @param _domainHash choosen contract owned domain hash
+     * @notice updates funds owner, useful to move username account to new registry.
+     * @param _label `msg.sender` owned username hash 
      **/
     function updateAccountOwner(
-        bytes32 _userHash,
-        bytes32 _domainHash
+        bytes32 _label
     ) 
         external 
     {
-        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
-        require(accounts[subdomainHash].creationTime > 0, "Username not registered.");
-        require(msg.sender == ens.owner(subdomainHash), "Caller not owner of ENS node.");
-        require(ens.owner(_domainHash) == address(this), "Registry not owner of domain.");
-        accounts[subdomainHash].accountOwner = msg.sender;
-        emit SubdomainOwner(subdomainHash, msg.sender);
+        bytes32 namehash = keccak256(abi.encodePacked(ensNode, _label));
+        require(msg.sender == ensRegistry.owner(namehash), "Caller not owner of ENS node.");
+        require(accounts[_label].creationTime > 0, "Username not registered.");
+        require(ensRegistry.owner(ensNode) == address(this), "Registry not owner of registry.");
+        accounts[_label].owner = msg.sender;
+        emit UsernameOwner(namehash, msg.sender);
     }  
     
     /**
      * @notice slash account due too length restriction 
-     * @param _subdomain raw value of offending subdomain
-     * @param _domainHash domain hash
+     * @param _username raw value of offending username
      */
-    function slashSmallSubdomain(
-        bytes _subdomain,
-        bytes32 _domainHash
+    function slashSmallUsername(
+        bytes _username
     ) 
         external 
     {
-        require(_subdomain.length < subdomainMinLenght, "Not a small subdomain.");
-        slashSubdomain(_subdomain, _domainHash);
+        require(_username.length < usernameMinLenght, "Not a small username.");
+        slashUsername(_username);
     }
 
     /**
      * @notice slash account due look like an address 
-     * @param _subdomain raw value of offending subdomain
-     * @param _domainHash domain hash
+     * @param _username raw value of offending username
      */
-    function slashAddressLikeSubdomain(
-        string _subdomain,
-        bytes32 _domainHash
+    function slashAddressLikeUsername(
+        string _username
     ) 
         external 
     {
-        bytes memory subdomain = bytes(_subdomain);
-        require(subdomain.length > 12, "Too small to look like an address.");
-        require(subdomain[0] == byte("0"), "First character need to be 0");
-        require(subdomain[1] == byte("x"), "Second character need to be x");
-        slashSubdomain(subdomain, _domainHash);
+        bytes memory username = bytes(_username);
+        require(username.length > 12, "Too small to look like an address.");
+        require(username[0] == byte("0"), "First character need to be 0");
+        require(username[1] == byte("x"), "Second character need to be x");
+        slashUsername(username);
     }  
 
     /**
      * @notice slash account due reserved name
-     * @param _subdomain raw value of offending subdomain
-     * @param _domainHash domain hash
+     * @param _username raw value of offending username
      */
-    function slashReservedSubdomain(
-        bytes _subdomain,
-        bytes32 _domainHash,
+    function slashReservedUsername(
+        bytes _username,
         uint256 _rootPos,
         bytes32[] _proof
     ) 
         external 
     {
-        require(reservedSubdomainsMerkleRoots.length > _rootPos, "Invalid Merkle Root");
+        require(reservedUsernamesMerkleRoots.length > _rootPos, "Invalid Merkle Root");
         require(
             MerkleProof.verifyProof(
                 _proof,
-                reservedSubdomainsMerkleRoots[_rootPos],
-                keccak256(_subdomain)
+                reservedUsernamesMerkleRoots[_rootPos],
+                keccak256(_username)
             ),
             "Invalid Proof."
         );
-        slashSubdomain(_subdomain, _domainHash);
+        slashUsername(_username);
     }
 
     /**
-     * @notice slash account of invalid subdomain
-     * @param _subdomain raw value of offending subdomain
-     * @param _domainHash domain hash
+     * @notice slash account of invalid username
+     * @param _username raw value of offending username
      * @param _offendingPos position of invalid character
      */
-    function slashInvalidSubdomain(
-        bytes _subdomain,
-        bytes32 _domainHash,
+    function slashInvalidUsername(
+        bytes _username,
         uint256 _offendingPos
     ) 
         external
     { 
-        require(_subdomain.length > _offendingPos, "Invalid position.");
-        byte b = _subdomain[_offendingPos];
+        require(_username.length > _offendingPos, "Invalid position.");
+        byte b = _username[_offendingPos];
         
         require(!((b >= 48 && b <= 57) || (b >= 97 && b <= 122)), "Not invalid character.");
     
-        slashSubdomain(_subdomain, _domainHash);
+        slashUsername(_username);
     }
 
-    function slashSubdomain(bytes _subdomain, bytes32 _domainHash) internal {
-        bytes32 userHash = keccak256(_subdomain);
-        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, userHash));
-        require(accounts[subdomainHash].creationTime > 0, "Username not registered.");
+    function slashUsername(bytes _username) internal {
+        bytes32 label = keccak256(_username);
+        bytes32 namehash = keccak256(abi.encodePacked(ensNode, label));
+        require(accounts[label].creationTime > 0, "Username not registered.");
         
-        ens.setSubnodeOwner(_domainHash, userHash, address(this));
-        ens.setResolver(subdomainHash, address(0));
-        ens.setOwner(subdomainHash, address(0));
+        ensRegistry.setSubnodeOwner(ensNode, label, address(this));
+        ensRegistry.setResolver(namehash, address(0));
+        ensRegistry.setOwner(namehash, address(0));
         
-        uint256 amountToTransfer = accounts[subdomainHash].tokenBalance;
-        delete accounts[subdomainHash];
+        uint256 amountToTransfer = accounts[label].balance;
+        delete accounts[label];
         if(amountToTransfer > 0){
             require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
         }
-        emit SubdomainOwner(subdomainHash, address(0));
+        emit UsernameOwner(namehash, address(0));
     }
 
     /**
      * @notice Migrate account to new registry
-     * @param _userHash `msg.sender` owned subdomain hash 
-     * @param _domainHash choosen contract owned domain hash
+     * @param _label `msg.sender` owned username hash 
      **/
     function moveAccount(
-        bytes32 _userHash,
-        bytes32 _domainHash
+        bytes32 _label
     ) 
         external 
     {
-        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
-        require(msg.sender == accounts[subdomainHash].accountOwner, "Callable only by account owner.");
-        ENSSubdomainRegistry _newRegistry = ENSSubdomainRegistry(ens.owner(_domainHash));
-        Account memory account = accounts[subdomainHash];
-        delete accounts[subdomainHash];
-        //require(address(this) == _newRegistry.parentRegistry(), "Wrong update."); 
-        token.approve(_newRegistry, account.tokenBalance);
+        require(msg.sender == accounts[_label].owner, "Callable only by account owner.");
+        UsernameRegistrar _newRegistry = UsernameRegistrar(ensRegistry.owner(ensNode));
+        Account memory account = accounts[_label];
+        delete accounts[_label];
+
+        token.approve(_newRegistry, account.balance);
         _newRegistry.migrateAccount(
-            _userHash,
-            _domainHash,
-            account.tokenBalance,
+            _label,
+            account.balance,
             account.creationTime,
-            account.accountOwner
+            account.owner
         );
     }
     
     /**
-     * @dev callabe only by parent registry to continue migration of domain
+     * @dev callabe only by parent registry to continue migration of registry
      **/
-    function migrateDomain(
-        bytes32 _domain,
+    function migrateRegistry(
         uint256 _price
     ) 
         external
         onlyParentRegistry
     {
-        require(ens.owner(_domain) == address(this), "ENS domain owner not transfered.");
-        assert(domains[_domain].state == NodeState.Free);
-        domains[_domain] = Domain(NodeState.Owned, _price);
+        require(state == RegistrarState.Unactive, "Not unactive");
+        require(ensRegistry.owner(ensNode) == address(this), "ENS registry owner not transfered.");
+        price = _price;
+        state = RegistrarState.Active;
+        emit RegistryPrice(_price);
     }
 
     /**
      * @dev callable only by parent registry for continue user opt-in migration
-     * @param _userHash any subdomain hash coming from parent
-     * @param _domainHash choosen contract owned domain hash
+     * @param _label any username hash coming from parent
      * @param _tokenBalance amount being transferred
      * @param _creationTime any value coming from parent
-     * @param _accountOwner accountOwner for opt-out/release at domain move
+     * @param _accountOwner owner for opt-out/release at registry move
      **/
     function migrateAccount(
-        bytes32 _userHash,
-        bytes32 _domainHash,
+        bytes32 _label,
         uint256 _tokenBalance,
         uint256 _creationTime,
         address _accountOwner
@@ -336,8 +317,6 @@ contract ENSSubdomainRegistry is Controlled {
         external
         onlyParentRegistry
     {
-        bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
-        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _accountOwner);
         if (_tokenBalance > 0) {
             require(
                 token.transferFrom(
@@ -348,68 +327,61 @@ contract ENSSubdomainRegistry is Controlled {
                 "Error moving funds from old registar."
             );
         }
-        
+        accounts[_label] = Account(_tokenBalance, _creationTime, _accountOwner);
     }
      
-        /**
-     * @notice moves a domain to other Registry (will not move subdomains accounts)
-     * @param _newRegistry new registry hodling this domain
-     * @param _domain domain being moved
+    /**
+     * @notice moves a registry to other Registry (will not move usernames accounts)
+     * @param _newRegistry new registry hodling this registry
      */
-    function moveDomain(
-        ENSSubdomainRegistry _newRegistry,
-        bytes32 _domain
+    function moveRegistry(
+        UsernameRegistrar _newRegistry
     ) 
         external
         onlyController
     {
-        require(domains[_domain].state == NodeState.Owned, "Wrong domain");
-        require(ens.owner(_domain) == address(this), "Domain not owned anymore.");
-        uint256 price = domains[_domain].price;
-        domains[_domain].state = NodeState.Moved;
-        ens.setOwner(_domain, _newRegistry);
-        _newRegistry.migrateDomain(_domain, price);
-        emit DomainMoved(_domain, _newRegistry);
+        require(state == RegistrarState.Active, "Wrong registry");
+        require(ensRegistry.owner(ensNode) == address(this), "Registry not owned anymore.");
+        state = RegistrarState.Moved;
+        ensRegistry.setOwner(ensNode, _newRegistry);
+        _newRegistry.migrateRegistry(price);
+        emit RegistryMoved(_newRegistry);
     }
        
     /** 
-     * @notice Controller include new domain available to register
-     * @param _domain domain owned by user registry being activated
-     * @param _price cost to register subnode from this node
+     * @notice Activate registry
+     * @param _price The price of username registry
      */
-    function setDomainPrice(
-        bytes32 _domain,
+    function activate(
         uint256 _price
     ) 
         external
         onlyController
     {
-        require(domains[_domain].state == NodeState.Free, "Domain state is not free");
-        require(ens.owner(_domain) == address(this), "Registry does not own domain");
-        domains[_domain] = Domain(NodeState.Owned, _price);
-        emit DomainPrice(_domain, _price);
+        require(state == RegistrarState.Unactive, "Registry state is not unactive");
+        require(ensRegistry.owner(ensNode) == address(this), "Registry does not own registry");
+        price = _price;
+        state = RegistrarState.Active;
+        emit RegistryPrice(_price);
     }
 
     /**
-     * @notice updates domain price
-     * @param _domain active domain being defined price
+     * @notice updates registry price
      * @param _price new price
      */
-    function updateDomainPrice(
-        bytes32 _domain,
+    function updateRegistryPrice(
         uint256 _price
     ) 
         external
         onlyController
     {
-        Domain storage domain = domains[_domain];
-        require(domain.state == NodeState.Owned, "Domain not owned");
-        domain.price = _price;
-        emit DomainPrice(_domain, _price);
+        require(state == RegistrarState.Active, "Registry not owned");
+        price = _price;
+        emit RegistryPrice(_price);
     }
 
     /** 
-     * @notice updates default public resolver for newly registred subdomains
+     * @notice updates default public resolver for newly registred usernames
      * @param _resolver new default resolver  
      */
     function setResolver(
@@ -421,44 +393,44 @@ contract ENSSubdomainRegistry is Controlled {
         resolver = PublicResolver(_resolver);
     }
 
-    function getPrice(bytes32 _domainHash) 
+    function getPrice() 
         external 
         view 
-        returns(uint256 subdomainPrice) 
+        returns(uint256 registryPrice) 
     {
-        subdomainPrice = domains[_domainHash].price;
+        return price;
     }
 
-    function getAccountBalance(bytes32 _subdomainHash)
+    function getAccountBalance(bytes32 _label)
         external
         view
         returns(uint256 accountBalance) 
     {
-        accountBalance = accounts[_subdomainHash].tokenBalance;
+        accountBalance = accounts[_label].balance;
     }
 
-    function getAccountOwner(bytes32 _subdomainHash)
+    function getAccountOwner(bytes32 _label)
         external
         view
-        returns(address accountOwner) 
+        returns(address owner) 
     {
-        accountOwner = accounts[_subdomainHash].accountOwner;
+        owner = accounts[_label].owner;
     }
 
-    function getCreationTime(bytes32 _subdomainHash)
+    function getCreationTime(bytes32 _label)
         external
         view
         returns(uint256 creationTime) 
     {
-        creationTime = accounts[_subdomainHash].creationTime;
+        creationTime = accounts[_label].creationTime;
     }
 
-    function getExpirationTime(bytes32 _subdomainHash)
+    function getExpirationTime(bytes32 _label)
         external
         view
         returns(uint256 expirationTime)
     {
-        expirationTime = accounts[_subdomainHash].creationTime + releaseDelay;
+        expirationTime = accounts[_label].creationTime + releaseDelay;
     }
 
 }
