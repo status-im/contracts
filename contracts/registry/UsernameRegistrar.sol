@@ -277,7 +277,7 @@ contract UsernameRegistrar is Controlled {
         delete accounts[_label];
 
         token.approve(_newRegistry, account.balance);
-        _newRegistry.migrateAccount(
+        _newRegistry.migrateUsername(
             _label,
             account.balance,
             account.creationTime,
@@ -286,12 +286,28 @@ contract UsernameRegistrar is Controlled {
     }
     
     /**
+     * @dev callabe only by parent registry to continue migration of ENSSubdomainRegistry
+     * @param _domainHash needs to be this contract ensNode
+     **/
+    function migrateDomain(
+        uint256 _price,
+        bytes32 _domainHash
+    ) 
+        external
+        onlyParentRegistry
+    {
+        require(_domainHash == ensNode, "Wrong Registry");
+        migrateRegistry(_price);
+    }
+
+    /**
      * @dev callabe only by parent registry to continue migration of registry
+     
      **/
     function migrateRegistry(
         uint256 _price
     ) 
-        external
+        public
         onlyParentRegistry
     {
         require(state == RegistrarState.Unactive, "Not unactive");
@@ -303,18 +319,35 @@ contract UsernameRegistrar is Controlled {
 
     /**
      * @dev callable only by parent registry for continue user opt-in migration
-     * @param _label any username hash coming from parent
-     * @param _tokenBalance amount being transferred
-     * @param _creationTime any value coming from parent
-     * @param _accountOwner owner for opt-out/release at registry move
+     * @param _domainHash needs to be this contract ensNode
      **/
     function migrateAccount(
-        bytes32 _label,
+        bytes32 _userHash,
+        bytes32 _domainHash,
         uint256 _tokenBalance,
         uint256 _creationTime,
         address _accountOwner
     )
         external
+    {
+        require(_domainHash == ensNode, "Wrong Registry");
+        migrateUsername(_userHash, _tokenBalance, _creationTime, _accountOwner);
+    }
+
+    /**
+     * @dev callable only by parent registry for continue user opt-in migration
+     * @param _label any username hash coming from parent
+     * @param _tokenBalance amount being transferred
+     * @param _creationTime any value coming from parent
+     * @param _accountOwner owner for opt-out/release at registry move
+     **/
+    function migrateUsername(
+        bytes32 _label,
+        uint256 _tokenBalance,
+        uint256 _creationTime,
+        address _accountOwner
+    )
+        public
         onlyParentRegistry
     {
         if (_tokenBalance > 0) {
