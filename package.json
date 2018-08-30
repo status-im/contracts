@@ -25,6 +25,7 @@
     "elliptic": "^6.4.1",
     "eth-ens-namehash": "^2.0.8",
     "formik": "^0.11.11",
+    "idna-normalize": "^1.0.0",
     "install": "^0.11.0",
     "npm": "^6.1.0",
     "prop-types": "^15.6.1",

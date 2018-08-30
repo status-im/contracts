@@ -27,12 +27,14 @@ const { getPrice, getExpirationTime, release } = ENSSubdomainRegistry.methods;
 import NotInterested from '@material-ui/icons/NotInterested';
 import Face from '@material-ui/icons/Face';
 import Copy from './copy';
+import IDNANormalizer from 'idna-normalize';
 
+const normalizer = new IDNANormalizer();
 const invalidSuffix = '0000000000000000000000000000000000000000'
 const nullAddress = '0x0000000000000000000000000000000000000000'
 const validAddress = address => address != nullAddress;
 const validStatusAddress = address => !address.includes(invalidSuffix);
-const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
+const formatName = domainName => domainName.includes('.') ? normalizer.normalize(domainName) : normalizer.normalize(`${domainName}.stateofus.eth`);
 const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join('.');
 const hashedDomain = domainName => hash(getDomain(domainName));
 const registryIsOwner = address => address == ENSSubdomainRegistry._address;
