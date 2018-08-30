@@ -207,13 +207,9 @@ contract ENSSubdomainRegistry is Controlled {
         external 
     {
         bytes memory subdomain = bytes(_subdomain);
-        require(subdomain.length > 7, "Too small to look like an address.");
+        require(subdomain.length > 12, "Too small to look like an address.");
         require(subdomain[0] == byte("0"), "First character need to be 0");
         require(subdomain[1] == byte("x"), "Second character need to be x");
-        for(uint i = 2; i < 7; i++){
-            byte b = subdomain[i];
-            require((b >= 48 && b <= 57) || (b >= 97 && b <= 102), "Does not look like an address");
-        }
         slashSubdomain(subdomain, _domainHash);
     }  
 
