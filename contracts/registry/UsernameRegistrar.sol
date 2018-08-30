@@ -22,7 +22,7 @@ contract UsernameRegistrar is Controlled {
     
     //slashing conditions
     uint256 public usernameMinLenght;
-    bytes32[] public reservedUsernamesMerkleRoots;
+    bytes32 public reservedUsernamesMerkleRoot;
     
     event RegistryPrice(uint256 price);
     event RegistryMoved(address newRegistry);
@@ -51,7 +51,7 @@ contract UsernameRegistrar is Controlled {
      * @param _resolver Default resolver to use in initial settings
      * @param _ensNode ENS node (registry) being used for usernames subnodes (subregistry)
      * @param _usernameMinLenght Minimum length of usernames 
-     * @param _reservedUsernamesMerkleRoots Merkle Roots of reserved usernames 
+     * @param _reservedUsernamesMerkleRoot Merkle Roots of reserved usernames 
      * @param _parentRegistry Address of old registry (if any) for account migration.
      */
     constructor(
@@ -60,7 +60,7 @@ contract UsernameRegistrar is Controlled {
         PublicResolver _resolver,
         bytes32 _ensNode,
         uint256 _usernameMinLenght,
-        bytes32[] _reservedUsernamesMerkleRoots,
+        bytes32 _reservedUsernamesMerkleRoot,
         address _parentRegistry
     ) 
         public 
@@ -70,7 +70,7 @@ contract UsernameRegistrar is Controlled {
         resolver = _resolver;
         ensNode = _ensNode;
         usernameMinLenght = _usernameMinLenght;
-        reservedUsernamesMerkleRoots = _reservedUsernamesMerkleRoots;
+        reservedUsernamesMerkleRoot = _reservedUsernamesMerkleRoot;
         parentRegistry = _parentRegistry;
     }
 
@@ -209,16 +209,14 @@ contract UsernameRegistrar is Controlled {
      */
     function slashReservedUsername(
         bytes _username,
-        uint256 _rootPos,
         bytes32[] _proof
     ) 
         external 
-    {
-        require(reservedUsernamesMerkleRoots.length > _rootPos, "Invalid Merkle Root");
+    {   
         require(
             MerkleProof.verifyProof(
                 _proof,
-                reservedUsernamesMerkleRoots[_rootPos],
+                reservedUsernamesMerkleRoot,
                 keccak256(_username)
             ),
             "Invalid Proof."

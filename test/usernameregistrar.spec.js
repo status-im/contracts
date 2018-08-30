@@ -49,7 +49,7 @@ var contractsConfig = {
       "$PublicResolver",
       registry.namehash,
       "3", 
-      [merkleRoot],
+      merkleRoot,
       "0x0"
     ],
     "onDeploy": [
@@ -64,7 +64,7 @@ var contractsConfig = {
       "$PublicResolver",
       registry.namehash,
       "3", 
-      [merkleRoot],
+      merkleRoot,
       "$UsernameRegistrar"
     ]
   },
@@ -76,7 +76,7 @@ var contractsConfig = {
       "$PublicResolver",
       dummyRegistry.namehash,
       "3", 
-      [merkleRoot],
+      merkleRoot,
       "0x0"
     ],
     "onDeploy": [
@@ -91,7 +91,7 @@ var contractsConfig = {
       "$PublicResolver",
       dummyRegistry.namehash,
       "3", 
-      [merkleRoot],
+      merkleRoot,
       "$DummyUsernameRegistrar"
     ]
   }
@@ -483,7 +483,7 @@ contract('UsernameRegistrar', function () {
       assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
       let failed;
       try{
-        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), 0, merkleTree.getHexProof(reservedNames[0])).send()
+        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), merkleTree.getHexProof(reservedNames[0])).send()
         failed = false;
       } catch(e){
         failed = true;
@@ -505,7 +505,7 @@ contract('UsernameRegistrar', function () {
       assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
       let failed;
       try{
-        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), 0, merkleTree.getHexProof(reservedNames[1])).send()
+        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), merkleTree.getHexProof(reservedNames[1])).send()
         failed = false;
       } catch(e){
         failed = true;
@@ -525,7 +525,7 @@ contract('UsernameRegistrar', function () {
         utils.zeroBytes32
       ).send({from: registrant});
       assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
-      result = await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), 0, merkleTree.getHexProof(username)).send()  
+      result = await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), merkleTree.getHexProof(username)).send()  
       //TODO: check events
       assert.equal(await ens.methods.owner(usernameHash).call(), utils.zeroAddress);
     });
