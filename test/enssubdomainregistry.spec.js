@@ -7,6 +7,24 @@ const PublicResolver = require('Embark/contracts/PublicResolver');
 const ENSSubdomainRegistry = require('Embark/contracts/ENSSubdomainRegistry');
 const { MerkleTree } = require('../utils/merkleTree.js');
 
+const domains = {
+  free : {
+    name: 'freedomain.eth',
+    price: 0,
+    namehash: namehash.hash('freedomain.eth')
+  },
+  paid : {
+    name: 'stateofus.eth',
+    price: 100000000,
+    namehash: namehash.hash('stateofus.eth')
+  },
+  temp : {
+    name: 'temporary.eth',
+    price: 100000000,
+    namehash: namehash.hash('temporary.eth')
+  }
+}
+
 const reservedNames = [
   'administrator',
   'support',
@@ -44,7 +62,8 @@ var contractsConfig = {
     ],
     "onDeploy": [
       "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0xbd99f8d5e7f81d2d7c1da34b67a2bb3a94dd8c9b0ab40ddc077621b98405983b', ENSSubdomainRegistry.address).send()",
-      "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0x7b4768a525e733422bf968587a91b4036e5176d36f44a9fb5b29d0bca03ab3a3', ENSSubdomainRegistry.address).send()"
+      "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0x7b4768a525e733422bf968587a91b4036e5176d36f44a9fb5b29d0bca03ab3a3', ENSSubdomainRegistry.address).send()",
+      "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0x44fa953dda0aa9a41a27e14a13ed7e08a0d7fc72873516f5b3bf9b50718610df', ENSSubdomainRegistry.address).send()"
     ]
   },
   "UpdatedENSSubdomainRegistry": {
@@ -64,20 +83,6 @@ var contractsConfig = {
 config({ contracts: contractsConfig });
 
 contract('ENSSubdomainRegistry', function () {
-  //this.timeout(0);
-  const domains = {
-    free : {
-      name: 'freedomain.eth',
-      price: 0,
-      namehash: namehash.hash('freedomain.eth')
-    },
-    paid : {
-      name: 'stateofus.eth',
-      price: 100000000,
-      namehash: namehash.hash('stateofus.eth')
-    }
-
-  }
   let ens;
   let accountsArr;
 
@@ -232,7 +237,6 @@ contract('ENSSubdomainRegistry', function () {
       const pubKey = utils.keyFromXY(resolverPubKey[0], resolverPubKey[1]);
       assert.equal(pubKey, contactCode, "pubKey does not match contract code");
     });
-
     it('should register free pubkey only resolver-defined subdomain', async () => {
       const subdomain = 'carlos';
       const registrant = accountsArr[3];
@@ -272,8 +276,6 @@ contract('ENSSubdomainRegistry', function () {
       const pubKey = utils.keyFromXY(resolverPubKey[0], resolverPubKey[1]);
       assert.equal(pubKey, contactCode, "pubKey does not match contract code");
     });
-
-
     it('should register empty subdomain with token cost', async () => {
       const registrant = accountsArr[5];
       const subdomain = 'erin';
@@ -311,6 +313,28 @@ contract('ENSSubdomainRegistry', function () {
   });
 
   describe('release()', function() {
+    it('should not release subdomain due delay', async () => {
+      let registrant = accountsArr[6];
+      let subdomain = 'mistaker';
+      await ENSSubdomainRegistry.methods.register(
+        web3Utils.sha3(subdomain),
+        domains.free.namehash,
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});
+      let failed;
+      try{
+        await ENSSubdomainRegistry.methods.release(
+          web3Utils.sha3(subdomain),
+          domains.free.namehash
+        ).send({from: registrant});  
+        failed = false;
+      } catch(e){
+        failed = true;
+      }
+      assert(failed, "Released after delay period");
+    });
     it('should release free subdomain', async () => {
       let registrant = accountsArr[6];
       let subdomain = 'frank';
@@ -333,17 +357,11 @@ contract('ENSSubdomainRegistry', function () {
         web3Utils.sha3(subdomain),
         domains.free.namehash
       ).send({from: registrant});
-
       //TODO: check events
-
       assert.equal(await ens.methods.owner(subdomainHash).call(), utils.zeroAddress, "Not released name ownship");
       assert.equal(await TestToken.methods.balanceOf(registrant).call(), initialRegistrantBalance, "Registrant token balance unexpectectly changed")
       assert.equal(await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call(), initialRegistryBalance, "Registry token balance unexpectectly changed")
-
     });
-  
-  
-
     it('should release subdomain with cost', async () => {;
       const registrant = accountsArr[6];
       const subdomain = 'frank';
@@ -365,28 +383,22 @@ contract('ENSSubdomainRegistry', function () {
       const initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(subdomainHash).call();
       const initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
       const initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
-      
       await utils.increaseTime(1000)
       const resultRelease = await ENSSubdomainRegistry.methods.release(
         web3Utils.sha3(subdomain),
         domains.paid.namehash
       ).send({from: registrant});
-
       //TODO: check events
-
       assert.equal(await ENSSubdomainRegistry.methods.getAccountBalance(subdomainHash).call(), 0, "Final balance didnt zeroed");
       assert.equal(await TestToken.methods.balanceOf(registrant).call(), (+initialRegistrantBalance)+(+initialAccountBalance), "Releaser token balance didnt increase")
       assert.equal(await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call(), (+initialRegistryBalance)-(+initialAccountBalance), "Registry token balance didnt decrease")
-
     });
-
     it('should release transfered subdomain with cost', async () => {
       let registrant = accountsArr[7];
       let subdomain = 'grace';
       let subdomainHash = namehash.hash(subdomain + '.' + domains.paid.name);
       let labelHash = web3Utils.sha3(subdomain);
       let newOwner = accountsArr[8];
-
       let domainPrice = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
       await TestToken.methods.mint(domainPrice).send({from: registrant});
       await TestToken.methods.approve(ENSSubdomainRegistry.address, domainPrice).send({from: registrant});
@@ -398,7 +410,6 @@ contract('ENSSubdomainRegistry', function () {
         utils.zeroBytes32
       ).send({from: registrant});
       await ens.methods.setOwner(subdomainHash, newOwner).send({from: registrant});
-
       let releaseDelay = await ENSSubdomainRegistry.methods.releaseDelay().call();
       await utils.increaseTime(releaseDelay)
       await utils.increaseTime(1000)
@@ -410,16 +421,40 @@ contract('ENSSubdomainRegistry', function () {
         web3Utils.sha3(subdomain),
         domains.paid.namehash
       ).send({from: newOwner});
-
       //TODO: check events
-
       assert.equal(await ENSSubdomainRegistry.methods.getAccountBalance(subdomainHash).call(), 0, "Final balance didnt zeroed");
       assert.equal(await TestToken.methods.balanceOf(newOwner).call(), (+initialRegistrantBalance)+(+initialAccountBalance), "New owner token balance didnt increase")
       assert.equal(await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call(), (+initialRegistryBalance)-(+initialAccountBalance), "Registry token balance didnt decrease")
-
     });
-    xit('should release moved subdomain account balance by funds owner', async () => {
-
+    it('should release moved subdomain account balance by funds owner', async () => {
+      const domain = domains.temp;
+      await ENSSubdomainRegistry.methods.setDomainPrice(domain.namehash, domain.price).send({from: accountsArr[0]});
+      const registrant = accountsArr[5];
+      const subdomain = 'hardhead';
+      const subdomainHash = namehash.hash(subdomain + '.' + domain.name);
+      const domainPrice = await ENSSubdomainRegistry.methods.getPrice(domain.namehash).call()
+      const label = web3Utils.sha3(subdomain);
+      const node = domain.namehash;
+      await TestToken.methods.mint(domainPrice).send({from: registrant});
+      await TestToken.methods.approve(ENSSubdomainRegistry.address, domainPrice).send({from: registrant});  
+      await ENSSubdomainRegistry.methods.register(
+        label,
+        node,
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});
+      let initialAccountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(subdomainHash).call();
+      const initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
+      const initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
+      await ENSSubdomainRegistry.methods.moveDomain(UpdatedENSSubdomainRegistry.address, domain.namehash).send();
+      const resultRelease = await ENSSubdomainRegistry.methods.release(
+        label,
+        node
+      ).send({from: registrant});
+      //TODO: verify events
+      assert.equal(await TestToken.methods.balanceOf(registrant).call(), (+initialRegistrantBalance)+(+initialAccountBalance), "New owner token balance didnt increase")
+      assert.equal(await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call(), (+initialRegistryBalance)-(+initialAccountBalance), "Registry token balance didnt decrease")
     });
   });
   
@@ -441,19 +476,17 @@ contract('ENSSubdomainRegistry', function () {
         utils.zeroBytes32
       ).send({from: registrant});
       await ens.methods.setOwner(subdomainHash, newOwner).send({from: registrant});
-
       let resultUpdateOwner = await ENSSubdomainRegistry.methods.updateAccountOwner(
         labelHash,
         domains.paid.namehash
       ).send({from: newOwner});
-
       //TODO: check events
-
       assert.equal(await ENSSubdomainRegistry.methods.getAccountOwner(subdomainHash).call(), newOwner, "Backup owner not updated");
     });
   });
+  
   describe('slashInvalidSubdomain()', function() {
-    it('should slash invalid free subdomain', async () => {
+    it('should slash invalid subdomain', async () => {
       let subdomain = 'alicé';
       let subdomainHash = namehash.hash(subdomain + '.' + domains.free.name);
       let registrant = accountsArr[1];
@@ -471,7 +504,28 @@ contract('ENSSubdomainRegistry', function () {
       assert.equal(await ENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call(), 0);
       assert.equal(await ens.methods.owner(subdomainHash).call(), utils.zeroAddress);
     });
+    it('should not slash valid subdomain', async () => {
+      let subdomain = 'legituser';
+      let subdomainHash = namehash.hash(subdomain + '.' + domains.free.name);
+      let registrant = accountsArr[1];
+      await ENSSubdomainRegistry.methods.register(
+        web3Utils.sha3(subdomain),
+        domains.free.namehash,
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});    
+      let failed;
+      try{
+        await ENSSubdomainRegistry.methods.slashInvalidSubdomain(web3Utils.toHex(subdomain), domains.free.namehash, 4).send()
+        failed = false;
+      } catch(e){
+        failed = true;
+      }
+      assert(failed, "Was slashed anyway");
+    });
   });
+
   describe('slashReservedSubdomain()', function() {
     it('should slash reserved name subdomain', async () => {
       let subdomain = reservedNames[0];
@@ -490,7 +544,28 @@ contract('ENSSubdomainRegistry', function () {
       assert.equal(await ens.methods.owner(subdomainHash).call(), utils.zeroAddress);
     });
   });
+
   describe('slashSmallSubdomain()', function() {
+    it('should not slash big subdomain', async() =>{
+      let subdomain = '1234567890';
+      let subdomainHash = namehash.hash(subdomain + '.' + domains.free.name);
+      let registrant = accountsArr[1];
+      await ENSSubdomainRegistry.methods.register(
+        web3Utils.sha3(subdomain),
+        domains.free.namehash,
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});
+      let failed;
+      try{
+        await ENSSubdomainRegistry.methods.slashSmallSubdomain(web3Utils.toHex(subdomain), domains.free.namehash).send()    
+        failed = false;
+      } catch(e){
+        failed = true;
+      }
+      assert(failed, "Was slashed anyway");
+    })
     it('should slash small subdomain', async () => {
       let subdomain = 'a';
       let subdomainHash = namehash.hash(subdomain + '.' + domains.free.name);
@@ -501,21 +576,18 @@ contract('ENSSubdomainRegistry', function () {
         utils.zeroAddress,
         utils.zeroBytes32,
         utils.zeroBytes32
-      ).send({from: registrant});
-      
+      ).send({from: registrant});  
       assert.equal(await ens.methods.owner(subdomainHash).call(), registrant);
       result = await ENSSubdomainRegistry.methods.slashSmallSubdomain(web3Utils.toHex(subdomain), domains.free.namehash).send()    
       assert.equal(await ens.methods.owner(subdomainHash).call(), utils.zeroAddress);
-
     });
   });
   describe('slashAddressLikeSubdomain()', function() {
-    it('should slash address like subdomain', async () => {
-      let subdomain = "0xc6b95bd26";
-      let userlabelHash = "0x59bf8d16c517a40a5dacc3471abd002f3bc0850a13e930e4bee49070a58517e8"; //sha3("0xc6b95bd26")
-      let subdomainHash = "0x6f15e192c1c4537c2d774431219ed42efc6be95efe362104ba546eb574f3f1e5"; //namehash("0xc6b95bd26.freedomain.eth")
+    it('should slash subdomain that starts with 0x and is 12 of lenght or bigger', async () => {
+      let subdomain = "0xc6b95bd26123";
+      let userlabelHash = "0xe311c0592b075c30277c679f0daea74ee1727547efa522fd28d20a8f2c3e435b"; //sha3("0xc6b95bd26123")
+      let subdomainHash = "0x5fcd61e83fda60beb7c9bff8e0e26a6f975a5154ff2e6f5464dc97571c95cdd4"; //namehash("0xc6b95bd26123.freedomain.eth")
       let domainnameHash = "0x297836a76312224372ac04e26dd23d1294bb8256598ec113ecc52735f826beff"; //namehash("freedomain.eth")
-      
       let registrant = accountsArr[1];
       let result = await ENSSubdomainRegistry.methods.register(
         userlabelHash,
@@ -524,23 +596,64 @@ contract('ENSSubdomainRegistry', function () {
         utils.zeroBytes32,
         utils.zeroBytes32
       ).send({from: registrant});
-      
       assert.equal(await ens.methods.owner(subdomainHash).call(), registrant);
       result = await ENSSubdomainRegistry.methods.slashAddressLikeSubdomain(subdomain, domainnameHash).send()    
       assert.equal(await ens.methods.owner(subdomainHash).call(), utils.zeroAddress);
-
+    });
+    it('should not slash subdomain that starts with 0x but is smaller then 12', async () => {
+      let subdomain = "0xc6b95bd26";
+      let userlabelHash = "0x59bf8d16c517a40a5dacc3471abd002f3bc0850a13e930e4bee49070a58517e8"; //sha3("0xc6b95bd26")
+      let subdomainHash = "0x6f15e192c1c4537c2d774431219ed42efc6be95efe362104ba546eb574f3f1e5"; //namehash("0xc6b95bd26.freedomain.eth")
+      let domainnameHash = "0x297836a76312224372ac04e26dd23d1294bb8256598ec113ecc52735f826beff"; //namehash("freedomain.eth")
+      let registrant = accountsArr[1];
+      await ENSSubdomainRegistry.methods.register(
+        userlabelHash,
+        domainnameHash,
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});
+      let failed;
+      try{
+        result = await ENSSubdomainRegistry.methods.slashAddressLikeSubdomain(subdomain, domainnameHash).send()    
+        failed = false;
+      } catch(e){
+        failed = true;
+      }
+      assert(failed, "Was slashed anyway");
+    });
+    it('should not slash subdomain that dont starts 0x and is bigger than 12', async () => {
+      const subdomain = "0a002322c6b95bd26";
+      const userlabelHash = "0xe4769e5c31ff61ac50dce20559a4411a4ca45d94c733cbeda7ab9f28ed75cef1"; //sha3("0a002322c6b95bd26")
+      const subdomainHash = "0x549a8b62103d19b66f70bee21176514340094253a92123609c1df25b0812d40c"; //namehash("0a002322c6b95bd26.freedomain.eth")
+      const domainnameHash = "0x297836a76312224372ac04e26dd23d1294bb8256598ec113ecc52735f826beff"; //namehash("freedomain.eth") 
+      const registrant = accountsArr[1];
+      await ENSSubdomainRegistry.methods.register(
+        userlabelHash,
+        domainnameHash,
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});
+      let failed;
+      try{
+        await ENSSubdomainRegistry.methods.slashAddressLikeSubdomain(subdomain, domainnameHash).send()    
+        failed = false;
+      } catch(e){
+        failed = true;
+      }
+      assert(failed, "Was slashed anyway");     
     });
   });
   describe('slashSubdomain()', function() {
     it('should slash a paid subdomain and get funds from registrant', async () => {
-      let subdomain = 'b';
-      let subdomainHash = namehash.hash(subdomain + '.' + domains.paid.name);
-      let registrant = accountsArr[1];
-      let slasher = accountsArr[2];
+      const subdomain = 'b';
+      const subdomainHash = namehash.hash(subdomain + '.' + domains.paid.name);
+      const registrant = accountsArr[1];
+      const slasher = accountsArr[2];
       const domainPrice = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
       await TestToken.methods.mint(domainPrice).send({from: registrant});
       await TestToken.methods.approve(ENSSubdomainRegistry.address, domainPrice).send({from: registrant});
-      
       await ENSSubdomainRegistry.methods.register(
         web3Utils.sha3(subdomain),
         domains.paid.namehash,
@@ -548,42 +661,62 @@ contract('ENSSubdomainRegistry', function () {
         utils.zeroBytes32,
         utils.zeroBytes32
       ).send({from: registrant});
-      
       assert.equal(await ens.methods.owner(subdomainHash).call(), registrant);
-      let initialSlasherBalance = await TestToken.methods.balanceOf(slasher).call();
+      const initialSlasherBalance = await TestToken.methods.balanceOf(slasher).call();
       await ENSSubdomainRegistry.methods.slashSmallSubdomain(web3Utils.toHex(subdomain), domains.paid.namehash).send({from: slasher})
+      //TODO: check events
       assert.equal(await TestToken.methods.balanceOf(slasher).call(), (+initialSlasherBalance)+(+domainPrice));    
       assert.equal(await ens.methods.owner(subdomainHash).call(), utils.zeroAddress);
-
     });
   });
   
   describe('moveDomain()', function() {
     it('should move free domain to new registry and migrate', async () => {
       const resultMoveDomain = await ENSSubdomainRegistry.methods.moveDomain(UpdatedENSSubdomainRegistry.address, domains.free.namehash).send();
-      
       //TODO: check events
-      
       assert.equal(await ens.methods.owner(domains.free.namehash).call(), UpdatedENSSubdomainRegistry.address, "domain ownership not moved correctly")
-      
     });
     it('should move paid domain to new registry and migrate', async () => {
-      let price = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
+      const price = await ENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call()
       const result = await ENSSubdomainRegistry.methods.moveDomain(UpdatedENSSubdomainRegistry.address, domains.paid.namehash).send();
-
       //TODO: check events
-
       assert.equal(await ens.methods.owner(domains.paid.namehash).call(), UpdatedENSSubdomainRegistry.address, "domain ownership not moved correctly")
       assert.equal(await UpdatedENSSubdomainRegistry.methods.getPrice(domains.paid.namehash).call(), price, "updated registry didnt migrated price")
     });
   });
 
   describe('moveAccount()', function() {
-    xit('should move free subdomain to new registry by funds owner', async () => {
-
+    it('should move free subdomain to new registry by funds owner', async () => {
+      const subdomain = 'alice';
+      const subdomainHash = namehash.hash(subdomain + '.' + domains.free.name);
+      const registrant = accountsArr[1];
+      const label = web3Utils.sha3(subdomain);
+      const node = domains.free.namehash;
+      const creationTime = await ENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call();
+      assert.notEqual(creationTime, 0);
+      assert.equal(await UpdatedENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call(), 0);
+      const result = await ENSSubdomainRegistry.methods.moveAccount(label,node).send({from: registrant});
+      assert.equal(await ENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call(), 0);
+      assert.equal(await UpdatedENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call(), creationTime);
     });
-    xit('should move paid subdomain to new registry by funds owner', async () => {
-
+    it('should move paid subdomain to new registry by funds owner', async () => {
+      const registrant = accountsArr[5];
+      const subdomain = 'erin';
+      const subdomainHash = namehash.hash(subdomain + '.' + domains.paid.name);
+      const label = web3Utils.sha3(subdomain);
+      const node = domains.paid.namehash;
+      const accountBalance = await ENSSubdomainRegistry.methods.getAccountBalance(subdomainHash).call()
+      assert.notEqual(accountBalance, 0);
+      const initialRegistryBalance = await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call();
+      const initialUpdatedRegistryBalance = await TestToken.methods.balanceOf(UpdatedENSSubdomainRegistry.address).call();
+      const creationTime = await ENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call();
+      assert.notEqual(creationTime, 0);
+      assert.equal(await UpdatedENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call(), 0);
+      const result = await ENSSubdomainRegistry.methods.moveAccount(label,node).send({from: registrant});
+      assert.equal(await ENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call(), 0);
+      assert.equal(await UpdatedENSSubdomainRegistry.methods.getCreationTime(subdomainHash).call(), creationTime);
+      assert.equal(await TestToken.methods.balanceOf(ENSSubdomainRegistry.address).call(), (+initialRegistryBalance)-(+accountBalance))
+      assert.equal(await TestToken.methods.balanceOf(UpdatedENSSubdomainRegistry.address).call(), (+initialUpdatedRegistryBalance)+(+accountBalance))
     });
   });
 
