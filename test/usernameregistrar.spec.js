@@ -6,7 +6,7 @@ const ENSRegistry = require('Embark/contracts/ENSRegistry');
 const PublicResolver = require('Embark/contracts/PublicResolver');
 const UsernameRegistrar = require('Embark/contracts/UsernameRegistrar');
 const { MerkleTree } = require('../utils/merkleTree.js');
-
+const { reservedNames } = require('../config/ens-usernames/reservedNames')
 const registry = {
   name: 'stateofus',
   registry:  'stateofus.eth',
@@ -22,13 +22,6 @@ const dummyRegistry = {
   namehash: namehash.hash('dummyreg.eth'),
   price: 100000000
 }
-
-const reservedNames = [
-  'administrator',
-  'support',
-  'status',
-  'network',
-]
 
 // TODO: load file of reserved names and balance array lenght to be even
 
@@ -453,8 +446,8 @@ contract('UsernameRegistrar', function () {
       assert.equal(await ens.methods.owner(usernameHash).call(), utils.zeroAddress);
     });
     it('should not slash valid username', async () => {
-      let username = 'legituser';
-      let registrant = accountsArr[1];
+      const username = 'legituser';
+      const registrant = accountsArr[1];
       await TestToken.methods.mint(registry.price).send({from: registrant});
       await TestToken.methods.approve(UsernameRegistrar.address, registry.price).send({from: registrant});
       await UsernameRegistrar.methods.register(
@@ -475,10 +468,10 @@ contract('UsernameRegistrar', function () {
   });
 
   describe('slashReservedUsername()', function() {
-    it('should slash reserved name username', async () => {
-      let username = reservedNames[0];
-      let usernameHash = namehash.hash(username + '.' + registry.registry);
-      let registrant = accountsArr[1];
+    it('should not slash not reserved name username', async () => {
+      const username = 'somedummyname123';
+      const usernameHash = namehash.hash(username + '.' + registry.registry);
+      const registrant = accountsArr[1];
       await TestToken.methods.mint(registry.price).send({from: registrant});
       await TestToken.methods.approve(UsernameRegistrar.address, registry.price).send({from: registrant});
       await UsernameRegistrar.methods.register(
@@ -488,8 +481,52 @@ contract('UsernameRegistrar', function () {
         utils.zeroBytes32
       ).send({from: registrant});
       assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
-      const proof = merkleTree.getHexProof(reservedNames[0]);
-      result = await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), 0, proof).send()  
+      let failed;
+      try{
+        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), 0, merkleTree.getHexProof(reservedNames[0])).send()
+        failed = false;
+      } catch(e){
+        failed = true;
+      }
+      assert(failed, "Was slashed anyway");
+    });
+    it('should not slash reserved name username with wrong proof ', async () => {
+      const username = reservedNames[5];
+      const usernameHash = namehash.hash(username + '.' + registry.registry);
+      const registrant = accountsArr[1];
+      await TestToken.methods.mint(registry.price).send({from: registrant});
+      await TestToken.methods.approve(UsernameRegistrar.address, registry.price).send({from: registrant});
+      await UsernameRegistrar.methods.register(
+        web3Utils.sha3(username),
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});
+      assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
+      let failed;
+      try{
+        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), 0, merkleTree.getHexProof(reservedNames[1])).send()
+        failed = false;
+      } catch(e){
+        failed = true;
+      }
+      assert(failed, "Was slashed anyway");
+    });
+    it('should slash reserved name username', async () => {
+      const username = reservedNames[7];
+      const usernameHash = namehash.hash(username + '.' + registry.registry);
+      const registrant = accountsArr[1];
+      await TestToken.methods.mint(registry.price).send({from: registrant});
+      await TestToken.methods.approve(UsernameRegistrar.address, registry.price).send({from: registrant});
+      await UsernameRegistrar.methods.register(
+        web3Utils.sha3(username),
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).send({from: registrant});
+      assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
+      result = await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), 0, merkleTree.getHexProof(username)).send()  
+      //TODO: check events
       assert.equal(await ens.methods.owner(usernameHash).call(), utils.zeroAddress);
     });
   });
