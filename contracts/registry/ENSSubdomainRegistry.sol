@@ -25,12 +25,9 @@ contract ENSSubdomainRegistry is Controlled {
     uint256 public subdomainMinLenght;
     bytes32[] public reservedSubdomainsMerkleRoots;
     
-
-
-    event FundsOwner(bytes32 indexed subdomainhash, address fundsOwner);
     event DomainPrice(bytes32 indexed namehash, uint256 price);
     event DomainMoved(bytes32 indexed namehash, address newRegistry);
-    event SlashedSubdomain(bytes32 namehash, address reporter);
+    event SubdomainOwner(bytes32 subdomainHash, address accountOwner);
 
     enum NodeState { Free, Owned, Moved }
     struct Domain {
@@ -41,7 +38,7 @@ contract ENSSubdomainRegistry is Controlled {
     struct Account {
         uint256 tokenBalance;
         uint256 creationTime;
-        address fundsOwner;
+        address accountOwner;
     }
 
     modifier onlyParentRegistry {
@@ -126,9 +123,10 @@ contract ENSSubdomainRegistry is Controlled {
             }
             ens.setOwner(subdomainHash, msg.sender);
         }else {
-            //transfer ownship of subdone to registrant
+            //transfer ownship of subdone directly to registrant
             ens.setSubnodeOwner(_domainHash, _userHash, msg.sender);
         }
+        emit SubdomainOwner(subdomainHash, msg.sender);
     }
     
     /** 
@@ -153,12 +151,13 @@ contract ENSSubdomainRegistry is Controlled {
             ens.setResolver(subdomainHash, address(0));
             ens.setOwner(subdomainHash, address(0));
         } else {
-            require(msg.sender == account.fundsOwner, "Not the former account owner.");
+            require(msg.sender == account.accountOwner, "Not the former account owner.");
         }
         delete accounts[subdomainHash];
         if (account.tokenBalance > 0) {
             require(token.transfer(msg.sender, account.tokenBalance), "Transfer failed");
         }
+        emit SubdomainOwner(subdomainHash, address(0));
         
     }
 
@@ -167,7 +166,7 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _userHash `msg.sender` owned subdomain hash 
      * @param _domainHash choosen contract owned domain hash
      **/
-    function updateFundsOwner(
+    function updateAccountOwner(
         bytes32 _userHash,
         bytes32 _domainHash
     ) 
@@ -177,8 +176,8 @@ contract ENSSubdomainRegistry is Controlled {
         require(accounts[subdomainHash].creationTime > 0, "Username not registered.");
         require(msg.sender == ens.owner(subdomainHash), "Caller not owner of ENS node.");
         require(ens.owner(_domainHash) == address(this), "Registry not owner of domain.");
-        accounts[subdomainHash].fundsOwner = msg.sender;
-        emit FundsOwner(subdomainHash, msg.sender);
+        accounts[subdomainHash].accountOwner = msg.sender;
+        emit SubdomainOwner(subdomainHash, msg.sender);
     }  
     
     /**
@@ -278,7 +277,7 @@ contract ENSSubdomainRegistry is Controlled {
         if(amountToTransfer > 0){
             require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
         }
-        emit SlashedSubdomain(subdomainHash, msg.sender);
+        emit SubdomainOwner(subdomainHash, address(0));
     }
 
     /**
@@ -293,7 +292,7 @@ contract ENSSubdomainRegistry is Controlled {
         external 
     {
         bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
-        require(msg.sender == accounts[subdomainHash].fundsOwner, "Callable only by account owner.");
+        require(msg.sender == accounts[subdomainHash].accountOwner, "Callable only by account owner.");
         ENSSubdomainRegistry _newRegistry = ENSSubdomainRegistry(ens.owner(_domainHash));
         Account memory account = accounts[subdomainHash];
         delete accounts[subdomainHash];
@@ -304,7 +303,7 @@ contract ENSSubdomainRegistry is Controlled {
             _domainHash,
             account.tokenBalance,
             account.creationTime,
-            account.fundsOwner
+            account.accountOwner
         );
     }
     
@@ -329,20 +328,20 @@ contract ENSSubdomainRegistry is Controlled {
      * @param _domainHash choosen contract owned domain hash
      * @param _tokenBalance amount being transferred
      * @param _creationTime any value coming from parent
-     * @param _fundsOwner fundsOwner for opt-out/release at domain move
+     * @param _accountOwner accountOwner for opt-out/release at domain move
      **/
     function migrateAccount(
         bytes32 _userHash,
         bytes32 _domainHash,
         uint256 _tokenBalance,
         uint256 _creationTime,
-        address _fundsOwner
+        address _accountOwner
     )
         external
         onlyParentRegistry
     {
         bytes32 subdomainHash = keccak256(abi.encodePacked(_domainHash, _userHash));
-        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _fundsOwner);
+        accounts[subdomainHash] = Account(_tokenBalance, _creationTime, _accountOwner);
         if (_tokenBalance > 0) {
             require(
                 token.transferFrom(
@@ -442,12 +441,12 @@ contract ENSSubdomainRegistry is Controlled {
         accountBalance = accounts[_subdomainHash].tokenBalance;
     }
 
-    function getFundsOwner(bytes32 _subdomainHash)
+    function getAccountOwner(bytes32 _subdomainHash)
         external
         view
-        returns(address fundsOwner) 
+        returns(address accountOwner) 
     {
-        fundsOwner = accounts[_subdomainHash].fundsOwner;
+        accountOwner = accounts[_subdomainHash].accountOwner;
     }
 
     function getCreationTime(bytes32 _subdomainHash)
