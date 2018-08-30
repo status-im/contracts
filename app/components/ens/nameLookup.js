@@ -7,7 +7,7 @@ import { hash } from 'eth-ens-namehash';
 import { isNil } from 'lodash';
 import Hidden from '@material-ui/core/Hidden';
 import Typography from '@material-ui/core/Typography';
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import { Button, Field, TextInput, MobileSearch, MobileButton, Card, Info, Text } from '../../ui/components'
 import { IconCheck } from '../../ui/icons'
@@ -23,7 +23,7 @@ import StatusLogo from '../../ui/icons/components/StatusLogo'
 import EnsLogo from '../../ui/icons/logos/ens.png';
 import { formatPrice } from '../ens/utils';
 import CheckCircle from '../../ui/icons/components/baseline_check_circle_outline.png';
-const { getPrice, getExpirationTime, release } = ENSSubdomainRegistry.methods;
+const { getPrice, getExpirationTime, release } = UsernameRegistrar.methods;
 import NotInterested from '@material-ui/icons/NotInterested';
 import Face from '@material-ui/icons/Face';
 import Copy from './copy';
@@ -35,7 +35,7 @@ const validStatusAddress = address => !address.includes(invalidSuffix);
 const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
 const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join('.');
 const hashedDomain = domainName => hash(getDomain(domainName));
-const registryIsOwner = address => address == ENSSubdomainRegistry._address;
+const registryIsOwner = address => address == UsernameRegistrar._address;
 const { soliditySha3, fromWei } = web3.utils;
 
 
@@ -117,8 +117,7 @@ class RenderAddresses extends PureComponent {
       if (!isNil(value)) {
         this.setState({ submitted: true })
         release(
-          soliditySha3(domainName),
-          hash('stateofus.eth'),
+          soliditySha3(domainName)
         )
           .send()
       } else {
@@ -199,7 +198,7 @@ class Register extends PureComponent {
 
   componentDidMount() {
     const { domainName } = this.props;
-    getPrice(hashedDomain(domainName))
+    getPrice()
       .call()
       .then((res) => { this.setState({ domainPrice: res })});
   }

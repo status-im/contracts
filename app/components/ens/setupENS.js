@@ -1,6 +1,6 @@
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
 import web3Utils from 'web3-utils'
 import { hash } from 'eth-ens-namehash'
 
@@ -12,10 +12,10 @@ const dispatchSetup = (ENSRegistry) => {
   setSubnodeOwner(zeroBytes32, sha3('eth'), getUserAddress(ENSRegistry))
     .send()
     .then(res => { console.log(res) })
-  setSubnodeOwner(hash('eth'), sha3('stateofus'), ENSSubdomainRegistry._address)
+  setSubnodeOwner(hash('eth'), sha3('stateofus'), UsernameRegistrar._address)
     .send()
     .then(res => { console.log(res) })
-  setSubnodeOwner(hash('eth'), sha3('stateofus'), ENSSubdomainRegistry._address)
+  setSubnodeOwner(hash('eth'), sha3('stateofus'), UsernameRegistrar._address)
     .send()
     .then(res => { console.log(res) })
 }

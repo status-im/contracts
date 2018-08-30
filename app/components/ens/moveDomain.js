@@ -1,7 +1,6 @@
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
 import web3 from 'web3';
 import React from 'react';
-import { hash } from 'eth-ens-namehash';
 import { Button } from 'react-bootstrap';
 import FieldGroup from '../standard/FieldGroup';
 import { withFormik } from 'formik';
@@ -25,16 +24,6 @@ const InnerForm = ({
       value={values.newAddress}
       error={errors.newAddress}
     />
-    <FieldGroup
-      id="domainName"
-      name="domainName"
-      type="text"
-      label="Domain Name"
-      onChange={handleChange}
-      onBlur={handleBlur}
-      value={values.domainName}
-      error={errors.domainName}
-    />
     <Button bsStyle="primary" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
   </form>
 )
@@ -49,16 +38,14 @@ const MoveDomain = withFormik({
     if (Object.keys(errors).length) throw errors;
   },
   async handleSubmit(values, { setSubmitting }) {
-    const { newAddress, domainName } = values;
-    const { methods: { moveDomain } } = ENSSubdomainRegistry;
-    const hashedDomain = hash(domainName);
+    const { newAddress } = values;
+    const { methods: { moveDomain } } = UsernameRegistrar;
     console.log(
-      `inputs for moveDomain of domain name: ${domainName}`,
-      newAddress,
-      hashedDomain,
+      `inputs for moveDomain:}`,
+      newAddress
     );
 
-    moveDomain(newAddress, hashedDomain)
+    moveDomain(newAddress)
       .send()
       .then((res) => {
         setSubmitting(false);

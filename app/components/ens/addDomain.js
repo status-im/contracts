@@ -1,4 +1,4 @@
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
 import web3 from 'web3';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
 import React from 'react';
@@ -11,16 +11,16 @@ import { debounce } from 'lodash/fp';
 const { methods: { owner } } = ENSRegistry;
 
 const delay = debounce(500);
-const getDomain = (hashedDomain, domains) => domains(hashedDomain).call();
-const registryIsOwner = address => address == ENSSubdomainRegistry._address;
-const fetchOwner = domainName => owner(hash(domainName)).call();
+const getRegistry = (hashedRegistry, registrys) => registrys(hashedRegistry).call();
+const registryIsOwner = address => address == UsernameRegistrar._address;
+const fetchOwner = registryName => owner(hash(registryName)).call();
 const debounceFetchOwner = delay(fetchOwner);
-const getAndIsOwner = async domainName => {
-  const address = await debounceFetchOwner(domainName);
+const getAndIsOwner = async registryName => {
+  const address = await debounceFetchOwner(registryName);
   return registryIsOwner(address);
 }
-const fetchDomain = delay(getDomain);
-const setPrice = (domainFn, hashedDomain, price) => domainFn(hashedDomain, price || 0).send();
+const fetchRegistry = delay(getRegistry);
+const setPrice = (registryFn, price) => registryFn(price || 0).send();
 
 const InnerForm = ({
   values,
@@ -33,53 +33,50 @@ const InnerForm = ({
 }) => (
   <form onSubmit={handleSubmit}>
     <FieldGroup
-      id="domainName"
-      name="domainName"
+      id="registryName"
+      name="registryName"
       type="text"
-      label="Domain Name"
+      label="Registry Name"
       onChange={handleChange}
       onBlur={handleBlur}
-      value={values.domainName}
-      error={errors.domainName}
+      value={values.registryName}
+      error={errors.registryName}
     />
     <FieldGroup
-      id="domainPrice"
-      name="domainPrice"
+      id="registryPrice"
+      name="registryPrice"
       type="number"
-      label="Domain Price"
-      placeholder="(Optional) Domain will be free if left blank"
+      label="Registry Price"
+      placeholder="(Optional) Registry will be free if left blank"
       onChange={handleChange}
       onBlur={handleBlur}
-      value={values.domainPrice}
+      value={values.registryPrice}
     />
     <Button bsStyle="primary" type="submit" disabled={isSubmitting || !!Object.keys(errors).length}>{!isSubmitting ? 'Submit' : 'Submitting to the Blockchain - (this may take awhile)'}</Button>
   </form>
 )
 
-const AddDomain = withFormik({
-  mapPropsToValues: props => ({ domainName: '', domainPrice: '' }),
+const AddRegistry = withFormik({
+  mapPropsToValues: props => ({ registryName: '', registryPrice: '' }),
   async validate(values) {
-    const { domainName } = values;
+    const { registryName } = values;
     const errors = {};
-    if (!domainName) errors.domainName = 'Required';
-    if (domainName && !await getAndIsOwner(domainName)) errors.domainName = 'This domain is not owned by registry';
+    if (!registryName) errors.registryName = 'Required';
+    if (registryName && !await getAndIsOwner(registryName)) errors.registryName = 'This registry is not owned by registry';
     if (Object.keys(errors).length) throw errors;
   },
   async handleSubmit(values, { setSubmitting }) {
-    const { domainName, domainPrice } = values;
-    const { methods: { domains, setDomainPrice, updateDomainPrice } } = ENSSubdomainRegistry;
-    const hashedDomain = hash(domainName);
-    const { state } = await getDomain(hashedDomain, domains);
+    const { registryName, registryPrice } = values;
+    const { methods: { state, activate, updateRegistryPrice } } = UsernameRegistrar;
+    const { registryState } = await state();
     console.log(
       'Inputs for setPrice',
-      Number(state) ? 'updateDomainPrice' : 'setDomainPrice',
-      hashedDomain,
-      web3.utils.toWei(domainPrice.toString(), 'ether'),
+      Number(registryState) ? 'updateRegistryPrice' : 'activate',
+      web3.utils.toWei(registryPrice.toString(), 'ether'),
     );
     setPrice(
-      Number(state) ? updateDomainPrice : setDomainPrice,
-      hashedDomain,
-      web3.utils.toWei(domainPrice.toString(), 'ether'),
+      Number(registryState) ? updateRegistryPrice : activate,
+      web3.utils.toWei(registryPrice.toString(), 'ether'),
     )
       .then(res => {
         setSubmitting(false);
@@ -92,4 +89,4 @@ const AddDomain = withFormik({
   }
 })(InnerForm);
 
-export default AddDomain;
+export default AddRegistry;
