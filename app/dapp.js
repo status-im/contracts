@@ -62,7 +62,7 @@ class App extends React.Component {
           </div>
         </Fade>}
         {searching && <Fade in={searching}>
-          <Web3Render ready={isMainnet} network="ropsten">
+          <Web3Render ready={isRopsten} network="ropsten">
             <div>
               <NameLookup />
               <Hidden mdDown>

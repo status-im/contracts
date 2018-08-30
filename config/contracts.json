@@ -1,4 +1,4 @@
-{
+module.exports = {
   "default": {
     "deployment": {
       "host": "localhost",
@@ -26,6 +26,8 @@
           "$TestToken",
           "$ENSRegistry",
           "$PublicResolver",
+          "3",
+          [merkleRoot],
           "0x0"
         ]
       }
@@ -53,6 +55,8 @@
           "$TestToken",
           "$ENSRegistry",
           "$PublicResolver",
+          "3",
+          [merkleRoot],
           "0x0"
         ],
         "onDeploy": [
@@ -93,11 +97,14 @@
       "TestToken": {
         "address": "0xc55cF4B03948D7EBc8b9E8BAD92643703811d162"
       },
-      "ENSSubdomainRegistry": {
-        "address": "0x9e183BC54Bb4f3cCa1A478CA6f2c3EdC37B60478"
-      },
       "SafeMath": {
         "address": "0x0F9992f7737f9ba3aceD170D4D1259cb2CEcc050"
+      },
+      "MerkleProof": {
+        "address": "0x5df00E70AD165D50228DB6d8285fB6EAAc630FD7"
+      },
+      "MerkleProofWrapper": {
+        "address": "0x58E01078d14142E0370526dFdAE44E4f508c844B"
       },
       "ERC20Receiver": { "deploy": false }
     }

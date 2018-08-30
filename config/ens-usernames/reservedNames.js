@@ -1,4 +1,4 @@
-reserved_usernames = [
+exports.ReservedUsernames = [
 	
 
 	//Ethereum reserved words
