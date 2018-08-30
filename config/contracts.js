@@ -1,4 +1,8 @@
-{
+const { MerkleTree } = require('../utils/merkleTree.js');
+const { reservedNames } = require('../config/ens-usernames/reservedNames')
+const merkleTree = new MerkleTree(reservedNames);
+
+module.exports = {
   "default": {
     "deployment": {
       "host": "localhost",
@@ -28,7 +32,7 @@
           "$PublicResolver",
           "0x5f7791d31ca0493e9ca7c9ca16695ecd9d5044768674d14d31ab5d8277518fff",
           3,
-          "0x0",
+          merkleTree.getHexRoot(),
           "0x0"
         ]
       }
@@ -58,7 +62,7 @@
           "$PublicResolver",
           "0x5f7791d31ca0493e9ca7c9ca16695ecd9d5044768674d14d31ab5d8277518fff",
           3,
-          "0x0",
+          merkleTree.getHexRoot(),
           "0x0"
         ],
         "onDeploy": [
