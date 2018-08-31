@@ -90,41 +90,7 @@ contract UsernameRegistrar is Controlled {
         external 
         returns(bytes32 namehash) 
     {
-        require(state == RegistrarState.Active, "Registry unavailable.");
-        namehash = keccak256(abi.encodePacked(ensNode, _label));
-        require(ensRegistry.owner(namehash) == address(0), "ENS node already owned.");
-        require(accounts[_label].creationTime == 0, "Username already registered.");
-        accounts[_label] = Account(price, block.timestamp, msg.sender);
-        if(price > 0) {
-            require(token.allowance(msg.sender, address(this)) >= price, "Unallowed to spend.");
-            require(
-                token.transferFrom(
-                    address(msg.sender),
-                    address(this),
-                    price
-                ),
-                "Transfer failed"
-            );
-        } 
-    
-        bool resolvePubkey = _pubkeyA != 0 || _pubkeyB != 0;
-        bool resolveAccount = _account != address(0);
-        if (resolvePubkey || resolveAccount) {
-            //set to self the ownship to setup initial resolver
-            ensRegistry.setSubnodeOwner(ensNode, _label, address(this));
-            ensRegistry.setResolver(namehash, resolver); //default resolver
-            if (resolveAccount) {
-                resolver.setAddr(namehash, _account);
-            }
-            if (resolvePubkey) {
-                resolver.setPubkey(namehash, _pubkeyA, _pubkeyB);
-            }
-            ensRegistry.setOwner(namehash, msg.sender);
-        }else {
-            //transfer ownship of subdone directly to registrant
-            ensRegistry.setSubnodeOwner(ensNode, _label, msg.sender);
-        }
-        emit UsernameOwner(namehash, msg.sender);
+        return registerUser(msg.sender, _label, _account, _pubkeyA, _pubkeyB);
     }
     
     /** 
@@ -153,8 +119,7 @@ contract UsernameRegistrar is Controlled {
         if (account.balance > 0) {
             require(token.transfer(msg.sender, account.balance), "Transfer failed");
         }
-        emit UsernameOwner(_label, address(0));
-        
+        emit UsernameOwner(_label, address(0));   
     }
 
     /** 
@@ -243,23 +208,6 @@ contract UsernameRegistrar is Controlled {
         slashUsername(_username);
     }
 
-    function slashUsername(bytes _username) internal {
-        bytes32 label = keccak256(_username);
-        bytes32 namehash = keccak256(abi.encodePacked(ensNode, label));
-        require(accounts[label].creationTime > 0, "Username not registered.");
-        
-        ensRegistry.setSubnodeOwner(ensNode, label, address(this));
-        ensRegistry.setResolver(namehash, address(0));
-        ensRegistry.setOwner(namehash, address(0));
-        
-        uint256 amountToTransfer = accounts[label].balance;
-        delete accounts[label];
-        if(amountToTransfer > 0){
-            require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
-        }
-        emit UsernameOwner(namehash, address(0));
-    }
-
     /**
      * @notice Migrate account to new registry
      * @param _label `msg.sender` owned username hash 
@@ -298,21 +246,67 @@ contract UsernameRegistrar is Controlled {
         migrateRegistry(_price);
     }
 
-    /**
-     * @dev callabe only by parent registry to continue migration of registry
-     
-     **/
-    function migrateRegistry(
+    /** 
+     * @notice Activate registry
+     * @param _price The price of username registry
+     */
+    function activate(
         uint256 _price
     ) 
-        public
-        onlyParentRegistry
+        external
+        onlyController
     {
-        require(state == RegistrarState.Unactive, "Not unactive");
-        require(ensRegistry.owner(ensNode) == address(this), "ENS registry owner not transfered.");
+        require(state == RegistrarState.Unactive, "Registry state is not unactive");
+        require(ensRegistry.owner(ensNode) == address(this), "Registry does not own registry");
         price = _price;
         state = RegistrarState.Active;
         emit RegistryPrice(_price);
+    }
+
+    /** 
+     * @notice updates default public resolver for newly registred usernames
+     * @param _resolver new default resolver  
+     */
+    function setResolver(
+        address _resolver
+    ) 
+        external
+        onlyController
+    {
+        resolver = PublicResolver(_resolver);
+    }
+
+    /**
+     * @notice updates registry price
+     * @param _price new price
+     */
+    function updateRegistryPrice(
+        uint256 _price
+    ) 
+        external
+        onlyController
+    {
+        require(state == RegistrarState.Active, "Registry not owned");
+        price = _price;
+        emit RegistryPrice(_price);
+    }
+  
+    /**
+     * @notice moves a registry to other Registry (will not move usernames accounts)
+     * @param _newRegistry new registry hodling this registry
+     */
+    function moveRegistry(
+        UsernameRegistrar _newRegistry
+    ) 
+        external
+        onlyController
+    {
+        require(state == RegistrarState.Active, "Wrong registry");
+        require(ensRegistry.owner(ensNode) == address(this), "Registry not owned anymore.");
+        state = RegistrarState.Moved;
+        ensRegistry.setOwner(ensNode, _newRegistry);
+        _newRegistry.migrateRegistry(price);
+        emit RegistryMoved(_newRegistry);
     }
 
     /**
@@ -330,6 +324,71 @@ contract UsernameRegistrar is Controlled {
     {
         require(_domainHash == ensNode, "Wrong Registry");
         migrateUsername(_userHash, _tokenBalance, _creationTime, _accountOwner);
+    }
+
+    /**
+     * @notice gets registrar price 
+     * @return registry price
+     **/
+    function getPrice() 
+        external 
+        view 
+        returns(uint256 registryPrice) 
+    {
+        return price;
+    }
+    
+    /**
+     * @notice reads amount tokens locked in username 
+     * @param _label hash of username
+     * @return locked username balance
+     **/
+    function getAccountBalance(bytes32 _label)
+        external
+        view
+        returns(uint256 accountBalance) 
+    {
+        accountBalance = accounts[_label].balance;
+    }
+
+    /**
+     * @notice reads username owner at this contract, 
+     * which can release or migrate in case of upgrade
+     * @param _label hash of username
+     * @return username owner
+     **/
+    function getAccountOwner(bytes32 _label)
+        external
+        view
+        returns(address owner) 
+    {
+        owner = accounts[_label].owner;
+    }
+
+    /**
+     * @notice reads when the account was registered 
+     * @param _label hash of username
+     * @return registration time
+     **/
+    function getCreationTime(bytes32 _label)
+        external
+        view
+        returns(uint256 creationTime) 
+    {
+        creationTime = accounts[_label].creationTime;
+    }
+
+    /**
+     * @notice calculate time where username can be released 
+     * @param _label hash of username
+     * @return exact time when username can be released
+     **/
+    function getExpirationTime(bytes32 _label)
+        external
+        view
+        returns(uint256 expirationTime)
+    {
+        expirationTime = accounts[_label].creationTime + releaseDelay;
     }
 
     /**
@@ -360,108 +419,99 @@ contract UsernameRegistrar is Controlled {
         }
         accounts[_label] = Account(_tokenBalance, _creationTime, _accountOwner);
     }
-     
+
     /**
-     * @notice moves a registry to other Registry (will not move usernames accounts)
-     * @param _newRegistry new registry hodling this registry
-     */
-    function moveRegistry(
-        UsernameRegistrar _newRegistry
-    ) 
-        external
-        onlyController
-    {
-        require(state == RegistrarState.Active, "Wrong registry");
-        require(ensRegistry.owner(ensNode) == address(this), "Registry not owned anymore.");
-        state = RegistrarState.Moved;
-        ensRegistry.setOwner(ensNode, _newRegistry);
-        _newRegistry.migrateRegistry(price);
-        emit RegistryMoved(_newRegistry);
-    }
-       
-    /** 
-     * @notice Activate registry
-     * @param _price The price of username registry
-     */
-    function activate(
+     * @dev callabe only by parent registry to continue migration
+     * of registry and activate registrar
+     * @param _price the price to setup and activate domain
+     **/
+    function migrateRegistry(
         uint256 _price
     ) 
-        external
-        onlyController
+        public
+        onlyParentRegistry
     {
-        require(state == RegistrarState.Unactive, "Registry state is not unactive");
-        require(ensRegistry.owner(ensNode) == address(this), "Registry does not own registry");
+        require(state == RegistrarState.Unactive, "Not unactive");
+        require(ensRegistry.owner(ensNode) == address(this), "ENS registry owner not transfered.");
         price = _price;
         state = RegistrarState.Active;
         emit RegistryPrice(_price);
     }
 
     /**
-     * @notice updates registry price
-     * @param _price new price
+     * @notice Registers `_label` username to `ensNode` setting msg.sender as owner.
+     * @param _owner address registering the user and paying registry price.
+     * @param _label choosen unowned username hash 
+     * @param _account optional address to set at public resolver
+     * @param _pubkeyA optional pubkey part A to set at public resolver
+     * @param _pubkeyB optional pubkey part B to set at public resolver
      */
-    function updateRegistryPrice(
-        uint256 _price
+    function registerUser(
+        address _owner,
+        bytes32 _label,
+        address _account,
+        bytes32 _pubkeyA,
+        bytes32 _pubkeyB
     ) 
-        external
-        onlyController
+        internal 
+        returns(bytes32 namehash)
     {
-        require(state == RegistrarState.Active, "Registry not owned");
-        price = _price;
-        emit RegistryPrice(_price);
+        require(state == RegistrarState.Active, "Registry unavailable.");
+        namehash = keccak256(abi.encodePacked(ensNode, _label));
+        require(ensRegistry.owner(namehash) == address(0), "ENS node already owned.");
+        require(accounts[_label].creationTime == 0, "Username already registered.");
+        accounts[_label] = Account(price, block.timestamp, _owner);
+        if(price > 0) {
+            require(token.allowance(_owner, address(this)) >= price, "Unallowed to spend.");
+            require(
+                token.transferFrom(
+                    _owner,
+                    address(this),
+                    price
+                ),
+                "Transfer failed"
+            );
+        } 
+    
+        bool resolvePubkey = _pubkeyA != 0 || _pubkeyB != 0;
+        bool resolveAccount = _account != address(0);
+        if (resolvePubkey || resolveAccount) {
+            //set to self the ownship to setup initial resolver
+            ensRegistry.setSubnodeOwner(ensNode, _label, address(this));
+            ensRegistry.setResolver(namehash, resolver); //default resolver
+            if (resolveAccount) {
+                resolver.setAddr(namehash, _account);
+            }
+            if (resolvePubkey) {
+                resolver.setPubkey(namehash, _pubkeyA, _pubkeyB);
+            }
+            ensRegistry.setOwner(namehash, _owner);
+        } else {
+            //transfer ownship of subdone directly to registrant
+            ensRegistry.setSubnodeOwner(ensNode, _label, _owner);
+        }
+        emit UsernameOwner(namehash, _owner);
     }
-
-    /** 
-     * @notice updates default public resolver for newly registred usernames
-     * @param _resolver new default resolver  
+    
+    /**
+     * @dev removes account hash of `_username` and send account.balance to msg.sender
+     * @param _username username being slashed
      */
-    function setResolver(
-        address _resolver
-    ) 
-        external
-        onlyController
-    {
-        resolver = PublicResolver(_resolver);
+    function slashUsername(bytes _username) internal {
+        bytes32 label = keccak256(_username);
+        bytes32 namehash = keccak256(abi.encodePacked(ensNode, label));
+        require(accounts[label].creationTime > 0, "Username not registered.");
+        
+        ensRegistry.setSubnodeOwner(ensNode, label, address(this));
+        ensRegistry.setResolver(namehash, address(0));
+        ensRegistry.setOwner(namehash, address(0));
+        
+        uint256 amountToTransfer = accounts[label].balance;
+        delete accounts[label];
+        if(amountToTransfer > 0){
+            require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
+        }
+        emit UsernameOwner(namehash, address(0));
     }
-
-    function getPrice() 
-        external 
-        view 
-        returns(uint256 registryPrice) 
-    {
-        return price;
-    }
-
-    function getAccountBalance(bytes32 _label)
-        external
-        view
-        returns(uint256 accountBalance) 
-    {
-        accountBalance = accounts[_label].balance;
-    }
-
-    function getAccountOwner(bytes32 _label)
-        external
-        view
-        returns(address owner) 
-    {
-        owner = accounts[_label].owner;
-    }
-
-    function getCreationTime(bytes32 _label)
-        external
-        view
-        returns(uint256 creationTime) 
-    {
-        creationTime = accounts[_label].creationTime;
-    }
-
-    function getExpirationTime(bytes32 _label)
-        external
-        view
-        returns(uint256 expirationTime)
-    {
-        expirationTime = accounts[_label].creationTime + releaseDelay;
-    }
-
+    
 }
