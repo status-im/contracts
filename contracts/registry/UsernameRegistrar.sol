@@ -32,7 +32,8 @@ contract UsernameRegistrar is Controlled {
     bytes32 public ensNode;
     uint256 public price;
     RegistrarState public state;
-    
+    uint256 private reserveAmount;
+
     struct Account {
         uint256 balance;
         uint256 creationTime;
@@ -117,6 +118,7 @@ contract UsernameRegistrar is Controlled {
         }
         delete accounts[_label];
         if (account.balance > 0) {
+            reserveAmount -= account.balance;
             require(token.transfer(msg.sender, account.balance), "Transfer failed");
         }
         emit UsernameOwner(_label, address(0));   
@@ -327,6 +329,52 @@ contract UsernameRegistrar is Controlled {
     }
 
     /**
+     * @notice withdraw tokens forced into the contract
+     * @param _token address of ERC20 withdrawing excess, or address(0) if want ETH/
+     * @param _beneficiary who gets the funds
+     **/
+    function withdrawExcessBalance(
+        address _token,
+        address _beneficiary
+    )
+        external 
+        onlyController 
+    {
+        require(_beneficiary != address(0), "Cannot burn token");
+        if (_token == address(0)) {
+            _beneficiary.transfer(address(this).balance);
+        } else {
+            ERC20Token excessToken = ERC20Token(_token);
+            uint256 amount = excessToken.balanceOf(address(this));
+            if(_token == address(token)){
+                require(amount > reserveAmount, "Is not excess");
+                amount -= reserveAmount;
+            } else {
+                require(amount > 0, "Is not excess");
+            }
+            excessToken.transfer(_beneficiary, amount);
+        }
+    }
+
+    /**
+     * @notice withdraw ens nodes not belonging to this contract
+     * @param _domainHash ens node namehash
+     * @param _beneficiary new owner of ens node
+     **/
+    function withdrawWrongNode(
+        bytes32 _domainHash,
+        address _beneficiary
+    ) 
+        external
+        onlyController
+    {
+        require(_beneficiary != address(0), "Cannot burn node");
+        require(_domainHash != ensNode, "Cannot withdraw main node");   
+        require(ensRegistry.owner(_domainHash) == address(this), "Not owner of this node");   
+        ensRegistry.setOwner(_domainHash, _beneficiary);
+    }
+
+    /**
      * @notice gets registrar price 
      * @return registry price
      **/
@@ -416,6 +464,7 @@ contract UsernameRegistrar is Controlled {
                 ), 
                 "Error moving funds from old registar."
             );
+            reserveAmount += _tokenBalance;
         }
         accounts[_label] = Account(_tokenBalance, _creationTime, _accountOwner);
     }
@@ -471,6 +520,7 @@ contract UsernameRegistrar is Controlled {
                 ),
                 "Transfer failed"
             );
+            reserveAmount += price;
         } 
     
         bool resolvePubkey = _pubkeyA != 0 || _pubkeyB != 0;
@@ -508,7 +558,8 @@ contract UsernameRegistrar is Controlled {
         
         uint256 amountToTransfer = accounts[label].balance;
         delete accounts[label];
-        if(amountToTransfer > 0){
+        if (amountToTransfer > 0) {
+            reserveAmount -= amountToTransfer;
             require(token.transfer(msg.sender, amountToTransfer), "Error in transfer.");   
         }
         emit UsernameOwner(namehash, address(0));
