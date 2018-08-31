@@ -87,6 +87,12 @@ module.exports = {
         "address": "0xDBf9038cf5Aaa030890790dB87E746E00Fc352b3"
       },
       "ERC20Receiver": { "deploy": false },
+      "MerkleProof": {
+        "address": "0x713ED9846463235df08D92B886938651105D3940"
+      },
+      "MerkleProofWrapper": {
+        "address": "0x76E55E13C5891a90f7fCA2e1238a6B3463F564e2"
+      },
       "SafeMath": {
         "address": "0xA115a57952D3337e2a1aB3Cb82bA376EEcDDc469"
       }
