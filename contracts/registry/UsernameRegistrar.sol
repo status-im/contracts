@@ -8,7 +8,7 @@ import "../ens/PublicResolver.sol";
 
 /** 
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
- * @notice Sell ENS usernames of a ENS registry.
+ * @notice Registers usernames as ENS subnodes of the domain `ensNode`
  */
 contract UsernameRegistrar is Controlled {
     
@@ -77,6 +77,16 @@ contract UsernameRegistrar is Controlled {
 
     /**
      * @notice Registers `_label` username to `ensNode` setting msg.sender as owner.
+     * Terms of name registration:
+     * - SNT is deposited, not spent; the amount is locked up for 1 year.
+     * - After 1 year, the user can release the name and receive their deposit back (at any time).
+     * - User deposits are completely protected. The contract controller cannot access them.
+     * - User's address(es) will be publicly associated with the ENS name.
+     * - User must authorise the contract to transfer `price` `token.name()`  on their behalf.
+     * - Usernames registered with less then `usernameMinLenght` characters can be slashed.
+     * - Usernames contained in the merkle tree of root `reservedUsernamesMerkleRoot` can be slashed.
+     * - Usernames starting with `0x` and bigger then 12 characters can be slashed.
+     * - If terms of the contract change—e.g. Status makes contract upgrades—the user has the right to release the username and get their deposit back.
      * @param _label choosen unowned username hash 
      * @param _account optional address to set at public resolver
      * @param _pubkeyA optional pubkey part A to set at public resolver
