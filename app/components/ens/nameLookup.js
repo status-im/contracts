@@ -91,7 +91,9 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
        : 'Name is unavailable'}
     </Typography>
     <Typography type='body2' style={{ textAlign: 'center', margin: 10 }}>
-      {edit ? 'The contact code connects the domain with a unique Status account' : 'registered to the addresses below'}
+      {edit
+       ? 'The contact code connects the domain with a unique Status account'
+       : validAddress(address) ? 'registered to the addresses below' : 'Click \'Edit\' to add a valid address and contact code'}
     </Typography>
     {edit && <RegisterSubDomain
       subDomain={domainName}
@@ -115,6 +117,7 @@ class RenderAddresses extends PureComponent {
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
     const onClose = value => { this.setState({ editAction: value, editMenu: false }) }
+    const onClickEdit = () => { validAddress(address) ? this.setState({ editMenu: true }) : this.setState({ editAction: 'edit' }) }
     const isOwner = defaultAccount === ownerAddress;
     const closeReleaseAlert = value => {
       if (!isNil(value)) {
@@ -145,7 +148,7 @@ class RenderAddresses extends PureComponent {
         </Hidden>
         <Hidden mdUp>
           {submitted ? <TransactionComplete type={editAction} setStatus={setStatus} /> : <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} onSubmit={() => { this.setState({ submitted: true}) }}/>}
-          {isOwner && !editAction && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
+          {isOwner && !editAction && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={onClickEdit}/>}
           <EditOptions open={editMenu} onClose={onClose} />
           <ReleaseDomainAlert open={editAction === 'release' && !submitted} handleClose={closeReleaseAlert} />
         </Hidden>
@@ -253,7 +256,7 @@ const ConnectedRegister = connect(mapStateToProps, mapDispatchToProps)(Register)
 
 const DisplayAddress = connect(mapStateToProps)((props) => (
   <Fragment>
-    {validAddress(props.address) ?
+    {validAddress(props.address) || props.defaultAccount === props.ownerAddress ?
      <RenderAddresses {...props} />
      :
      <Hidden mdUp>
@@ -311,6 +314,7 @@ const InnerForm = ({
   isSubmitting,
   status,
   setStatus,
+  defaultAccount
 }) => (
   <div>
     <Hidden mdDown>
@@ -321,7 +325,7 @@ const InnerForm = ({
     </Hidden>
     {!status
      ? <LookupForm {...{ handleSubmit, values, handleChange }} />
-     : validAddress(status.address) ?
+     : validAddress(status.address) || defaultAccount === status.ownerAddress ?
      <DisplayAddress
        domainName={values.domainName}
        address={status.address}
@@ -365,4 +369,4 @@ const NameLookup = withFormik({
   }
 })(InnerForm)
 
-export default NameLookup;
+export default connect(mapStateToProps)(NameLookup);
