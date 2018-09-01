@@ -60,7 +60,8 @@ const backButton = {
   cursor: 'pointer'
 }
 
-const generatePrettyDate = (timestamp) => new Date(timestamp * 1000).toDateString();
+const validTimestamp = timestamp => Number(timestamp) > 99999999;
+const generatePrettyDate = timestamp => new Date(timestamp * 1000).toDateString();
 
 const DisplayBox = ({ displayType, pubKey }) => (
   <div style={{ border: '1px solid #EEF2F5', borderRadius: '8px', margin: '1em', display: 'flex', flexDirection: 'column', justifyContent: 'space-around', minHeight: '4em' }}>
@@ -80,7 +81,7 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
         {isOwner ? <Face style={{ marginBottom: '0.5em', fontSize: '2em' }} /> : <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>}
         <b>{formatName(domainName)}</b>
         <div style={{ fontWeight: 300 }}>
-          {expirationTime && <i>Locked until {generatePrettyDate(expirationTime)}</i>}
+          {validTimestamp(expirationTime) && <i>Locked until {generatePrettyDate(expirationTime)}</i>}
         </div>
       </Typography>
     </Info>
