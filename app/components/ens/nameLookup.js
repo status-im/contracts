@@ -28,10 +28,10 @@ import NotInterested from '@material-ui/icons/NotInterested';
 import Face from '@material-ui/icons/Face';
 import Copy from './copy';
 import IDNANormalizer from 'idna-normalize';
+import { nullAddress, getResolver } from './utils/domain';
 
 const normalizer = new IDNANormalizer();
 const invalidSuffix = '0000000000000000000000000000000000000000'
-const nullAddress = '0x0000000000000000000000000000000000000000'
 const validAddress = address => address != nullAddress;
 const validStatusAddress = address => !address.includes(invalidSuffix);
 const formatName = domainName => domainName.includes('.') ? normalizer.normalize(domainName) : normalizer.normalize(`${domainName}.stateofus.eth`);
@@ -214,10 +214,11 @@ class Register extends PureComponent {
   }
 
   render() {
-    const { domainName, setStatus, style, registryOwnsDomain } = this.props;
+    const { domainName, setStatus, style, registryOwnsDomain, ownerAddress, defaultAccount } = this.props;
     const { domainPrice, registered, submitted } = this.state;
     const formattedDomain = formatName(domainName);
     const formattedDomainArray = formattedDomain.split('.');
+    const isOwner = defaultAccount === ownerAddress;
     return (
       <div style={style}>
         {!registered && !submitted ?
@@ -334,6 +335,7 @@ const InnerForm = ({
          style={{ position: 'relative' }}
          setStatus={setStatus}
          registryOwnsDomain={status.registryOwnsDomain}
+         ownerAddress={status.ownerAddress}
          domainName={values.domainName}  />
      </div>
     }
@@ -346,10 +348,7 @@ const NameLookup = withFormik({
     const { domainName } = values;
     const { methods: { owner, resolver } } = ENSRegistry;
     const lookupHash = hash(formatName(domainName));
-    const resolverAddress = await resolver(lookupHash).call();
-    const resolverContract = resolverAddress !== nullAddress
-                           ? new EmbarkJS.Contract({ abi: PublicResolver._jsonInterface, address: resolverAddress })
-                           : PublicResolver;
+    const resolverContract = await getResolver(lookupHash);
     const { addr, pubkey } = resolverContract.methods;
     const address = addr(lookupHash).call();
     const keys = pubkey(lookupHash).call();
