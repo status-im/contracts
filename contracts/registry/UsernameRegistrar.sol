@@ -1,8 +1,9 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "../common/MerkleProof.sol";
 import "../common/Controlled.sol";
 import "../token/ERC20Token.sol";
+import "../token/ApproveAndCallFallBack.sol";
 import "../ens/ENS.sol";
 import "../ens/PublicResolver.sol";
 
@@ -10,7 +11,7 @@ import "../ens/PublicResolver.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
  * @notice Registers usernames as ENS subnodes of the domain `ensNode`
  */
-contract UsernameRegistrar is Controlled {
+contract UsernameRegistrar is Controlled, ApproveAndCallFallBack {
     
     ERC20Token public token;
     ENS public ensRegistry;
@@ -449,6 +450,63 @@ contract UsernameRegistrar is Controlled {
         expirationTime = accounts[_label].creationTime + releaseDelay;
     }
 
+    /**
+     * @notice Receive approval, callable only by `token()`. 
+     * @param _from who is approving
+     * @param _amount amount being approved, need to be equal `getPrice()`
+     * @param _token token being approved, need to be equal `token()`
+     * @param _data abi encoded data with selector of `register(bytes32,address,bytes32,bytes32)`
+     */
+    function receiveApproval(
+        address _from,
+        uint256 _amount,
+        address _token,
+        bytes _data
+    ) 
+        public
+    {
+        require(_amount == price, "Wrong value");
+        require(_token == address(token), "Wrong token");
+        require(_token == address(msg.sender), "Wrong call");
+        require(_data.length <= 132, "Wrong data length");
+        bytes4 sig;
+        bytes32 label;
+        address account;
+        bytes32 pubkeyA;
+        bytes32 pubkeyB;
+        (sig, label, account, pubkeyA, pubkeyB) = abiDecodeRegister(_data);
+        require(
+            sig == bytes4(0xb82fedbb), //bytes4(keccak256("register(bytes32,address,bytes32,bytes32)"))
+            "Wrong method selector"
+        );
+        registerUser(_from, label, account, pubkeyA, pubkeyB);
+    }
+    
+    /**
+     * @dev decodes abi encoded data with selector for "register(bytes32,address,bytes32,bytes32)"
+     * @param _data abi encoded data
+     */
+    function abiDecodeRegister(
+        bytes _data
+    ) 
+        private 
+        pure 
+        returns(
+            bytes4 sig,
+            bytes32 label,
+            address account,
+            bytes32 pubkeyA,
+            bytes32 pubkeyB
+        )
+    {
+        assembly {
+            sig := mload(add(_data, add(0x20, 0)))
+            label := mload(add(_data, 36))
+            account := mload(add(_data, 68))
+            pubkeyA := mload(add(_data, 100))
+            pubkeyB := mload(add(_data, 132))
+        }
+    }
     /**
      * @dev callable only by parent registry for continue user opt-in migration
      * @param _label any username hash coming from parent

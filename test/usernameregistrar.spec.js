@@ -288,6 +288,113 @@ contract('UsernameRegistrar', function () {
     });
   });
 
+  describe('receiveApproval()', function() {
+    it('should register username', async () => {
+      const registrant = accountsArr[5];
+      const username = 'erinauto';
+      const usernameHash = namehash.hash(username + '.' + registry.registry);
+      const label = web3Utils.sha3(username);
+      const registryPrice = await UsernameRegistrar.methods.getPrice().call()
+      await TestToken.methods.mint(registry.price).send({from: registrant});
+      const initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
+      const initialRegistryBalance = await TestToken.methods.balanceOf(UsernameRegistrar.address).call();
+      
+      const registerCall = UsernameRegistrar.methods.register(
+        web3Utils.sha3(username),
+        utils.zeroAddress,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).encodeABI();
+      const approveAndCallResult = await TestToken.methods.approveAndCall(UsernameRegistrar.address, registry.price, registerCall).send({from: registrant});  
+      // TODO: check events
+      assert.equal(await ens.methods.owner(usernameHash).call(), registrant, "ENSRegistry owner mismatch");
+      assert.equal(await ens.methods.resolver(usernameHash).call(), utils.zeroAddress, "Resolver wrongly defined");
+      assert.equal(await UsernameRegistrar.methods.getAccountBalance(label).call(), registryPrice, "Registry username account balance wrong");
+      assert.equal(await UsernameRegistrar.methods.getAccountOwner(label).call(), registrant, "Account owner mismatch");
+      assert.equal(await TestToken.methods.balanceOf(registrant).call(), +initialRegistrantBalance-registryPrice, "User final balance wrong")
+      assert.equal(await TestToken.methods.balanceOf(UsernameRegistrar.address).call(), (+initialRegistryBalance)+(+registry.price), "Registry final balance wrong")
+    });
+    it('should register username only resolveing address  ', async () => {
+      const registrant = accountsArr[2];
+      await TestToken.methods.mint(registry.price).send({from: registrant});
+      const username = 'bobauto';
+      const usernameHash = namehash.hash(username + '.' + registry.registry);
+      const label = web3Utils.sha3(username);
+      const registerCall = UsernameRegistrar.methods.register(
+        web3Utils.sha3(username),
+
+        registrant,
+        utils.zeroBytes32,
+        utils.zeroBytes32
+      ).encodeABI();
+
+      const approveAndCallResult = await TestToken.methods.approveAndCall(UsernameRegistrar.address, registry.price, registerCall).send({from: registrant});  
+      // TODO: check events
+
+      assert.equal(await ens.methods.owner(usernameHash).call(), registrant, "ENSRegistry owner mismatch");
+      assert.equal(await ens.methods.resolver(usernameHash).call(), PublicResolver.address, "Resolver wrongly defined");
+      assert.equal(await UsernameRegistrar.methods.getAccountBalance(label).call(), registry.price, "Wrong account balance");
+      assert.equal(await UsernameRegistrar.methods.getAccountOwner(label).call(), registrant, "Account owner mismatch");
+      assert.equal(await PublicResolver.methods.addr(usernameHash).call(), registrant, "Resolved address not set");      
+      const resolverPubKey = await PublicResolver.methods.pubkey(usernameHash).call();
+      assert.equal(resolverPubKey[0], utils.zeroBytes32 , "Unexpected resolved pubkey[0]");
+      assert.equal(resolverPubKey[1], utils.zeroBytes32 , "Unexpected resolved pubkey[1]");
+    });
+
+    it('should register username with only status contact', async () => {
+      const username = 'carlosauto';
+      const registrant = accountsArr[3];
+      await TestToken.methods.mint(registry.price).send({from: registrant});
+      const usernameHash = namehash.hash(username + '.' + registry.registry);
+      const contactCode = '0x04dbb31252d9bddb4e4d362c7b9c80cba74732280737af97971f42ccbdc716f3f3efb1db366880e52d09b1bfd59842e833f3004088892b7d14b9ce9e957cea9a82';
+      const points = utils.generateXY(contactCode);
+      const label = web3Utils.sha3(username);
+      const registerCall = UsernameRegistrar.methods.register(
+        web3Utils.sha3(username),
+        utils.zeroAddress,
+        points.x,
+        points.y
+      ).encodeABI();
+
+      const approveAndCallResult = await TestToken.methods.approveAndCall(UsernameRegistrar.address, registry.price, registerCall).send({from: registrant});  
+      // TODO: check events
+      assert.equal(await ens.methods.owner(usernameHash).call(), registrant, "ENSRegistry owner mismatch");
+      assert.equal(await ens.methods.resolver(usernameHash).call(), PublicResolver.address, "Resolver wrongly defined");
+      assert.equal(await UsernameRegistrar.methods.getAccountBalance(label).call(), registry.price, "Wrong account balance");
+      assert.equal(await UsernameRegistrar.methods.getAccountOwner(label).call(), registrant, "Account owner mismatch");
+      assert.equal(await PublicResolver.methods.addr(usernameHash).call(), utils.zeroAddress, "Resolved address not set");      
+      const resolverPubKey = await PublicResolver.methods.pubkey(usernameHash).call();
+      const pubKey = utils.keyFromXY(resolverPubKey[0], resolverPubKey[1]);
+      assert.equal(pubKey, contactCode, "pubKey does not match contract code");
+    });
+    it('should register username with status contact code and address', async () => {
+      const registrant = accountsArr[2];
+      await TestToken.methods.mint(registry.price).send({from: registrant});
+      const username = 'bob2auto';
+      const usernameHash = namehash.hash(username + '.' + registry.registry);
+      const contactCode = '0x04dbb31252d9bddb4e4d362c7b9c80cba74732280737af97971f42ccbdc716f3f3efb1db366880e52d09b1bfd59842e833f3004088892b7d14b9ce9e957cea9a82';
+      const points = utils.generateXY(contactCode);
+      const label = web3Utils.sha3(username);
+      const registerCall = UsernameRegistrar.methods.register(
+        label,
+        registrant,
+        points.x,
+        points.y
+      ).encodeABI();
+
+      const approveAndCallResult = await TestToken.methods.approveAndCall(UsernameRegistrar.address, registry.price, registerCall).send({from: registrant});  
+      // TODO: check events
+      assert.equal(await ens.methods.owner(usernameHash).call(), registrant, "ENSRegistry owner mismatch");
+      assert.equal(await ens.methods.resolver(usernameHash).call(), PublicResolver.address, "Resolver wrongly defined");
+      assert.equal(await UsernameRegistrar.methods.getAccountBalance(label).call(), registry.price, "Wrong account balance");
+      assert.equal(await UsernameRegistrar.methods.getAccountOwner(label).call(), registrant, "Account owner mismatch");
+      assert.equal(await PublicResolver.methods.addr(usernameHash).call(), registrant, "Resolved address not set");      
+      const resolverPubKey = await PublicResolver.methods.pubkey(usernameHash).call();
+      const pubKey = utils.keyFromXY(resolverPubKey[0], resolverPubKey[1]);
+      assert.equal(pubKey, contactCode, "pubKey does not match contract code");
+    });
+  });
+
   describe('release()', function() {
     it('should not release username due delay', async () => {
       let registrant = accountsArr[6];
