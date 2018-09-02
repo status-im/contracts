@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "./ERC20Token.sol";
 
@@ -20,23 +20,15 @@ contract StandardToken is ERC20Token {
         return transfer(msg.sender, _to, _value);
     }
 
-    /**
-     * @dev Aprove the passed address to spend the specified amount of tokens on behalf of msg.sender.
-     * @param _spender The address which will spend the funds.
-     * @param _value The amount of tokens to be spent.
-     */
-    function approve(address _spender, uint256 _value) returns (bool) {
-
-      // To change the approve amount you first have to reduce the addresses`
-      //  allowance to zero by calling `approve(_spender, 0)` if it is not
-      //  already 0 to mitigate the race condition described here:
-      //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-      require((_value == 0) || (allowed[msg.sender][_spender] == 0));
-
-      allowed[msg.sender][_spender] = _value;
-      Approval(msg.sender, _spender, _value);
-      return true;
-  }
+    function approve(
+        address _to,
+        uint256 _value
+    )
+        external
+        returns (bool success)
+    {
+        return approve(msg.sender, _to, _value);
+    }
 
     function transferFrom(
         address _from,
@@ -78,6 +70,25 @@ contract StandardToken is ERC20Token {
         returns(uint256 currentTotalSupply)
     {
         return supply;
+    }
+    
+    /**
+     * @dev Aprove the passed address to spend the specified amount of tokens on behalf of msg.sender.
+     * @param _from The address that is approving the spend
+     * @param _spender The address which will spend the funds.
+     * @param _value The amount of tokens to be spent.
+     */
+    function approve(address _from, address _spender, uint256 _value) internal returns (bool) {
+
+        // To change the approve amount you first have to reduce the addresses`
+        //  allowance to zero by calling `approve(_spender, 0)` if it is not
+        //  already 0 to mitigate the race condition described here:
+        //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+        require((_value == 0) || (allowed[_from][_spender] == 0), "Bad usage");
+
+        allowed[_from][_spender] = _value;
+        emit Approval(_from, _spender, _value);
+        return true;
     }
 
     function mint(

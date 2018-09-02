@@ -1,7 +1,7 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "./StandardToken.sol";
-import './ApprovalReceiver.sol';
+import "./ApproveAndCallFallBack.sol";
 
 /**
  * @notice ERC20Token for test scripts, can be minted by anyone.
@@ -18,9 +18,13 @@ contract TestToken is StandardToken {
         mint(msg.sender, _amount);
     }
 
-    function approveAndCall(address _spender, uint256 _value, bytes _extraData) returns (bool success) {
-      assert(approve(_spender, _value));
-      return ApprovalReceiver(_spender).receiveApproval(msg.sender, _value, this, _extraData);
+    function approveAndCall(address _spender, uint256 _value, bytes _extraData) 
+        external 
+        returns (bool success)
+    {
+        approve(msg.sender, _spender, _value);
+        ApproveAndCallFallBack(_spender).receiveApproval(msg.sender, _value, this, _extraData);
+        return true;
     }
 
 }
