@@ -483,12 +483,13 @@ contract('UsernameRegistrar', function () {
       await TestToken.methods.mint(dummyRegistry.price).send({from: registrant});
       await DummyUsernameRegistrar.methods.activate(dummyRegistry.price).send({from: accountsArr[0]});
       await TestToken.methods.approve(DummyUsernameRegistrar.address, dummyRegistry.price).send({from: registrant});  
-      
+
       const username = 'hardhead';
       const label = web3Utils.sha3(username);
+      const usernameHash = namehash.hash(username + '.' + dummyRegistry.registry);
       await DummyUsernameRegistrar.methods.register(
         label,
-        utils.zeroAddress,
+        registrant,
         utils.zeroBytes32,
         utils.zeroBytes32
       ).send({from: registrant});
@@ -496,12 +497,21 @@ contract('UsernameRegistrar', function () {
       const initialRegistrantBalance = await TestToken.methods.balanceOf(registrant).call();
       const initialRegistryBalance = await TestToken.methods.balanceOf(DummyUsernameRegistrar.address).call();
       await DummyUsernameRegistrar.methods.moveRegistry(UpdatedDummyUsernameRegistrar.address).send();
+
+      assert.equal(await ens.methods.owner(usernameHash).call(), registrant, "ENSRegistry owner mismatch");
+      assert.equal(await ens.methods.resolver(usernameHash).call(), PublicResolver.address, "Resolver wrongly defined");
+      assert.equal(await PublicResolver.methods.addr(usernameHash).call(), registrant, "Resolved address not set");      
+      
       const resultRelease = await DummyUsernameRegistrar.methods.release(
         label
       ).send({from: registrant});
       //TODO: verify events
       assert.equal(await TestToken.methods.balanceOf(registrant).call(), (+initialRegistrantBalance)+(+initialAccountBalance), "New owner token balance didnt increase")
       assert.equal(await TestToken.methods.balanceOf(DummyUsernameRegistrar.address).call(), (+initialRegistryBalance)-(+initialAccountBalance), "Registry token balance didnt decrease")
+      assert.equal(await ens.methods.resolver(usernameHash).call(), utils.zeroAddress, "Resolver not undefined");
+      assert.equal(await ens.methods.owner(usernameHash).call(), utils.zeroAddress, "Owner not removed");
+      //We are not cleaning PublicResolver or any resolver, so the value should remain the same.
+      assert.equal(await PublicResolver.methods.addr(usernameHash).call(), registrant, "Resolved address not set");      
     });
   });
   

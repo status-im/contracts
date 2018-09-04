@@ -114,11 +114,10 @@ contract UsernameRegistrar is Controlled, ApproveAndCallFallBack {
     )
         external 
     {
-        bool isRegistryController = ensRegistry.owner(ensNode) == address(this);
         bytes32 namehash = keccak256(abi.encodePacked(ensNode, _label));
         Account memory account = accounts[_label];
         require(account.creationTime > 0, "Username not registered.");
-        if (isRegistryController) {
+        if (state == RegistrarState.Active) {
             require(msg.sender == ensRegistry.owner(namehash), "Not owner of ENS node.");
             require(block.timestamp > account.creationTime + releaseDelay, "Release period not reached.");
             ensRegistry.setSubnodeOwner(ensNode, _label, address(this));
@@ -126,6 +125,14 @@ contract UsernameRegistrar is Controlled, ApproveAndCallFallBack {
             ensRegistry.setOwner(namehash, address(0));
         } else {
             require(msg.sender == account.owner, "Not the former account owner.");
+            address newOwner = ensRegistry.owner(ensNode);
+            //low level call, case dropUsername not implemented or failing, proceed release.
+            newOwner.call(
+                abi.encodeWithSignature(
+                    "dropUsername(bytes32)",
+                    _label
+                )
+            );
         }
         delete accounts[_label];
         if (account.balance > 0) {
@@ -133,6 +140,7 @@ contract UsernameRegistrar is Controlled, ApproveAndCallFallBack {
             require(token.transfer(msg.sender, account.balance), "Transfer failed");
         }
         emit UsernameOwner(_label, address(0));   
+    
     }
 
     /** 
@@ -337,6 +345,23 @@ contract UsernameRegistrar is Controlled, ApproveAndCallFallBack {
     {
         require(_domainHash == ensNode, "Wrong Registry");
         migrateUsername(_userHash, _tokenBalance, _creationTime, _accountOwner);
+    }
+
+    /** 
+     * @dev clears ens registry. Callable only by parant registry for continue user opt-out migration
+     * @param _label any username hash coming from parent 
+     */
+    function dropUsername(
+        bytes32 _label
+    ) 
+        external 
+        onlyParentRegistry
+    {
+        require(accounts[_label].creationTime == 0, "Already migrated");
+        bytes32 namehash = keccak256(abi.encodePacked(ensNode, _label));
+        ensRegistry.setSubnodeOwner(ensNode, _label, address(this));
+        ensRegistry.setResolver(namehash, address(0));
+        ensRegistry.setOwner(namehash, address(0));
     }
 
     /**
