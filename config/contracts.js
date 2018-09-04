@@ -1,6 +1,8 @@
 const { MerkleTree } = require('../utils/merkleTree.js');
-const { reservedNames } = require('../config/ens-usernames/reservedNames')
-const merkleTree = new MerkleTree(reservedNames);
+const { ReservedUsernames } = require('./ens-usernames/reservedNames.js');
+
+const merkleTree = new MerkleTree(ReservedUsernames);
+const merkleRoot = merkleTree.getHexRoot();
 
 module.exports = {
   "default": {
@@ -25,6 +27,7 @@ module.exports = {
         "args": ["$ENSRegistry"],
         "deploy": true
       },
+
       "UsernameRegistrar": {
         "args": [
           "$TestToken",
@@ -33,7 +36,7 @@ module.exports = {
           "0x5f7791d31ca0493e9ca7c9ca16695ecd9d5044768674d14d31ab5d8277518fff",
           3,
           merkleTree.getHexRoot(),
-          "0x0"
+          "0x9e183BC54Bb4f3cCa1A478CA6f2c3EdC37B60478"
         ]
       }
     }
@@ -85,6 +88,7 @@ module.exports = {
       "UsernameRegistrar": {
         "address": "0xDBf9038cf5Aaa030890790dB87E746E00Fc352b3"
       },
+      "ERC20Receiver": { "deploy": false },
       "MerkleProof": {
         "address": "0x713ED9846463235df08D92B886938651105D3940"
       },
@@ -116,6 +120,9 @@ module.exports = {
       },
       "MerkleProofWrapper": {
         "address": "0x58E01078d14142E0370526dFdAE44E4f508c844B"
+      },
+      "UsernameRegistrar": {
+        "address": "0x028F3Df706c5295Ba283c326F4692c375D14cb68"
       },
       "ERC20Receiver": { "deploy": false }
     }

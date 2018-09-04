@@ -15,6 +15,7 @@ import FieldGroup from '../standard/FieldGroup';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import TokenPermissions from '../standard/TokenPermissionConnect';
 import { generateXY } from '../../utils/ecdsa';
+import { getResolver } from './utils/domain';
 
 const { soliditySha3, fromWei } = web3.utils;
 
@@ -147,7 +148,8 @@ const RegisterSubDomain = withFormik({
     if (!subDomain) errors.subDomain = 'Required';
     return errors;
   },
-  handleSubmit(values, { setSubmitting, props }) {
+  async handleSubmit(values, { setSubmitting, props }) {
+    const { editAccount, preRegisteredCallback } = props;
     const { address, statusAddress } = values;
     const { subDomain, domainName, registeredCallbackFn } = props || values;
     const { methods: { register } } = UsernameRegistrar;
@@ -156,7 +158,8 @@ const RegisterSubDomain = withFormik({
     const domainNameHash = hash(domainName);
     const resolveToAddr = address || zeroAddress;
     const points = statusAddress ? generateXY(statusAddress) : null;
-    const node = hash(`${subDomain}.${domainName}`);
+    const node = hash(subDomain.includes('eth') ? subDomain : `${subDomain}.${domainName}`);
+    const { methods: { setAddr, setPubkey } } = await getResolver(node);
 
     const funcsToSend = [];
     const args = [
@@ -165,24 +168,24 @@ const RegisterSubDomain = withFormik({
       points ? points.x : zeroBytes32,
       points ? points.y : zeroBytes32,
     ];
-    props.editAccount
+    editAccount
       ? funcsToSend.push(setAddr(node, resolveToAddr), setPubkey(node, args[3], args[4]))
       : funcsToSend.push(register(...args));
     while (funcsToSend.length) {
       const toSend = funcsToSend.pop();
-      toSend.estimateGas().then(gasEstimated => {
-        console.log("Register would work. :D Gas estimated: "+gasEstimated)
-        console.log("Trying: register(\""+subdomainHash+"\",\""+domainNameHash+"\",\""+resolveToAddr+"\",\""+zeroBytes32+"\",\""+zeroBytes32+"\")")
-        props.preRegisteredCallback && props.preRegisteredCallback();
-        toSend.send({gas: gasEstimated+1000}).then(txId => {
-          if(txId.status == "0x1" || txId.status == "0x01"){
-            console.log("Register send success. :)")
+      toSend.estimateGas().then((gasEstimated) => {
+        console.log("Register would work. :D Gas estimated: " + gasEstimated)
+        console.log("Trying: register(\"" + subdomainHash + "\",\"" + domainNameHash + "\",\"" + resolveToAddr + "\",\"" + zeroBytes32 + "\",\"" + zeroBytes32 + "\")");
+        if (preRegisteredCallback) preRegisteredCallback();
+        toSend.send({gas: gasEstimated + 1000 }).then((txId) => {
+          if (txId.status == "0x1" || txId.status == "0x01"){
+            console.log("Register send success. :)");
           } else {
-            console.log("Register send errored. :( Out of gas? ")
+            console.log("Register send errored. :( Out of gas? ");
           }
           console.dir(txId)
         }).catch(err => {
-          console.log("Register send errored. :( Out of gas?")
+          console.log("Register send errored. :( Out of gas?");
           console.dir(err)
         }).finally(() => {
           // REQUIRED UNTIL THIS ISSUES IS RESOLVED: https://github.com/jaredpalmer/formik/issues/597

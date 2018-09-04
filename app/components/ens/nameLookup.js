@@ -27,12 +27,14 @@ const { getPrice, getExpirationTime, release } = UsernameRegistrar.methods;
 import NotInterested from '@material-ui/icons/NotInterested';
 import Face from '@material-ui/icons/Face';
 import Copy from './copy';
+import IDNANormalizer from 'idna-normalize';
+import { nullAddress, getResolver } from './utils/domain';
 
+const normalizer = new IDNANormalizer();
 const invalidSuffix = '0000000000000000000000000000000000000000'
-const nullAddress = '0x0000000000000000000000000000000000000000'
 const validAddress = address => address != nullAddress;
 const validStatusAddress = address => !address.includes(invalidSuffix);
-const formatName = domainName => domainName.includes('.') ? domainName : `${domainName}.stateofus.eth`;
+const formatName = domainName => domainName.includes('.') ? normalizer.normalize(domainName) : normalizer.normalize(`${domainName}.stateofus.eth`);
 const getDomain = fullDomain => formatName(fullDomain).split('.').slice(1).join('.');
 const hashedDomain = domainName => hash(getDomain(domainName));
 const registryIsOwner = address => address == UsernameRegistrar._address;
@@ -58,7 +60,8 @@ const backButton = {
   cursor: 'pointer'
 }
 
-const generatePrettyDate = (timestamp) => new Date(timestamp * 1000).toDateString();
+const validTimestamp = timestamp => Number(timestamp) > 99999999;
+const generatePrettyDate = timestamp => new Date(timestamp * 1000).toDateString();
 
 const DisplayBox = ({ displayType, pubKey }) => (
   <div style={{ border: '1px solid #EEF2F5', borderRadius: '8px', margin: '1em', display: 'flex', flexDirection: 'column', justifyContent: 'space-around', minHeight: '4em' }}>
@@ -78,7 +81,7 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
         {isOwner ? <Face style={{ marginBottom: '0.5em', fontSize: '2em' }} /> : <NotInterested style={{ marginBottom: '0.5em', fontSize: '2em' }}/>}
         <b>{formatName(domainName)}</b>
         <div style={{ fontWeight: 300 }}>
-          {expirationTime && <i>Locked until {generatePrettyDate(expirationTime)}</i>}
+          {validTimestamp(expirationTime) && <i>Locked until {generatePrettyDate(expirationTime)}</i>}
         </div>
       </Typography>
     </Info>
@@ -88,7 +91,9 @@ const MobileAddressDisplay = ({ domainName, address, statusAccount, expirationTi
        : 'Name is unavailable'}
     </Typography>
     <Typography type='body2' style={{ textAlign: 'center', margin: 10 }}>
-      {edit ? 'The contact code connects the domain with a unique Status account' : 'registered to the addresses below'}
+      {edit
+       ? 'The contact code connects the domain with a unique Status account'
+       : validAddress(address) ? 'registered to the addresses below' : 'Click \'Edit\' to add a valid address and contact code'}
     </Typography>
     {edit && <RegisterSubDomain
       subDomain={domainName}
@@ -112,6 +117,7 @@ class RenderAddresses extends PureComponent {
     const isCopied = address => address == copied;
     const renderCopied = address => isCopied(address) && <span style={{ color: theme.positive }}><IconCheck/>Copied!</span>;
     const onClose = value => { this.setState({ editAction: value, editMenu: false }) }
+    const onClickEdit = () => { validAddress(address) ? this.setState({ editMenu: true }) : this.setState({ editAction: 'edit' }) }
     const isOwner = defaultAccount === ownerAddress;
     const closeReleaseAlert = value => {
       if (!isNil(value)) {
@@ -127,7 +133,7 @@ class RenderAddresses extends PureComponent {
     return (
       <Fragment>
         <Hidden mdDown>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', margin: 50 }}>
             <Info.Action title="Click to copy"><b>{formatName(domainName)}</b>{expirationTime && <i> (Expires {generatePrettyDate(expirationTime)})</i>} Resolves To:</Info.Action>
             {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
             <CopyToClipboard text={address} onCopy={markCopied}>
@@ -141,7 +147,7 @@ class RenderAddresses extends PureComponent {
         </Hidden>
         <Hidden mdUp>
           {submitted ? <TransactionComplete type={editAction} setStatus={setStatus} /> : <MobileAddressDisplay {...this.props} isOwner={isOwner} edit={editAction === 'edit'} onSubmit={() => { this.setState({ submitted: true}) }}/>}
-          {isOwner && !editAction && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={() => { this.setState({ editMenu: true }) } }/>}
+          {isOwner && !editAction && <MobileButton text="Edit" style={{ marginLeft: '35%' }} onClick={onClickEdit}/>}
           <EditOptions open={editMenu} onClose={onClose} />
           <ReleaseDomainAlert open={editAction === 'release' && !submitted} handleClose={closeReleaseAlert} />
         </Hidden>
@@ -211,10 +217,11 @@ class Register extends PureComponent {
   }
 
   render() {
-    const { domainName, setStatus, style, registryOwnsDomain } = this.props;
+    const { domainName, setStatus, style, registryOwnsDomain, ownerAddress, defaultAccount } = this.props;
     const { domainPrice, registered, submitted } = this.state;
     const formattedDomain = formatName(domainName);
     const formattedDomainArray = formattedDomain.split('.');
+    const isOwner = defaultAccount === ownerAddress;
     return (
       <div style={style}>
         {!registered && !submitted ?
@@ -248,7 +255,7 @@ const ConnectedRegister = connect(mapStateToProps, mapDispatchToProps)(Register)
 
 const DisplayAddress = connect(mapStateToProps)((props) => (
   <Fragment>
-    {validAddress(props.address) ?
+    {validAddress(props.address) || props.defaultAccount === props.ownerAddress ?
      <RenderAddresses {...props} />
      :
      <Hidden mdUp>
@@ -306,6 +313,7 @@ const InnerForm = ({
   isSubmitting,
   status,
   setStatus,
+  defaultAccount
 }) => (
   <div>
     <Hidden mdDown>
@@ -316,7 +324,7 @@ const InnerForm = ({
     </Hidden>
     {!status
      ? <LookupForm {...{ handleSubmit, values, handleChange }} />
-     : validAddress(status.address) ?
+     : validAddress(status.address) || defaultAccount === status.ownerAddress ?
      <DisplayAddress
        domainName={values.domainName}
        address={status.address}
@@ -331,6 +339,7 @@ const InnerForm = ({
          style={{ position: 'relative' }}
          setStatus={setStatus}
          registryOwnsDomain={status.registryOwnsDomain}
+         ownerAddress={status.ownerAddress}
          domainName={values.domainName}  />
      </div>
     }
@@ -343,10 +352,7 @@ const NameLookup = withFormik({
     const { domainName } = values;
     const { methods: { owner, resolver } } = ENSRegistry;
     const lookupHash = hash(formatName(domainName));
-    const resolverAddress = await resolver(lookupHash).call();
-    const resolverContract = resolverAddress !== nullAddress
-                           ? new EmbarkJS.Contract({ abi: PublicResolver._jsonInterface, address: resolverAddress })
-                           : PublicResolver;
+    const resolverContract = await getResolver(lookupHash);
     const { addr, pubkey } = resolverContract.methods;
     const address = addr(lookupHash).call();
     const keys = pubkey(lookupHash).call();
@@ -362,4 +368,4 @@ const NameLookup = withFormik({
   }
 })(InnerForm)
 
-export default NameLookup;
+export default connect(mapStateToProps)(NameLookup);

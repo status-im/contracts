@@ -21,6 +21,7 @@ import Welcome from './components/ens/welcome';
 import Fade from '@material-ui/core/Fade';
 import Hidden from '@material-ui/core/Hidden';
 import Web3Render from './components/standard/Web3Render';
+import StatusOptimized from './components/standard/StatusOptimized';
 
 import './dapp.css';
 
@@ -53,6 +54,9 @@ class App extends React.Component {
     return (
       <div>
         <CssBaseline />
+        <Hidden mdDown>
+          <StatusOptimized />
+        </Hidden>
         <div style={{ display: admin ? 'block' : 'none' }} >
           <AdminMode style={{ display: admin ? 'block' : 'none' }}/>
         </div>
