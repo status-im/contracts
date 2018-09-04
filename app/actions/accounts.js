@@ -1,5 +1,5 @@
 import ERC20Token from 'Embark/contracts/ERC20Token'
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry'
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar'
 import TestToken from 'Embark/contracts/TestToken'
 
 import { getDefaultAccount } from '../utils/web3Helpers'
@@ -42,7 +42,7 @@ export const checkAndDispatchStatusContactCode = dispatch => {
 export const fetchAndDispatchSNTAllowance = dispatch => {
   const { methods: { allowance } } = TestToken;
   const { receiveSntAllowance } = accountActions;
-  const spender = ENSSubdomainRegistry._address;
+  const spender = UsernameRegistrar._address;
   allowance(getDefaultAccount(), spender)
     .call()
     .then(allowance => {

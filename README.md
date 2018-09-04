@@ -19,4 +19,4 @@ Usage:
 | token/ERC20Token                       | No     | Yes  | Yes |
 | ens/ENSRegistry                        | Yes    | Yes  | No  |
 | ens/PublicRegistry                     | Yes    | Yes  | No  |
-| registry/ENSSubdomainRegistry          | Yes    | Yes  | No  |
+| registry/UsernameRegistrar             | Yes    | Yes  | Yes |

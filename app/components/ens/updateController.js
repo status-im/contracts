@@ -1,4 +1,4 @@
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
 import web3 from 'web3';
 import React from 'react';
 import { Button } from 'react-bootstrap';
@@ -39,7 +39,7 @@ const UpdateController = withFormik({
   },
   async handleSubmit(values, { setSubmitting }) {
     const { newAddress } = values;
-    const { methods: { changeController } } = ENSSubdomainRegistry;
+    const { methods: { changeController } } = UsernameRegistrar;
     changeController(newAddress)
       .send()
       .then((res) => {

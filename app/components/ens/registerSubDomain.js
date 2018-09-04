@@ -1,5 +1,6 @@
 import web3 from "Embark/web3"
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
+import PublicResolver from 'Embark/contracts/PublicResolver';
 import TestToken from 'Embark/contracts/TestToken';
 import React from 'react';
 import { connect } from 'react-redux';
@@ -60,7 +61,7 @@ const InnerForm = ({
              mode="strong"
                    style={{ marginTop: '5px' }}
            onClick={() => {
-               ENSSubdomainRegistry.methods.getPrice(hash(values.domainName))
+               UsernameRegistrar.methods.getPrice()
                                    .call()
                                    .then((res) => { setFieldValue('price', fromWei(res)); });
            }}
@@ -126,7 +127,7 @@ const InnerForm = ({
         <div style={{ position: 'relative', left: 0, right: 0, bottom: 0 }}>
           {!Number(SNTAllowance) || (Number(domainPrice) && !Number(SNTBalance)) ? <TokenPermissions
             symbol="SNT"
-            spender={ENSSubdomainRegistry.address}
+            spender={UsernameRegistrar.address}
             methods={TestToken.methods}
             mobile
           />
@@ -151,7 +152,8 @@ const RegisterSubDomain = withFormik({
     const { editAccount, preRegisteredCallback } = props;
     const { address, statusAddress } = values;
     const { subDomain, domainName, registeredCallbackFn } = props || values;
-    const { methods: { register } } = ENSSubdomainRegistry;
+    const { methods: { register } } = UsernameRegistrar;
+    const { methods: { setAddr, setPubkey } } = PublicResolver;
     const subdomainHash = soliditySha3(subDomain);
     const domainNameHash = hash(domainName);
     const resolveToAddr = address || zeroAddress;
@@ -162,7 +164,6 @@ const RegisterSubDomain = withFormik({
     const funcsToSend = [];
     const args = [
       subdomainHash,
-      domainNameHash,
       resolveToAddr,
       points ? points.x : zeroBytes32,
       points ? points.y : zeroBytes32,

@@ -10,7 +10,7 @@ import TestTokenUI from './components/testtoken';
 import ERC20TokenUI from './components/erc20token';
 import TestToken from 'Embark/contracts/TestToken';
 import ENSSubManagement from './components/ensSubManagement';
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
 import NameLookup from './components/ens/nameLookup';
 import AdminMode from './components/AdminMode';
 import TokenPermissions from './components/standard/TokenPermissionConnect';
@@ -66,14 +66,14 @@ class App extends React.Component {
           </div>
         </Fade>}
         {searching && <Fade in={searching}>
-          <Web3Render ready={isRopsten} network="ropsten">
+          <Web3Render ready={network == 'private'} network={network}>
             <div>
               <NameLookup />
               <Hidden mdDown>
                 <div style={{ textAlign: 'center', margin: '0px 40px' }}>
                   <TokenPermissions
                     symbol={symbols[network] || 'SNT'}
-                    spender={ENSSubdomainRegistry._address}
+                    spender={UsernameRegistrar._address}
                     methods={TestToken.methods} />
                   <hr/>
                   <Toggle onChange={() => { this.setState({ admin: !admin })}} />

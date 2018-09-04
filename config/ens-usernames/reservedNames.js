@@ -1,6 +1,4 @@
-exports.ReservedUsernames = [
-	
-
+exports.reservedNames = [
 	//Ethereum reserved words
 	'eth',
 	'ether',

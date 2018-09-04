@@ -1,6 +1,6 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import ENSRegistry from 'Embark/contracts/ENSRegistry';
-import ENSSubdomainRegistry from 'Embark/contracts/ENSSubdomainRegistry';
+import UsernameRegistrar from 'Embark/contracts/UsernameRegistrar';
 import TestToken from 'Embark/contracts/TestToken';
 import React, { Fragment } from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button, ControlLabel } from 'react-bootstrap';
@@ -24,7 +24,7 @@ const ENSSubManagement = props => (
     <h2 style={{ textAlign: 'center' }}>Subdomain Management</h2>
     <h3>Change Registry Controller</h3>
     <UpdateController />
-    <h3>Add/Update Domain Price</h3>
+    <h3>Activate Registry/Update Registry Price</h3>
     <AddDomain />
     <h3>Move Domain To Another Registry</h3>
     <MoveDomain />
@@ -34,7 +34,7 @@ const ENSSubManagement = props => (
     <hr/>
     <TokenPermissions
       symbol='SNT'
-      spender={ENSSubdomainRegistry._address}
+      spender={UsernameRegistrar._address}
       methods={TestToken.methods} />
     <hr/>
     <SetupENS ENSRegistry={ENSRegistry} />
