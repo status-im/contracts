@@ -134,7 +134,7 @@ class RenderAddresses extends PureComponent {
     return (
       <Fragment>
         <Hidden mdDown>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', margin: 50 }}>
             <Info.Action title="Click to copy"><b>{formatName(domainName)}</b>{expirationTime && <i> (Expires {generatePrettyDate(expirationTime)})</i>} Resolves To:</Info.Action>
             {address && <Text style={{ marginTop: '1em' }}>Ethereum Address {renderCopied(address)}</Text>}
             <CopyToClipboard text={address} onCopy={markCopied}>
