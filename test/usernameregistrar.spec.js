@@ -6,7 +6,7 @@ const ENSRegistry = require('Embark/contracts/ENSRegistry');
 const PublicResolver = require('Embark/contracts/PublicResolver');
 const UsernameRegistrar = require('Embark/contracts/UsernameRegistrar');
 const { MerkleTree } = require('../utils/merkleTree.js');
-const { reservedNames } = require('../config/ens-usernames/reservedNames')
+const { ReservedUsernames } = require('../config/ens-usernames/reservedNames')
 const registry = {
   name: 'stateofus',
   registry:  'stateofus.eth',
@@ -25,7 +25,7 @@ const dummyRegistry = {
 
 // TODO: load file of reserved names and balance array lenght to be even
 
-const merkleTree = new MerkleTree(reservedNames);
+const merkleTree = new MerkleTree(ReservedUsernames);
 const merkleRoot = merkleTree.getHexRoot();
 
 var contractsConfig = {
@@ -600,7 +600,7 @@ contract('UsernameRegistrar', function () {
       assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
       let failed;
       try{
-        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), merkleTree.getHexProof(reservedNames[0])).send()
+        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), merkleTree.getHexProof(ReservedUsernames[0])).send()
         failed = false;
       } catch(e){
         failed = true;
@@ -608,7 +608,7 @@ contract('UsernameRegistrar', function () {
       assert(failed, "Was slashed anyway");
     });
     it('should not slash reserved name username with wrong proof ', async () => {
-      const username = reservedNames[5];
+      const username = ReservedUsernames[5];
       const usernameHash = namehash.hash(username + '.' + registry.registry);
       const registrant = accountsArr[1];
       await TestToken.methods.mint(registry.price).send({from: registrant});
@@ -622,7 +622,7 @@ contract('UsernameRegistrar', function () {
       assert.equal(await ens.methods.owner(usernameHash).call(), registrant);
       let failed;
       try{
-        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), merkleTree.getHexProof(reservedNames[1])).send()
+        await UsernameRegistrar.methods.slashReservedUsername(web3Utils.toHex(username), merkleTree.getHexProof(ReservedUsernames[1])).send()
         failed = false;
       } catch(e){
         failed = true;
@@ -630,7 +630,7 @@ contract('UsernameRegistrar', function () {
       assert(failed, "Was slashed anyway");
     });
     it('should slash reserved name username', async () => {
-      const username = reservedNames[7];
+      const username = ReservedUsernames[7];
       const usernameHash = namehash.hash(username + '.' + registry.registry);
       const registrant = accountsArr[1];
       await TestToken.methods.mint(registry.price).send({from: registrant});
