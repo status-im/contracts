@@ -153,7 +153,6 @@ const RegisterSubDomain = withFormik({
     const { address, statusAddress } = values;
     const { subDomain, domainName, registeredCallbackFn } = props || values;
     const { methods: { register } } = UsernameRegistrar;
-    const { methods: { setAddr, setPubkey } } = PublicResolver;
     const subdomainHash = soliditySha3(subDomain);
     const domainNameHash = hash(domainName);
     const resolveToAddr = address || zeroAddress;
