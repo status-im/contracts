@@ -2,7 +2,6 @@ const { MerkleTree } = require('../utils/merkleTree.js');
 const { ReservedUsernames } = require('./ens-usernames/reservedNames.js');
 
 const merkleTree = new MerkleTree(ReservedUsernames);
-const merkleRoot = merkleTree.getHexRoot();
 
 module.exports = {
   "default": {
@@ -18,16 +17,21 @@ module.exports = {
     "gas": "auto",
     "contracts": {
       "TestToken": {
-        "args": [ ]
+        "deploy": false
+      },
+      "MerkleProofWrapper": {
+        "deploy": false
+      },
+      "ERC20Receiver": { 
+        "deploy": false 
       },
       "ENSRegistry": {
-        "deploy": true
+        "deploy": false
       },
       "PublicResolver": {
         "args": ["$ENSRegistry"],
-        "deploy": true
+        "deploy": false
       },
-
       "UsernameRegistrar": {
         "args": [
           "$TestToken",
@@ -59,15 +63,6 @@ module.exports = {
         ]
       },
       "UsernameRegistrar": {
-        "args": [
-          "$TestToken",
-          "$ENSRegistry",
-          "$PublicResolver",
-          "0x5f7791d31ca0493e9ca7c9ca16695ecd9d5044768674d14d31ab5d8277518fff",
-          3,
-          merkleTree.getHexRoot(),
-          "0x0"
-        ],
         "onDeploy": [
           "ENSRegistry.methods.setSubnodeOwner('0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae', '0xbd99f8d5e7f81d2d7c1da34b67a2bb3a94dd8c9b0ab40ddc077621b98405983b', UsernameRegistrar.address).send()"
         ]
@@ -88,14 +83,12 @@ module.exports = {
       "UsernameRegistrar": {
         "address": "0xDBf9038cf5Aaa030890790dB87E746E00Fc352b3"
       },
-      "ERC20Receiver": { "deploy": false },
       "MerkleProof": {
         "address": "0x713ED9846463235df08D92B886938651105D3940"
       },
       "MerkleProofWrapper": {
         "address": "0x76E55E13C5891a90f7fCA2e1238a6B3463F564e2"
       },
-      "ERC20Receiver": { "deploy": false },
       "SafeMath": {
         "address": "0xA115a57952D3337e2a1aB3Cb82bA376EEcDDc469"
       }
@@ -123,8 +116,7 @@ module.exports = {
       },
       "UsernameRegistrar": {
         "address": "0x028F3Df706c5295Ba283c326F4692c375D14cb68"
-      },
-      "ERC20Receiver": { "deploy": false }
+      }
     }
   },
   "rinkeby":{
