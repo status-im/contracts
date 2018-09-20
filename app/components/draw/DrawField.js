@@ -112,7 +112,7 @@ class SketchFieldDemo extends React.Component {
       controlledValue: props.canvasState,
       shadowWidth: 0,
       shadowOffset: 0,
-      tool: Tools.Line,
+      tool: Tools.Pencil,
       fillWithColor: false,
       fillWithBackgroundColor: false,
       drawings: [],
