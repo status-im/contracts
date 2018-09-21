@@ -30,27 +30,38 @@ contract Canvas is Controlled {
     
     mapping(address => uint) public balances;
 
-    address[] players;
+    address[] public players;
 
-    mapping(address => uint) playerIndex;
+    mapping(address => uint) public playerIndex;
+    mapping(address => uint) public playerAmountToTax;
+    mapping(address => uint[]) public playerPixelsX;
+    mapping(address => uint[]) public playerPixelsY;
+
+
 
     uint public priceUpdatePeriod = 2 hours; // How long until the price of a pixel can be updated
     
     uint public lastTax;
     uint public taxPeriod = 30 minutes; // How much time between taxes
-    uint public taxPercentage = 5;
+    uint public taxPercentage = 10;
 
     constructor(address _token) public {
         token = ERC20Token(_token);
-        players.push(msg.sender);
+        players.push(address(0));
     }
 
 
     /// @notice Add funds to your balance. Tax will be deducted from these funds
     function addFunds(uint amount) public {
-        require(token.transferFrom(msg.sender, address(this), amount));
+        require(token.allowance(msg.sender, address(this)) >= amount, "Allowance isn't set");
+        require(token.transferFrom(msg.sender, address(this), amount), "Couldn't transfer funds");
         token.approve(msg.sender, amount); 
         balances[msg.sender] += amount;
+        
+        if(playerIndex[msg.sender] == 0 ){
+            uint idx = players.push(msg.sender) - 1;
+            playerIndex[msg.sender] = idx;
+        }
     }
 
     /// @notice Withdraw funds from your balance
@@ -58,8 +69,7 @@ contract Canvas is Controlled {
         require(amount > 0, "Amount must be greater than 0");
         require(balances[msg.sender] - amount <= balances[msg.sender], "Amount to withdraw must not be greater than balance");
         balances[msg.sender] -= amount;
-
-        require(token.transfer(msg.sender, amount));
+        require(token.transfer(msg.sender, amount), "Couldn't transfer funds");
     }
 
 
@@ -73,12 +83,8 @@ contract Canvas is Controlled {
         Pixel storage p = grid[x][y];
         
         if(p.owner == msg.sender) return;
-        
-        if(playerIndex[msg.sender] == 0 && msg.sender != controller){
-            uint idx = players.push(msg.sender) - 1;
-            playerIndex[msg.sender] = idx;
-        }
 
+       
         if(p.owner == address(0)){
             // Empty pixel
             require(balances[msg.sender] >= priceIfEmpty, "Not enough balance. Add more funds");
@@ -91,35 +97,20 @@ contract Canvas is Controlled {
             require(balances[msg.sender] >= p.price, "Not enough balance. Add more funds");
             balances[msg.sender] -= p.price;
             balances[p.owner] += p.price;
+            playerAmountToTax[p.owner] -= p.price;
         }
 
         p.lastPriceUpdate = 0; // New owner can change the price now
         p.owner = msg.sender;
         p.shapeIndex = shapeIndex;
 
+        playerPixelsX[msg.sender].push(x);
+        playerPixelsY[msg.sender].push(y);
+
+        playerAmountToTax[msg.sender] += p.price;
+
         emit PixelDrawn(msg.sender, x, y, p.price);
     }
-
-
-    /// @notice Leave the game, withdrawing the resulting balance, and returning your pixels to the public
-    function leaveTheGame() public {
-        // TODO: check performance. 
-        //       Probably it's more efficient for each owner to have an array of indexes that point to their pixels
-        for(uint x = 0; x < GRID_X; x++){
-            for(uint y = 0; y < GRID_Y; y++){
-                Pixel storage p = grid[x][y];
-                if(p.owner == msg.sender){
-                    // Release the properties to the public
-                    p.owner = address(0);
-                    p.lastPriceUpdate = 0;
-                    p.price = 0;
-                }
-            }
-        }
-
-        withdrawFunds(balances[msg.sender]);
-    }
-
 
     function canApplyTax() public view returns(bool){
         return lastTax + taxPeriod < block.timestamp;
@@ -139,22 +130,29 @@ contract Canvas is Controlled {
         lastTax = block.timestamp;
 
         // TODO: check performance
-        for(uint x = 0; x < GRID_X; x++){
-            for(uint y = 0; y < GRID_Y; y++){
-                Pixel storage p = grid[x][y];
-                if(p.owner != address(0)){
-                    uint taxAmount = p.price * taxPercentage / 100;
-                    if(balances[msg.sender] < taxAmount){
-                        p.owner = address(0);
-                        p.price = 0;
-                        p.lastPriceUpdate = 0;
-                    } else {
-                        balances[msg.sender] -= taxAmount;
-                        publicBalance += taxAmount;
+        for(uint i = 1; i < players.length; i++){
+            uint taxAmount = playerAmountToTax[players[i]] * taxPercentage / 100;
+            if(balances[players[i]] < taxAmount){
+                // If you ain't got enough money for your pixels, you lose everything :(
+                for(uint j = 0; j < playerPixelsX[players[i]].length; j++){
+                    uint x = playerPixelsX[players[i]][j];
+                    uint y = playerPixelsY[players[i]][j];
+
+                    if(grid[x][y].owner == players[i]){
+                        grid[x][y].owner = address(0);
+                        grid[x][y].price = 0;
+                        grid[x][y].lastPriceUpdate = 0;
+
+                        delete playerPixelsX[players[i]];
+                        delete playerPixelsY[players[i]];
                     }
                 }
+            } else {
+                balances[msg.sender] -= taxAmount;
+                publicBalance += taxAmount;
             }
         }
+
         
         emit TaxApplied(block.timestamp);
     }
@@ -190,13 +188,16 @@ contract Canvas is Controlled {
         require(p.owner == msg.sender, "You're not the owner of this pixel");
         require(p.lastPriceUpdate + priceUpdatePeriod < block.timestamp, "You cannot update the price yet");
 
+        playerAmountToTax[msg.sender] -= p.price;
+        playerAmountToTax[msg.sender] += newPrice;
+
         p.price = newPrice;
         p.lastPriceUpdate = block.timestamp;
 
         emit PixelPriceUpdated(x, y, newPrice);
     }
 
-    
+
     /// @notice After the hackathon ends, we return the SNT balances available to users 
     function gameOver() public onlyController {
         // TODO: check performance. Shouldn't matter in a sidechain, I guess
