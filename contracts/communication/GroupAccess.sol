@@ -4,7 +4,7 @@ import "../token/ERC20Token.sol";
 import "../common/MessageSigned.sol";
 
 
-contract GroupSuscription is MessageSigned {
+contract GroupAccess is MessageSigned {
 
     struct SuscriptionData {
         uint256 amount;
