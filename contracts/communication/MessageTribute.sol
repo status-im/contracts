@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity >=0.5.0 <0.6.0;
 
 import "../token/ERC20Token.sol";
 import "../common/MessageSigned.sol";
@@ -65,7 +65,14 @@ contract MessageTribute is MessageSigned {
      * @param _requesterSignature signature of Audience requestor
      * @param _grantorSignature signature of Audience grantor
      */
-    function grantAudience(bool _approve, bool _waive, bytes32 _secret, uint256 _timeLimit, bytes _requesterSignature, bytes _grantorSignature) public {  
+    function grantAudience(
+        bool _approve,
+        bool _waive,
+        bytes32 _secret,
+        uint256 _timeLimit,
+        bytes calldata _requesterSignature,
+        bytes calldata _grantorSignature
+    ) external {  
         require(_timeLimit <= block.timestamp);
 
         address grantor = recoverAddress(
@@ -80,7 +87,7 @@ contract MessageTribute is MessageSigned {
             _grantorSignature
         );
 
-        bytes32 hashedSecret = keccak256(grantor, _secret);
+        bytes32 hashedSecret = keccak256(abi.encodePacked(grantor, _secret));
         require(!granted[hashedSecret]);
         granted[hashedSecret] = true;
         address requester = recoverAddress(
@@ -120,12 +127,14 @@ contract MessageTribute is MessageSigned {
         returns(bytes32)
     {
         return keccak256(
-            address(this),
-            bytes4(keccak256("grantAudience(bytes32,bool,bool,bytes32)")),
-            _requesterSignatureHash,
-            _approve,
-            _waive,
-            _secret
+            abi.encodePacked(
+                address(this),
+                bytes4(keccak256("grantAudience(bytes32,bool,bool,bytes32)")),
+                _requesterSignatureHash,
+                _approve,
+                _waive,
+                _secret    
+            )
         );
     }
 
@@ -139,11 +148,13 @@ contract MessageTribute is MessageSigned {
         returns(bytes32)
     {
         return keccak256(
-            address(this),
-            bytes4(keccak256("requestAudience(address,bytes32,uint256)")),
-            _grantor,
-            _hashedSecret,
-            _timeLimit
+            abi.encodePacked(
+                address(this),
+                bytes4(keccak256("requestAudience(address,bytes32,uint256)")),
+                _grantor,
+                _hashedSecret,
+                _timeLimit
+            )
         );
     }
 
@@ -153,7 +164,7 @@ contract MessageTribute is MessageSigned {
      * @return Fee
      */
     function getFee(address _from, address _to) internal view
-        returns (Fee) 
+        returns (Fee memory) 
     {
         Fee memory specificFee = feeCatalog[_from][_to];
         Fee memory generalFee = feeCatalog[_from][address(0)];

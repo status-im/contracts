@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.5.0 <0.6.0;
 
 import "../token/ERC20Token.sol";
 import "../common/MessageSigned.sol";
@@ -25,25 +25,27 @@ contract GroupSuscription is MessageSigned {
         token = _token;
     }
     
-    function registerGroup(bytes _groupKey, 
-                           uint256 _amount, 
-                           uint256 _recurrency, 
-                           uint256  _amountHeld, 
-                           bool _requiresPayment) public {
+    function registerGroup(
+        bytes calldata _groupKey, 
+        uint256 _amount, 
+        uint256 _recurrency, 
+        uint256  _amountHeld, 
+        bool _requiresPayment
+    ) external {
         bytes32 groupId = keccak256(abi.encodePacked(address(this), msg.sender, _groupKey));
         groupOwnership[groupId] = msg.sender;
         groupSuscriptionInfo[groupId] = SuscriptionData(_amount, _recurrency, _amountHeld, _requiresPayment);
         emit GroupSetup(_groupKey, groupId);
     }
 
-    function getSuscriptionInfo(bytes32 groupId) public view 
-        returns (uint256 amount, uint256 recurrency, uint256 amountHeld bool requiresPayment) 
+    function getSuscriptionInfo(bytes32 groupId) external view 
+        returns (uint256 amount, uint256 recurrency, uint256 amountHeld, bool requiresPayment) 
     {
         SuscriptionData memory susc = groupSuscriptionInfo[groupId];
         return (susc.amount, susc.recurrency, susc.amountHeld, susc.requiresPayment);
     }
 
-    function canParticipate(bytes32 _groupId) public view
+    function canParticipate(bytes32 _groupId) external view
         returns (bool)
     {
         bytes32 suscriptionHash = getSuscriptionHash(_groupId);
@@ -56,7 +58,7 @@ contract GroupSuscription is MessageSigned {
         return suscriptions[suscriptionHash] > block.timestamp;
     }
 
-    function suscribe(bytes32 _groupId) public {
+    function suscribe(bytes32 _groupId) external {
         SuscriptionData memory susc = groupSuscriptionInfo[_groupId];
         bytes32 suscriptionHash = getSuscriptionHash(_groupId);
 

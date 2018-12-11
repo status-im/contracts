@@ -1,26 +1,27 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.5.0;
 
 import "./ERC20Token.sol";
 
 contract StandardToken is ERC20Token {
 
+    uint256 private supply;
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) allowed;
 
     constructor() internal { }
-
+    
     function transfer(
         address _to,
         uint256 _value
     ) 
-        public 
+        external 
         returns (bool success)
     {
         return transfer(msg.sender, _to, _value);    
     }
 
     function approve(address _spender, uint256 _value) 
-        public
+        external
         returns (bool success) 
     {
         allowed[msg.sender][_spender] = _value;
@@ -33,7 +34,7 @@ contract StandardToken is ERC20Token {
         address _to,
         uint256 _value
     )
-        public
+        external
         returns (bool success)
     {
         if (balances[_from] >= _value &&
@@ -47,7 +48,7 @@ contract StandardToken is ERC20Token {
     }
 
     function allowance(address _owner, address _spender) 
-        public 
+        external 
         view 
         returns (uint256 remaining)
     {
@@ -55,11 +56,30 @@ contract StandardToken is ERC20Token {
     }
 
     function balanceOf(address _owner) 
-        public 
+        external 
         view 
         returns (uint256 balance) 
     {
         return balances[_owner];
+    }
+    
+    function totalSupply() 
+        external 
+        view 
+        returns(uint256 currentTotalSupply) 
+    {
+        return supply;
+    }
+
+    function mint(
+        address _to,
+        uint256 _amount
+    ) 
+        internal
+    {
+        balances[_to] += _amount;
+        supply += _amount;
+        emit Transfer(address(0x0), _to, _amount);
     }
 
     function transfer(
