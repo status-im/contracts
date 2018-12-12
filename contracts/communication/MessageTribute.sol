@@ -1,29 +1,23 @@
 pragma solidity >=0.5.0 <0.6.0;
 
 import "../token/ERC20Token.sol";
-import "../common/MessageSigned.sol";
 
 
 /**
  * @title MessageTribute
  * @author Richard Ramos (Status Research & Development GmbH) 
+ *         Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @dev Inspired by one of Satoshi Nakamoto’s original suggested use cases for Bitcoin, 
         we will be introducing an economics-based anti-spam filter, in our case for 
         receiving messages and “cold” contact requests from users.
         token is deposited, and transferred from stakeholders to recipients upon receiving 
         a reply from the recipient.
  */
-contract MessageTribute is MessageSigned {
+contract MessageTribute  {
 
-    event AudienceGranted(address indexed from, address indexed to, bool approve);
+    event AudienceGranted(address indexed from, address to);
 
-    struct Fee {
-        uint256 amount;
-        bool permanent;
-    }
-    mapping(bytes32 => bool) private granted;
-    mapping(address => mapping(address => Fee)) public feeCatalog;
-    mapping(address => mapping(address => uint)) private lastAudienceDeniedTimestamp;
+    mapping(address => mapping(address => uint256)) public feeCatalog;
     
     ERC20Token public token;
     
@@ -39,123 +33,20 @@ contract MessageTribute is MessageSigned {
      * @notice Set tribute for accounts or everyone
      * @param _to Address to set the tribute. If address(0), applies to everyone
      * @param _amount Required tribute amount (using token from constructor)
-     * @param _isPermanent Tribute applies for all communications on only for the first
      */
-    function setRequiredTribute(address _to, uint _amount, bool _isPermanent) public {
-        feeCatalog[msg.sender][_to] = Fee(_amount, _isPermanent);
+    function setRequiredTribute(address _to, uint _amount) external {
+        feeCatalog[msg.sender][_to] = _amount;
     }
     
     /**
-     * @notice Obtain amount of tokens required from `msg.sender` to contact `_from`
-     * @return fee amount of tokens
+     * @notice Pay tribute to talk
      */
-    function getRequiredFee(address _from) public view 
-        returns (uint256 fee) 
-    {
-        Fee memory f = getFee(_from, msg.sender);
-        fee = f.amount;
-    }
-
-    /**
-     * @notice Approve/Deny chat request to `_to`
-     * @param _approve Approve or deny request
-     * @param _waive Refund deposit or not
-     * @param _secret Captcha solution
-     * @param _timeLimit time limit of audience request
-     * @param _requesterSignature signature of Audience requestor
-     * @param _grantorSignature signature of Audience grantor
-     */
-    function grantAudience(
-        bool _approve,
-        bool _waive,
-        bytes32 _secret,
-        uint256 _timeLimit,
-        bytes calldata _requesterSignature,
-        bytes calldata _grantorSignature
-    ) external {  
-        require(_timeLimit <= block.timestamp);
-
-        address grantor = recoverAddress(
-            getSignHash(
-                getGrantAudienceHash(
-                    keccak256(_requesterSignature),
-                    _approve,
-                    _waive,
-                    _secret
-                )
-            ),
-            _grantorSignature
-        );
-
-        bytes32 hashedSecret = keccak256(abi.encodePacked(grantor, _secret));
-        require(!granted[hashedSecret]);
-        granted[hashedSecret] = true;
-        address requester = recoverAddress(
-            getSignHash(
-                getRequestAudienceHash(
-                    grantor,
-                    hashedSecret,
-                    _timeLimit
-                )
-            ),
-            _requesterSignature
-        );
-        
-        require(lastAudienceDeniedTimestamp[grantor][requester] + 3 days <= now);
-        if(!_approve)
-            lastAudienceDeniedTimestamp[grantor][requester] = block.timestamp;
-
-        uint256 amount = getFee(grantor, requester).amount;
-        clearFee(grantor, requester);
-
-        if (!_waive) {
-            if (_approve) {
-                require(token.transferFrom(requester, grantor, amount));
-            }
-        }
-        emit AudienceGranted(grantor, requester, _approve);
-    }
-
-    function getGrantAudienceHash(
-        bytes32 _requesterSignatureHash,
-        bool _approve,
-        bool _waive,
-        bytes32 _secret
-    ) 
-        public
-        view
-        returns(bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(
-                address(this),
-                bytes4(keccak256("grantAudience(bytes32,bool,bool,bytes32)")),
-                _requesterSignatureHash,
-                _approve,
-                _waive,
-                _secret    
-            )
-        );
-    }
-
-    function getRequestAudienceHash(
-        address _grantor,
-        bytes32 _hashedSecret,
-        uint _timeLimit
-    )
-        public
-        view
-        returns(bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(
-                address(this),
-                bytes4(keccak256("requestAudience(address,bytes32,uint256)")),
-                _grantor,
-                _hashedSecret,
-                _timeLimit
-            )
-        );
+    function payTribute(address _to) external {  
+        address requester = msg.sender;
+        uint256 amount = getFee(_to, requester);
+        delete feeCatalog[_to][requester];
+        require(token.transferFrom(requester, _to, amount), "Transfer fail");
+        emit AudienceGranted(_to, requester);
     }
 
     /**
@@ -163,23 +54,12 @@ contract MessageTribute is MessageSigned {
      * @param _from Account `msg.sender` wishes to talk to
      * @return Fee
      */
-    function getFee(address _from, address _to) internal view
-        returns (Fee memory) 
+    function getFee(address _from, address _to) public view
+        returns (uint256) 
     {
-        Fee memory specificFee = feeCatalog[_from][_to];
-        Fee memory generalFee = feeCatalog[_from][address(0)];
-        return specificFee.amount > 0 ? specificFee : generalFee;
+        uint256 specificFee = feeCatalog[_from][_to];
+        uint256 generalFee = feeCatalog[_from][address(0)];
+        return specificFee > 0 ? specificFee : generalFee;
     }
 
-    /**
-     * @notice Remove any tribute configuration between `_from` and `_to`
-     * @param _from Owner of the configuration
-     * @param _to Account that paid tributes (won't after this function is executed)
-     */
-    function clearFee(address _from, address _to) private {
-        if (!feeCatalog[_from][_to].permanent) {
-            feeCatalog[_from][_to].amount = 0;
-            feeCatalog[_from][_to].permanent = false;
-        }
-    }
 }
