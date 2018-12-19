@@ -47,9 +47,9 @@ contract MessageTribute is Controlled {
         emit ResetFee(msg.sender);
     }
     
-
-    /** @notice controller can configure default fee
-     *  @param _defaultValue fee for unset or reseted users. 
+    /**
+     * @notice controller can configure default fee
+     * @param _defaultValue fee for unset or reseted users. 
      */
     function setDefaultValue(uint256 _defaultValue) external onlyController {
         defaultValue = _defaultValue;
