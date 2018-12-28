@@ -1,13 +1,11 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0 <0.6.0;
 
 /** 
  * @notice Uses ethereum signed messages
  */
 contract MessageSigned {
     
-    constructor() internal {
-
-    }
+    constructor() internal {}
 
     /**
      * @notice recovers address who signed the message
