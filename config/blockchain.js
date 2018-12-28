@@ -16,7 +16,7 @@ module.exports = {
     proxy: true, // Proxy is used to present meaningful information about transactions
     account: {
       // "address": "", // When specified, uses that address instead of the default one for the network
-      password: "config/development/password" // Password to unlock the account
+      password: "config/development/.password" // Password to unlock the account
     },
     targetGasLimit: 8000000, // Target gas limit sets the artificial target gas floor for the blocks to mine
     wsRPC: true, // Enable the WS-RPC server
@@ -30,33 +30,34 @@ module.exports = {
   testnet: {
     enabled: true,
     networkType: "testnet",
-    light: true,
+    syncMode: "light",
     rpcHost: "localhost",
     rpcPort: 8545,
     rpcCorsDomain: "http://localhost:8000",
     account: {
-      password: "config/testnet/password"
+      password: "config/testnet/.password"
     }
   },
   livenet: {
-    enabled: true,
+    enabled: false,
     networkType: "livenet",
-    light: true,
+    syncMode: "light",
     rpcHost: "localhost",
     rpcPort: 8545,
     rpcCorsDomain: "http://localhost:8000",
     account: {
-      password: "config/livenet/password"
+      password: "config/livenet/.password"
     }
-  },
-  privatenet: {
+  },  
+  rinkeby: {
     enabled: true,
-    networkType: "custom",
+    networkType: "rinkeby",
+    syncMode: "light",
     rpcHost: "localhost",
     rpcPort: 8545,
     rpcCorsDomain: "http://localhost:8000",
-    datadir: "yourdatadir",
-    networkId: "123",
-    bootnodes: ""
+    account: {
+      password: "config/rinkeby/.password"
+    }
   }
 };

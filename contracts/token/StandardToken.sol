@@ -1,10 +1,10 @@
-pragma solidity ^0.4.23;
+pragma solidity >=0.5.0 <0.6.0;
 
 import "./ERC20Token.sol";
 
 contract StandardToken is ERC20Token {
 
-    uint256 private supply;
+    uint256 public totalSupply;
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) allowed;
 
@@ -63,14 +63,6 @@ contract StandardToken is ERC20Token {
         return balances[_owner];
     }
     
-    function totalSupply() 
-        external 
-        view 
-        returns(uint256 currentTotalSupply) 
-    {
-        return supply;
-    }
-
     function mint(
         address _to,
         uint256 _amount
@@ -78,8 +70,8 @@ contract StandardToken is ERC20Token {
         internal
     {
         balances[_to] += _amount;
-        supply += _amount;
-        emit Transfer(0x0, _to, _amount);
+        totalSupply += _amount;
+        emit Transfer(address(0x0), _to, _amount);
     }
 
     function transfer(
