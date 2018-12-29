@@ -17,9 +17,7 @@ class App extends React.Component {
   }
 
   componentDidMount(){ 
-    __embarkContext.execWhenReady(() => {
-      
-    });
+
   }
 
 

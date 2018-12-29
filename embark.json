@@ -1,6 +1,11 @@
 {
   "contracts": ["contracts/**"],
-  "app": {},
+  "app": {
+    "js/dapp.js": ["app/dapp.js"],
+    "js/index.js": ["app/index.js"],
+    "index.html": "app/index.html",
+    "images/": ["app/images/**"]
+},
   "buildDir": "dist/",
   "config": "config/",
   "versions": {

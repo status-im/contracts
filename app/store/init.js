@@ -6,7 +6,7 @@ import { fetchAndDispatchAccountsWithBalances } from '../actions/accounts'
 const dispatch = action => store.dispatch(action)
 
 export default () => {
-  __embarkContext.execWhenReady(async () => {
+  EmbarkJS.onReady((err) => {
     fetchAndDispatchAccountsWithBalances(web3, dispatch)
   })
 }

@@ -17,9 +17,21 @@
     "url": "https://github.com/status-im/contracts/issues"
   },
   "homepage": "https://github.com/status-im/contracts#readme",
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.2.3"
+  },
   "dependencies": {
     "elliptic-curve": "^0.1.0",
     "ethereumjs-util": "^5.1.5",
+    "react": "^16.3.2",
+    "react-blockies": "^1.4.0",
+    "react-bootstrap": "0.32.1",
+    "react-dom": "^16.3.2",
+    "react-redux": "^6.0.0",
+    "redux": "^4.0.1",
+    "redux-action-creator": "^3.0.0",
+    "redux-thunk": "^2.3.0",
     "web3": "^1.0.0-beta.34"
   }
 }

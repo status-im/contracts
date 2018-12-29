@@ -1,5 +1,6 @@
 import EmbarkJS from 'Embark/EmbarkJS';
-import TestToken from 'Embark/contracts/TestToken';
+import StatusRoot from 'Embark/contracts/StatusRoot';
+import MiniMeToken from 'Embark/contracts/MiniMeToken';
 import React from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
 import ERC20TokenUI from './erc20token';
@@ -24,15 +25,10 @@ class TestTokenUI extends React.Component {
       e.preventDefault();
   
       var value = parseInt(this.state.amountToMint, 10);
-  
-      if (EmbarkJS.isNewWeb3()) {
-        TestToken.methods.mint(value).send({from: web3.eth.defaultAccount})
-          .then(r => { addToBalance(value) });
-      } else {
-        TestToken.mint(value).send({from: web3.eth.defaultAccount})
-          .then(r => { addToBalance(value) });
-      }
-      console.log(TestToken.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
+      StatusRoot.methods.mint(value).send({from: web3.eth.defaultAccount})
+        .then(r => { addToBalance(value) });
+
+      console.log(StatusRoot.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
     }
     
     render(){
@@ -48,7 +44,7 @@ class TestTokenUI extends React.Component {
             </FormGroup>
           </Form>
           
-          <ERC20TokenUI address={ TestToken.options.address } />
+          <ERC20TokenUI address={ MiniMeToken.options.address } />
 
       </React.Fragment>
       );
