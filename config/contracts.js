@@ -24,14 +24,12 @@ module.exports = {
       },
 
       "StatusNetwork": {"deploy": false},
-      "TestStatusNetwork": {"deploy": false},
-      "StatusRoot": {
-        "instanceOf": "TestStatusNetwork",
+      "TestStatusNetwork": {
         "deploy": true,
         "args": ["0x0", "$MiniMeToken"],
         "onDeploy": [
-          "await MiniMeToken.methods.changeController(StatusRoot.address).send()",
-          "await StatusRoot.methods.setOpen(true).send()",
+          "await MiniMeToken.methods.changeController(TestStatusNetwork.address).send()",
+          "await TestStatusNetwork.methods.setOpen(true).send()",
         ]
       }
     }

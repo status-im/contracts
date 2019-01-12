@@ -1,14 +1,11 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { Tabs, Tab } from 'react-bootstrap';
-
 import EmbarkJS from 'Embark/EmbarkJS';
-import TopNavbar from './components/topnavbar';
-import TestTokenUI from './components/testtoken';
+import TestTokenUI from './components/TestStatusNetwork';
 
 import './dapp.css';
 
-class App extends React.Component {
+class DApp extends React.Component {
 
   constructor(props) {
     super(props);
@@ -32,7 +29,7 @@ class App extends React.Component {
   render(){
     return (
       <div>
-        <TopNavbar />
+
         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
           <Tab eventKey={1} title="TestToken">
               <TestTokenUI />
@@ -42,4 +39,4 @@ class App extends React.Component {
   }
 }
 
-export default App;
+export default DApp;

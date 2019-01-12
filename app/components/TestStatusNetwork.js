@@ -1,11 +1,9 @@
 import EmbarkJS from 'Embark/EmbarkJS';
-import StatusRoot from 'Embark/contracts/StatusRoot';
+import TestStatusNetwork from 'Embark/contracts/TestStatusNetwork';
 import MiniMeToken from 'Embark/contracts/MiniMeToken';
 import React from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
 import ERC20TokenUI from './erc20token';
-import { connect } from 'react-redux';
-import { actions as accountActions } from '../reducers/accounts';
 
 class TestTokenUI extends React.Component {
 
@@ -20,20 +18,18 @@ class TestTokenUI extends React.Component {
       this.setState({amountToMint: e.target.value});
     }
     
-  mint(e){
-    const { addToBalance } = this.props;
+    async mint(e){
       e.preventDefault();
-  
+      await EmbarkJS.enableEthereum();
       var value = parseInt(this.state.amountToMint, 10);
-      StatusRoot.methods.mint(value).send({from: web3.eth.defaultAccount})
-        .then(r => { addToBalance(value) });
+      TestStatusNetwork.methods.mint(value).send({ gas: 1000000 })
 
-      console.log(StatusRoot.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
+      console.log(TestStatusNetwork.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
     }
     
     render(){
       return (<React.Fragment>
-          <h3> Mint Test Token</h3>
+          <h3> Test Status Network</h3>
           <Form inline>
             <FormGroup>
               <FormControl
@@ -51,10 +47,4 @@ class TestTokenUI extends React.Component {
     }
   }
 
-const mapDispatchToProps = dispatch => ({
-  addToBalance(amount) {
-    dispatch(accountActions.addToErc20TokenBalance(amount));
-  },
-});
-
-export default connect(null, mapDispatchToProps)(TestTokenUI);
+export default TestTokenUI;

@@ -14,17 +14,18 @@ module.exports = {
     rpcCorsDomain: "auto",  // Comma separated list of domains from which to accept cross origin requests (browser enforced)
                             // When set to "auto", Embark will automatically set the cors to the address of the webserver
     proxy: true, // Proxy is used to present meaningful information about transactions
-    account: {
-      // "address": "", // When specified, uses that address instead of the default one for the network
-      password: "config/development/.password" // Password to unlock the account
-    },
+    accounts: [
+      {
+        nodeAccounts: true,
+        password: "config/development/.password"
+      }
+    ],
     targetGasLimit: 8000000, // Target gas limit sets the artificial target gas floor for the blocks to mine
     wsRPC: true, // Enable the WS-RPC server
     wsOrigins: "auto",  // Origins from which to accept websockets requests
                         // When set to "auto", Embark will automatically set the cors to the address of the webserver
     wsHost: "localhost", // WS-RPC server listening interface (default: "localhost")
     wsPort: 8546, // WS-RPC server listening port (default: 8546)
-    simulatorMnemonic: "example exile argue silk regular smile grass bomb merge arm assist farm", // Mnemonic  used by the simulator to generate a wallet
     simulatorBlocktime: 0 // Specify blockTime in seconds for automatic mining. Default is 0 and no auto-mining.
   },
   testnet: {
@@ -34,9 +35,12 @@ module.exports = {
     rpcHost: "localhost",
     rpcPort: 8545,
     rpcCorsDomain: "http://localhost:8000",
-    account: {
-      password: "config/testnet/.password"
-    }
+    accounts: [
+      {
+        nodeAccounts: true,
+        password: "config/testnet/.password"
+      }
+    ],
   },
   livenet: {
     enabled: false,
@@ -45,9 +49,12 @@ module.exports = {
     rpcHost: "localhost",
     rpcPort: 8545,
     rpcCorsDomain: "http://localhost:8000",
-    account: {
-      password: "config/livenet/.password"
-    }
+    accounts: [
+      {
+        nodeAccounts: true,
+        password: "config/livenet/.password"
+      }
+    ],
   },  
   rinkeby: {
     enabled: true,
@@ -56,8 +63,11 @@ module.exports = {
     rpcHost: "localhost",
     rpcPort: 8545,
     rpcCorsDomain: "http://localhost:8000",
-    account: {
-      password: "config/rinkeby/.password"
-    }
+    accounts: [
+      {
+        nodeAccounts: true,
+        password: "config/rinkeby/.password"
+      }
+    ],
   }
 };
