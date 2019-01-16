@@ -23,15 +23,12 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
     mapping(uint256 => Pack) public packs;
     uint256 public nextId;
 
-    //TODO: add list of packs available
     /**
      * @notice Constructor
-     * @param _owner Authority address
      * @param _snt SNT token
      */
     constructor(
-        ERC20Token _snt,
-        uint256 _registerPrice
+        ERC20Token _snt
     ) 
         public
     { 
@@ -53,17 +50,17 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
     }
 
     function register(bytes32 _dataHash, uint256 _price, address _owner) external onlyController {
-        uint256 id = nextId++;
-        packs[id] = Pack(_dataHash, _price, _owner);
-        emit Register(id, _datahash, _price);
+        uint256 packId = nextId++;
+        packs[packId] = Pack(_dataHash, _price, _owner);
+        emit Register(packId, _dataHash, _price);
     }
 
     function unregister(uint256 _packId) external onlyController {
         delete packs[_packId];
-        emit Unregister(id);
+        emit Unregister(_packId);
     }
 
-    function migrateMarket(address _newMarket) external onlyController {
+    function migrateMarket(address payable _newMarket) external onlyController {
         stickerPack.changeController(_newMarket);
     }
 
@@ -86,8 +83,8 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
 
     function _buy(address _buyer, Pack memory _pack) internal {
         require(_pack.dataHash != bytes32(0), "Bad pack");
-        require(snt.transferFrom(_from, _pack.owner, _pack.price), "Bad payment");
-        stickerPack.generateToken(_from, pack.dataHash);
+        require(snt.transferFrom(_buyer, _pack.owner, _pack.price), "Bad payment");
+        stickerPack.generateToken(_buyer, _pack.dataHash);
     }
 
     /**
@@ -96,7 +93,7 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
      * @return Decoded registry call.
      */
     function abiDecodeBuy(
-        bytes _data
+        bytes memory _data
     ) 
         private 
         pure 

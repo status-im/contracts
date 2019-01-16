@@ -59,9 +59,9 @@ interface ERC721 /* is ERC165 */ {
      * @param _from The current owner of the NFT
      * @param _to The new owner
      * @param _tokenId The NFT to transfer
-     * @param data Additional data with no specified format, sent in call to `_to`
+     * @param _data Additional data with no specified format, sent in call to `_to`
      */
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external payable;
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) external;
 
     /**
      * @notice Transfers the ownership of an NFT from one address to another address
@@ -71,7 +71,7 @@ interface ERC721 /* is ERC165 */ {
      * @param _to The new owner
      * @param _tokenId The NFT to transfer
      */
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external payable;
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
 
     /**
      * @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
@@ -85,7 +85,7 @@ interface ERC721 /* is ERC165 */ {
      * @param _to The new owner
      * @param _tokenId The NFT to transfer
      */
-    function transferFrom(address _from, address _to, uint256 _tokenId) external payable;
+    function transferFrom(address _from, address _to, uint256 _tokenId) external;
 
     /**
      * @notice Set or reaffirm the approved address for an NFT
@@ -95,7 +95,7 @@ interface ERC721 /* is ERC165 */ {
      * @param _approved The new approved NFT controller
      * @param _tokenId The NFT to approve
      */
-    function approve(address _approved, uint256 _tokenId) external payable;
+    function approve(address _approved, uint256 _tokenId) external;
 
     /**
      * @notice Enable or disable approval for a third party ("operator") to manage
@@ -122,18 +122,4 @@ interface ERC721 /* is ERC165 */ {
      * @return True if `_operator` is an approved operator for `_owner`, false otherwise
      */
     function isApprovedForAll(address _owner, address _operator) external view returns (bool);
-}
-
-
-
-interface ERC165 {
-    /**
-     * @notice Query if a contract implements an interface
-     * @param interfaceID The interface identifier, as specified in ERC-165
-     * @dev Interface identification is specified in ERC-165. This function
-     *  uses less than 30,000 gas.
-     * @return `true` if the contract implements `interfaceID` and
-     *  `interfaceID` is not 0xffffffff, `false` otherwise
-     */
-    function supportsInterface(bytes4 interfaceID) external view returns (bool);
 }

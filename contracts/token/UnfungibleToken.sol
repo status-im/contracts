@@ -3,17 +3,19 @@ pragma solidity >=0.5.0 <0.6.0;
 import "./ERC721.sol";
 import "./ERC721Receiver.sol";
 import "../common/SafeMath.sol";
+import "../common/Address.sol";
+import "../common/Introspective.sol";
 
 /**
  * @title ERC721 Non-Fungible Token Standard basic implementation
  * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
  */
-contract UnfungibleToken is ERC165, ERC721 {
+contract UnfungibleToken is Introspective, ERC721 {
     using SafeMath for uint256;
-
+    using Address for address;
 
     // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
-    // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
+    // which can be also obtained as `ERC721Receiver(0).onERC721Received.selector`
     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
 
     // Mapping from token ID to owner
@@ -42,6 +44,25 @@ contract UnfungibleToken is ERC165, ERC721 {
      *     bytes4(keccak256('safeTransferFrom(address,address,uint256,bytes)'))
      */
 
+    modifier approvedOrOwner(uint256 tokenId){
+        address spender = msg.sender;
+        address owner = getOwner(tokenId);
+        // Disable solium check because of
+        // https://github.com/duaraghav8/Solium/issues/175
+        // solium-disable-next-line operator-whitespace
+        require(spender == owner || _tokenApprovals[tokenId] == spender || _operatorApprovals[owner][spender], "Unauthorized");
+        _;
+    }
+
+    modifier safe(address from, address to, uint256 tokenId, bytes memory _data) {
+        _;
+        if (to.isContract()) {
+            bytes4 retval = ERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, _data);
+            require(retval == _ERC721_RECEIVED, "Bad operation");
+        }
+    }
+
+
     constructor () public {
         // register the supported interfaces to conform to ERC721 via ERC165
         _registerInterface(_InterfaceId_ERC721);
@@ -52,8 +73,8 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param owner address to query the balance of
      * @return uint256 representing the amount owned by the passed address
      */
-    function balanceOf(address owner) public view returns (uint256) {
-        require(owner != address(0), "Invalid address");
+    function balanceOf(address owner) external view returns (uint256) {
+        require(owner != address(0), "Bad address");
         return _ownedTokensCount[owner];
     }
 
@@ -62,10 +83,8 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param tokenId uint256 ID of the token to query the owner of
      * @return owner address currently marked as the owner of the given token ID
      */
-    function ownerOf(uint256 tokenId) public view returns (address) {
-        address owner = _tokenOwner[tokenId];
-        require(owner != address(0), "Invalid address");
-        return owner;
+    function ownerOf(uint256 tokenId) external view returns (address) {
+        return getOwner(tokenId);
     }
 
     /**
@@ -76,23 +95,24 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param to address to be approved for the given token ID
      * @param tokenId uint256 ID of the token to be approved
      */
-    function approve(address to, uint256 tokenId) public {
-        address owner = ownerOf(tokenId);
+    function approve(address to, uint256 tokenId) external {
+        address owner = getOwner(tokenId);
         require(to != owner, "Bad operation");
-        require(msg.sender == owner || isApprovedForAll(owner, msg.sender), "Unauthorized");
+        require(msg.sender == owner || _operatorApprovals[owner][msg.sender], "Unauthorized");
 
         _tokenApprovals[tokenId] = to;
         emit Approval(owner, to, tokenId);
     }
 
+   
     /**
      * @dev Gets the approved address for a token ID, or zero if no address set
      * Reverts if the token ID does not exist.
      * @param tokenId uint256 ID of the token to query the approval of
      * @return address currently approved for the given token ID
      */
-    function getApproved(uint256 tokenId) public view returns (address) {
-        require(_exists(tokenId), "Bad token id");
+    function getApproved(uint256 tokenId) external view returns (address) {
+        require(exists(tokenId), "Bad token");
         return _tokenApprovals[tokenId];
     }
 
@@ -102,7 +122,7 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param to operator address to set the approval
      * @param approved representing the status of the approval to be set
      */
-    function setApprovalForAll(address to, bool approved) public {
+    function setApprovalForAll(address to, bool approved) external {
         require(to != msg.sender, "Bad operation");
         _operatorApprovals[msg.sender][to] = approved;
         emit ApprovalForAll(msg.sender, to, approved);
@@ -114,7 +134,7 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param operator operator address which you want to query the approval of
      * @return bool whether the given operator is approved by the given owner
      */
-    function isApprovedForAll(address owner, address operator) public view returns (bool) {
+    function isApprovedForAll(address owner, address operator) external view returns (bool) {
         return _operatorApprovals[owner][operator];
     }
 
@@ -126,10 +146,8 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param to address to receive the ownership of the given token ID
      * @param tokenId uint256 ID of the token to be transferred
     */
-    function transferFrom(address from, address to, uint256 tokenId) public {
-        require(_isApprovedOrOwner(msg.sender, tokenId), "Unauthorized");
-
-        _transferFrom(from, to, tokenId);
+    function transferFrom(address from, address to, uint256 tokenId) external approvedOrOwner(tokenId) {
+        transfer(from, to, tokenId);
     }
 
     /**
@@ -144,9 +162,12 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param to address to receive the ownership of the given token ID
      * @param tokenId uint256 ID of the token to be transferred
     */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public {
-        // solium-disable-next-line arg-overflow
-        safeTransferFrom(from, to, tokenId, "");
+    function safeTransferFrom(address from, address to, uint256 tokenId) 
+        external 
+        approvedOrOwner(tokenId)
+        safe(from, to, tokenId, "")    
+    {
+        transfer(from, to, tokenId);
     }
 
     /**
@@ -161,10 +182,12 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param tokenId uint256 ID of the token to be transferred
      * @param _data bytes data to send along with a safe transfer check
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes _data) public {
-        transferFrom(from, to, tokenId);
-        // solium-disable-next-line arg-overflow
-        require(_checkOnERC721Received(from, to, tokenId, _data), "Unauthorized");
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata _data) 
+        external
+        approvedOrOwner(tokenId)
+        safe(from, to, tokenId, _data) 
+    {
+        transfer(from, to, tokenId);
     }
 
     /**
@@ -172,24 +195,9 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param tokenId uint256 ID of the token to query the existence of
      * @return whether the token exists
      */
-    function _exists(uint256 tokenId) internal view returns (bool) {
+    function exists(uint256 tokenId) internal view returns (bool) {
         address owner = _tokenOwner[tokenId];
         return owner != address(0);
-    }
-
-    /**
-     * @dev Returns whether the given spender can transfer a given token ID
-     * @param spender address of the spender to query
-     * @param tokenId uint256 ID of the token to be transferred
-     * @return bool whether the msg.sender is approved for the given token ID,
-     *    is an operator of the owner, or is the owner of the token
-     */
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
-        address owner = ownerOf(tokenId);
-        // Disable solium check because of
-        // https://github.com/duaraghav8/Solium/issues/175
-        // solium-disable-next-line operator-whitespace
-        return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
     }
 
     /**
@@ -198,9 +206,9 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param to The address that will own the minted token
      * @param tokenId uint256 ID of the token to be minted
      */
-    function _mint(address to, uint256 tokenId) internal {
-        require(to != address(0), "Invalid address");
-        require(!_exists(tokenId), "Bad operation");
+    function mint(address to, uint256 tokenId) internal {
+        require(to != address(0), "Bad address");
+        require(!exists(tokenId), "Bad operation");
 
         _tokenOwner[tokenId] = to;
         _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
@@ -215,10 +223,10 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param owner owner of the token to burn
      * @param tokenId uint256 ID of the token being burned
      */
-    function _burn(address owner, uint256 tokenId) internal {
-        require(ownerOf(tokenId) == owner, "Unauthorized");
+    function burn(address owner, uint256 tokenId) internal {
+        require(getOwner(tokenId) == owner, "Unauthorized");
 
-        _clearApproval(tokenId);
+        delete _tokenApprovals[tokenId];
 
         _ownedTokensCount[owner] = _ownedTokensCount[owner].sub(1);
         _tokenOwner[tokenId] = address(0);
@@ -231,8 +239,8 @@ contract UnfungibleToken is ERC165, ERC721 {
      * Reverts if the token does not exist
      * @param tokenId uint256 ID of the token being burned
      */
-    function _burn(uint256 tokenId) internal {
-        _burn(ownerOf(tokenId), tokenId);
+    function burn(uint256 tokenId) internal {
+        burn(getOwner(tokenId), tokenId);
     }
 
     /**
@@ -242,11 +250,11 @@ contract UnfungibleToken is ERC165, ERC721 {
      * @param to address to receive the ownership of the given token ID
      * @param tokenId uint256 ID of the token to be transferred
     */
-    function _transferFrom(address from, address to, uint256 tokenId) internal {
-        require(ownerOf(tokenId) == from, "Unauthorized");
-        require(to != address(0), "Invalid address");
+    function transfer(address from, address to, uint256 tokenId) internal {
+        require(getOwner(tokenId) == from, "Unauthorized");
+        require(to != address(0), "Bad address");
 
-        _clearApproval(tokenId);
+        delete _tokenApprovals[tokenId];
 
         _ownedTokensCount[from] = _ownedTokensCount[from].sub(1);
         _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
@@ -256,31 +264,15 @@ contract UnfungibleToken is ERC165, ERC721 {
         emit Transfer(from, to, tokenId);
     }
 
-    /**
-     * @dev Internal function to invoke `onERC721Received` on a target address
-     * The call is not executed if the target address is not a contract
-     * @param from address representing the previous owner of the given token ID
-     * @param to target address that will receive the tokens
-     * @param tokenId uint256 ID of the token to be transferred
-     * @param _data bytes optional data to send along with the call
-     * @return whether the call correctly returned the expected magic value
+   /**
+     * @dev Gets the owner of the specified token ID
+     * @param tokenId uint256 ID of the token to query the owner of
+     * @return owner address currently marked as the owner of the given token ID
      */
-    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes _data) internal returns (bool) {
-        if (!to.isContract()) {
-            return true;
-        }
-
-        bytes4 retval = IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, _data);
-        return (retval == _ERC721_RECEIVED);
+    function getOwner(uint256 tokenId) internal view returns (address) {
+        address owner = _tokenOwner[tokenId];
+        require(owner != address(0), "Bad token");
+        return owner;
     }
-
-    /**
-     * @dev Private function to clear current approval of a given token ID
-     * @param tokenId uint256 ID of the token to be transferred
-     */
-    function _clearApproval(uint256 tokenId) private {
-        if (_tokenApprovals[tokenId] != address(0)) {
-            _tokenApprovals[tokenId] = address(0);
-        }
-    }
+    
 }
