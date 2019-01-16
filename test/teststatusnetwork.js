@@ -1,7 +1,6 @@
 const Utils = require('../utils/testUtils');
 const MiniMeToken = require('Embark/contracts/MiniMeToken');
 const TestStatusNetwork = require('Embark/contracts/TestStatusNetwork');
-const ERC20TokenSpec = require('./abstract/erc20tokenspec');
 
 config({
   contracts: {

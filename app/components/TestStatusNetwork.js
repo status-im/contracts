@@ -5,7 +5,7 @@ import React from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
 import ERC20TokenUI from './erc20token';
 
-class TestTokenUI extends React.Component {
+class TestStatusNetworkUI extends React.Component {
 
     constructor(props) {
       super(props);
@@ -47,4 +47,4 @@ class TestTokenUI extends React.Component {
     }
   }
 
-export default TestTokenUI;
+export default TestStatusNetworkUI;
