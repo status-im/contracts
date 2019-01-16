@@ -15,9 +15,9 @@ contract Sticker is Controlled, UnfungibleToken {
         mint(_owner, tokenId);
     }
 
-    function destroyToken(address _owner, uint256 _tokenId) external onlyController {
+    function destroyToken(uint256 _tokenId) external onlyController {
         delete dataHash[_tokenId];
-        burn(_owner, _tokenId);
+        burn(_tokenId);
     }
 
 }

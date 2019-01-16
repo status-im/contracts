@@ -18,9 +18,10 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         uint256 price;
         address owner;
     }
-    StickerPack public stickerPack = new StickerPack();
+    StickerPack public stickerPack = new StickerPack(); 
     ERC20Token public snt;    
     mapping(uint256 => Pack) public packs;
+    mapping(bytes32 => uint256) public packIds;
     uint256 public nextId;
 
     /**
@@ -35,8 +36,8 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         snt = _snt;
     }
 
-    function buy(uint256 _packId) external {
-        _buy(msg.sender, packs[_packId]);
+    function buy(uint256 _packId) external returns (uint256 tokenId) {
+        return _buy(msg.sender, packs[_packId]);
     }
     
     function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external {
@@ -49,13 +50,22 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         _buy(_from, pack);
     }
 
+    function transfer(uint256 _packId, address _to) external {
+        require(packs[_packId].owner == msg.sender);
+        packs[_packId].owner = _to;
+    }
+
     function register(bytes32 _dataHash, uint256 _price, address _owner) external onlyController {
+        require(packs[packIds[_dataHash]].dataHash != _dataHash, "Duplicated");
         uint256 packId = nextId++;
         packs[packId] = Pack(_dataHash, _price, _owner);
+        packIds[_dataHash] = packId;
         emit Register(packId, _dataHash, _price);
     }
 
+
     function unregister(uint256 _packId) external onlyController {
+        delete packIds[packs[_packId].dataHash];
         delete packs[_packId];
         emit Unregister(_packId);
     }
@@ -81,10 +91,22 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         emit ClaimedTokens(_token, controller, balance);
     }
 
-    function _buy(address _buyer, Pack memory _pack) internal {
+    function priceOf(uint256 _packId) external view returns(uint256 price){
+        price = packs[_packId].price;
+    }
+    
+    function ownerOf(uint256 _packId) external view returns(address owner){
+        owner = packs[_packId].owner;
+    }
+
+    function dataOf(uint256 _packId) external view returns(bytes32 dataHash){
+        dataHash = packs[_packId].dataHash;
+    }
+
+    function _buy(address _buyer, Pack memory _pack) internal returns (uint256 tokenId){
         require(_pack.dataHash != bytes32(0), "Bad pack");
         require(snt.transferFrom(_buyer, _pack.owner, _pack.price), "Bad payment");
-        stickerPack.generateToken(_buyer, _pack.dataHash);
+        return stickerPack.generateToken(_buyer, _pack.dataHash);
     }
 
     /**
