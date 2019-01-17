@@ -41,16 +41,5 @@ contract("StickerPack", function() {
         assert.equal(await StickerPack.methods.dataHash(tokenPackId).call(), testPackMerkleRoot, "fail testPackMerkleRoot");
     });
 
-    it("should unpack", async function() {
-        for (let i = 0; i < testPack.length; i++) {
-            await StickerPack.methods.unpack(tokenPackId, sha3(testPack[i]), testPackMerkleTree.getHexProof(testPack[i])).send({from: packOwner});    
-        }
-    });
-
-    it("should repack", async function() {
-        for (let i = 0; i < testPack.length; i++) {
-            await StickerPack.methods.repack(tokenPackId, i).send({from: packOwner});
-        }
-    });
 
 });
