@@ -9,12 +9,12 @@ import "../../common/Controlled.sol";
  * @dev 
  */
 contract StickerMarket is Controlled, ApproveAndCallFallBack {
-    event Register(uint256 packId, bytes32 dataHash, uint256 dataPrice);
-    event Unregister(uint256 packId);
+    event Register(uint256 indexed packId, bytes32 indexed stickersMerkleRoot, uint256 dataPrice, bytes _contenthash);
+    event Unregister(uint256 indexed packId, bytes32 indexed stickersMerkleRoot);
     event ClaimedTokens(address indexed _token, address indexed _controller, uint256 _amount);
 
     struct Pack {
-        bytes32 dataHash; // merkle tree root of "ipfs://stickerdata-json"
+        bytes32 stickersMerkleRoot; // merkle tree root of "ipfs://stickerdata-json" leafs
         uint256 price;
         address owner;
     }
@@ -22,6 +22,8 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
     ERC20Token public snt;    
     mapping(uint256 => Pack) public packs;
     mapping(bytes32 => uint256) public packIds;
+    mapping(bytes32 => bytes) public packContenthash;
+
     uint256 public nextId;
 
     /**
@@ -55,19 +57,21 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         packs[_packId].owner = _to;
     }
 
-    function register(bytes32 _dataHash, uint256 _price, address _owner) external onlyController {
-        require(packs[packIds[_dataHash]].dataHash != _dataHash, "Duplicated");
+    function register(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external onlyController {
+        require(packs[packIds[_stickersMerkleRoot]].stickersMerkleRoot != _stickersMerkleRoot, "Duplicated");
         uint256 packId = nextId++;
-        packs[packId] = Pack(_dataHash, _price, _owner);
-        packIds[_dataHash] = packId;
-        emit Register(packId, _dataHash, _price);
+        packs[packId] = Pack(_stickersMerkleRoot, _price, _owner);
+        packIds[_stickersMerkleRoot] = packId;
+        packContenthash[_stickersMerkleRoot] = _packContenthash;
+        emit Register(packId, _stickersMerkleRoot, _price, _packContenthash);
     }
 
 
     function unregister(uint256 _packId) external onlyController {
-        delete packIds[packs[_packId].dataHash];
+        bytes32 stickersMerkleRoot = packs[_packId].stickersMerkleRoot;
+        delete packIds[stickersMerkleRoot];
         delete packs[_packId];
-        emit Unregister(_packId);
+        emit Unregister(_packId, stickersMerkleRoot);
     }
 
     function migrateMarket(address payable _newMarket) external onlyController {
@@ -99,14 +103,14 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         owner = packs[_packId].owner;
     }
 
-    function dataOf(uint256 _packId) external view returns(bytes32 dataHash){
-        dataHash = packs[_packId].dataHash;
+    function dataOf(uint256 _packId) external view returns(bytes32 stickersMerkleRoot){
+        stickersMerkleRoot = packs[_packId].stickersMerkleRoot;
     }
 
     function _buy(address _buyer, Pack memory _pack) internal returns (uint256 tokenId){
-        require(_pack.dataHash != bytes32(0), "Bad pack");
+        require(_pack.stickersMerkleRoot != bytes32(0), "Bad pack");
         require(snt.transferFrom(_buyer, _pack.owner, _pack.price), "Bad payment");
-        return stickerPack.generateToken(_buyer, _pack.dataHash);
+        return stickerPack.generateToken(_buyer, _pack.stickersMerkleRoot);
     }
 
     /**
