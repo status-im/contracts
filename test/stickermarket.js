@@ -50,7 +50,7 @@ contract("StickerMarket", function() {
         let testPackMerkleRoot = testPackMerkleTree.getHexRoot();
         let testPackPrice = "10000000000000000000";
         let packOwner = accounts[1];
-        await StickerMarket.methods.register(testPackMerkleRoot, testPackPrice, packOwner).send();
+        await StickerMarket.methods.register(testPackMerkleRoot, testPackPrice, packOwner, "0x").send();
         
     });
 
