@@ -9,14 +9,16 @@ import "../../common/Controlled.sol";
  * @dev 
  */
 contract StickerMarket is Controlled, ApproveAndCallFallBack {
-    event Register(uint256 indexed packId, bytes32 indexed stickersMerkleRoot, uint256 dataPrice, bytes _contenthash);
+    event Register(uint256 indexed packId, bytes32 indexed stickersMerkleRoot, uint256 price, uint256 limit, bytes _contenthash);
     event Unregister(uint256 indexed packId, bytes32 indexed stickersMerkleRoot);
     event ClaimedTokens(address indexed _token, address indexed _controller, uint256 _amount);
 
     struct Pack {
         bytes32 stickersMerkleRoot; // merkle tree root of "ipfs://stickerdata-json" leafs
         uint256 price;
+        uint256 limit;
         address owner;
+        uint256 sold;
     }
     StickerPack public stickerPack = new StickerPack(); 
     ERC20Token public snt;    
@@ -47,7 +49,7 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         require(_token == address(msg.sender), "Bad call");
         require(_data.length == 36, "Bad data length");
         uint256 packId = abiDecodeBuy(_data);
-        Pack memory pack = packs[packId];
+        Pack storage pack = packs[packId];
         require(pack.price == _amount, "Bad amount");
         _buy(_from, pack);
     }
@@ -57,13 +59,13 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         packs[_packId].owner = _to;
     }
 
-    function register(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external onlyController {
+    function register(bytes32 _stickersMerkleRoot, uint256 _price, uint256 _limit, address _owner, bytes calldata _packContenthash) external onlyController {
         require(packs[packIds[_stickersMerkleRoot]].stickersMerkleRoot != _stickersMerkleRoot, "Duplicated");
         uint256 packId = nextId++;
-        packs[packId] = Pack(_stickersMerkleRoot, _price, _owner);
+        packs[packId] = Pack(_stickersMerkleRoot, _price, _limit, _owner, 0);
         packIds[_stickersMerkleRoot] = packId;
         packContenthash[_stickersMerkleRoot] = _packContenthash;
-        emit Register(packId, _stickersMerkleRoot, _price, _packContenthash);
+        emit Register(packId, _stickersMerkleRoot, _price, _limit, _packContenthash);
     }
 
 
@@ -107,8 +109,9 @@ contract StickerMarket is Controlled, ApproveAndCallFallBack {
         stickersMerkleRoot = packs[_packId].stickersMerkleRoot;
     }
 
-    function _buy(address _buyer, Pack memory _pack) internal returns (uint256 tokenId){
+    function _buy(address _buyer, Pack storage _pack) internal returns (uint256 tokenId){
         require(_pack.stickersMerkleRoot != bytes32(0), "Bad pack");
+        require(_pack.limit == 0 || _pack.sold++ < _pack.limit, "Sold out");
         require(snt.transferFrom(_buyer, _pack.owner, _pack.price), "Bad payment");
         return stickerPack.generateToken(_buyer, _pack.stickersMerkleRoot);
     }
