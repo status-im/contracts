@@ -27,6 +27,10 @@ contract UnfungibleToken is Introspective, ERC721 {
     // Mapping from owner to number of owned token
     mapping (address => uint256) private _ownedTokensCount;
 
+    // Cache view of user token list
+    mapping (address => uint256[]) public ownedTokens;
+    mapping (uint256 => uint256) private _ownedTokensPos;
+
     // Mapping from owner to operator approvals
     mapping (address => mapping (address => bool)) private _operatorApprovals;
 
@@ -212,7 +216,7 @@ contract UnfungibleToken is Introspective, ERC721 {
 
         _tokenOwner[tokenId] = to;
         _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
-
+        addOwnedTokens(ownedTokens[to], tokenId);
         emit Transfer(address(0), to, tokenId);
     }
 
@@ -230,7 +234,7 @@ contract UnfungibleToken is Introspective, ERC721 {
 
         _ownedTokensCount[owner] = _ownedTokensCount[owner].sub(1);
         _tokenOwner[tokenId] = address(0);
-
+        removeOwnedTokens(ownedTokens[owner], tokenId);
         emit Transfer(owner, address(0), tokenId);
     }
     
@@ -242,7 +246,6 @@ contract UnfungibleToken is Introspective, ERC721 {
     function burn(uint256 tokenId) internal {
         burn(getOwner(tokenId), tokenId);
     }
-
     /**
      * @dev Internal function to transfer ownership of a given token ID to another address.
      * As opposed to transferFrom, this imposes no restrictions on msg.sender.
@@ -255,15 +258,26 @@ contract UnfungibleToken is Introspective, ERC721 {
         require(to != address(0), "Bad address");
 
         delete _tokenApprovals[tokenId];
-
+    
         _ownedTokensCount[from] = _ownedTokensCount[from].sub(1);
         _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
-
         _tokenOwner[tokenId] = to;
-
+        removeOwnedTokens(ownedTokens[from], tokenId);
+        addOwnedTokens(ownedTokens[to], tokenId);
         emit Transfer(from, to, tokenId);
     }
-
+    
+    function addOwnedTokens(uint256[] storage tokenList, uint256 _tokenId) internal {
+        _ownedTokensPos[_tokenId] = tokenList.push(_tokenId);
+    }
+    
+    function removeOwnedTokens(uint256[] storage tokenList, uint256 _tokenId) internal {
+        uint pos = _ownedTokensPos[_tokenId];
+        uint256 movedElement = tokenList[tokenList.length-1]; //tokenId;
+        tokenList[pos] = movedElement;
+        tokenList.length--;
+        _ownedTokensPos[movedElement] = pos;
+    }
    /**
      * @dev Gets the owner of the specified token ID
      * @param tokenId uint256 ID of the token to query the owner of
