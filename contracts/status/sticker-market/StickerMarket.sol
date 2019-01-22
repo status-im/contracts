@@ -27,7 +27,7 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
 
     uint256 public marketCount;
 
-    uint256[] public availablePacks;
+    uint256[] private _availablePacks;
     mapping (uint256 => uint256) private _availablePacksPos;
 
     modifier market {
@@ -118,6 +118,10 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
     }
 
+    function getAvailablePacks() external view returns (uint256[] memory marketIds) {
+        return _availablePacks;
+    }
+
     function _buy(address _buyer, Pack memory _pack) internal returns (uint256 tokenId){
         require(_pack.stickersMerkleRoot != bytes32(0), "Bad pack");
         require(snt.allowance(_buyer, address(this)) >= _pack.price, "Bad argument");
@@ -150,14 +154,14 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     }
 
     function addAvailablePack(uint256 _marketId) internal {
-        _availablePacksPos[_marketId] = availablePacks.push(_marketId);
+        _availablePacksPos[_marketId] = _availablePacks.push(_marketId);
     }
     
     function removeAvailablePack(uint256 _marketId) internal {
         uint pos = _availablePacksPos[_marketId];
-        uint256 movedElement = availablePacks[availablePacks.length-1]; //tokenId;
-        availablePacks[pos] = movedElement;
-        availablePacks.length--;
+        uint256 movedElement = _availablePacks[_availablePacks.length-1]; //tokenId;
+        _availablePacks[pos] = movedElement;
+        _availablePacks.length--;
         _availablePacksPos[movedElement] = pos;
     }
 }

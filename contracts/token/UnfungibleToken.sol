@@ -28,7 +28,7 @@ contract UnfungibleToken is Introspective, ERC721 {
     mapping (address => uint256) private _ownedTokensCount;
 
     // Cache view of user token list
-    mapping (address => uint256[]) public ownedTokens;
+    mapping (address => uint256[]) private _ownedTokens;
     mapping (uint256 => uint256) private _ownedTokensPos;
 
     // Mapping from owner to operator approvals
@@ -216,7 +216,7 @@ contract UnfungibleToken is Introspective, ERC721 {
 
         _tokenOwner[tokenId] = to;
         _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
-        addOwnedTokens(ownedTokens[to], tokenId);
+        addOwnedTokens(_ownedTokens[to], tokenId);
         emit Transfer(address(0), to, tokenId);
     }
 
@@ -234,7 +234,7 @@ contract UnfungibleToken is Introspective, ERC721 {
 
         _ownedTokensCount[owner] = _ownedTokensCount[owner].sub(1);
         _tokenOwner[tokenId] = address(0);
-        removeOwnedTokens(ownedTokens[owner], tokenId);
+        removeOwnedTokens(_ownedTokens[owner], tokenId);
         emit Transfer(owner, address(0), tokenId);
     }
     
@@ -262,8 +262,8 @@ contract UnfungibleToken is Introspective, ERC721 {
         _ownedTokensCount[from] = _ownedTokensCount[from].sub(1);
         _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
         _tokenOwner[tokenId] = to;
-        removeOwnedTokens(ownedTokens[from], tokenId);
-        addOwnedTokens(ownedTokens[to], tokenId);
+        removeOwnedTokens(_ownedTokens[from], tokenId);
+        addOwnedTokens(_ownedTokens[to], tokenId);
         emit Transfer(from, to, tokenId);
     }
     
@@ -278,6 +278,11 @@ contract UnfungibleToken is Introspective, ERC721 {
         tokenList.length--;
         _ownedTokensPos[movedElement] = pos;
     }
+
+    function tokensOwnedBy(address owner) external view returns (uint256[] memory tokenList) {
+        return _ownedTokens[owner];
+    }
+
    /**
      * @dev Gets the owner of the specified token ID
      * @param tokenId uint256 ID of the token to query the owner of
