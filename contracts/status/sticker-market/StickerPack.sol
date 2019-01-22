@@ -10,14 +10,18 @@ contract StickerPack is Controlled, UnfungibleToken {
     uint256 public nextId;
     mapping(uint256 => bytes32) public dataHash; 
 
-    function generateToken(address _owner, bytes32 _dataHash) public onlyController returns (uint256 tokenId){
-        tokenId = nextId++;
-        dataHash[tokenId] = _dataHash;
-        mint(_owner, tokenId);
+    function generateToken(address _owner, bytes32 _dataHash) external onlyController returns (uint256 tokenId){
+        return generateStickerPackToken(_owner, _dataHash);
     }
 
     function containsSticker(uint256 _packId, bytes32 _stickerData, bytes32[] memory _proof) public view returns (bool){
         return MerkleProof.verify(_proof, dataHash[_packId], _stickerData);
+    }
+    
+    function generateStickerPackToken(address _owner, bytes32 _dataHash) internal returns (uint256 tokenId){
+        tokenId = nextId++;
+        dataHash[tokenId] = _dataHash;
+        mint(_owner, tokenId);
     }
 
 }

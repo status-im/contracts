@@ -12,6 +12,7 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     event Register(uint256 indexed marketId, bytes32 indexed stickersMerkleRoot, uint256 dataPrice, bytes _contenthash);
     event Unregister(uint256 indexed marketId, bytes32 indexed stickersMerkleRoot);
     event ClaimedTokens(address indexed _token, address indexed _controller, uint256 _amount);
+    event MarketState(bool enabled);
 
     struct Pack {
         bytes32 stickersMerkleRoot; // merkle tree root of "ipfs://stickerdata-json" leafs
@@ -64,9 +65,14 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         marketPacks[_marketId].owner = _to;
     }
 
-    function registerMarketPack(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external onlyController {
+    function setMarketState(bool enabled) external onlyController {
+        marketEnabled = enabled;
+        emit MarketState(enabled);
+    }
+
+    function registerMarketPack(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external onlyController returns(uint256 marketId) {
         require(marketPacks[marketIds[_stickersMerkleRoot]].stickersMerkleRoot != _stickersMerkleRoot, "Duplicated");
-        uint256 marketId = marketCount++;
+        marketId = marketCount++;
         marketPacks[marketId] = Pack(_stickersMerkleRoot, _price, _owner);
         marketIds[_stickersMerkleRoot] = marketId;
         packContenthash[_stickersMerkleRoot] = _packContenthash;
@@ -114,8 +120,11 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
 
     function _buy(address _buyer, Pack memory _pack) internal returns (uint256 tokenId){
         require(_pack.stickersMerkleRoot != bytes32(0), "Bad pack");
-        require(snt.transferFrom(_buyer, _pack.owner, _pack.price), "Bad payment");
-        return generateToken(_buyer, _pack.stickersMerkleRoot);
+        require(snt.allowance(_buyer, address(this)) >= _pack.price, "Bad argument");
+        if(_pack.price > 0){
+            require(snt.transferFrom(_buyer, _pack.owner, _pack.price), "Bad payment");
+        }
+        return generateStickerPackToken(_buyer, _pack.stickersMerkleRoot);
     }
 
     /**
