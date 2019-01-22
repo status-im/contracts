@@ -14,23 +14,21 @@ module.exports = {
       "http://localhost:8545"
     ],
     gas: "auto",
+    strategy: 'explicit',
     contracts: {      
-      "ERC20Receiver": {"deploy": false},
-      "SafeMath": {"deploy": false},
-      
       "MiniMeTokenFactory": {},
       "MiniMeToken": {
         "args":["$MiniMeTokenFactory", "0x0", "0x0", "Status Test Token", 18, "STT", true],
       },
-
-      "StatusNetwork": {"deploy": false},
       "TestStatusNetwork": {
-        "deploy": true,
         "args": ["0x0", "$MiniMeToken"],
         "onDeploy": [
           "await MiniMeToken.methods.changeController(TestStatusNetwork.address).send()",
           "await TestStatusNetwork.methods.setOpen(true).send()",
         ]
+      },
+      "StickerMarket": {
+        "args": ["$MiniMeToken"]
       }
     }
   },
