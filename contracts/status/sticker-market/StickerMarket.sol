@@ -118,7 +118,7 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
     }
 
-    function getAvailablePacks() external view returns (uint256[] memory marketIds) {
+    function getAvailablePacks() external view returns (uint256[] memory availableIds) {
         return _availablePacks;
     }
 
