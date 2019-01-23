@@ -111,14 +111,14 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         emit ClaimedTokens(_token, controller, balance);
     }
 
-    function getMarketPackData(uint256 _marketId) external view returns(bytes32 stickersMerkleRoot, uint256 price, address owner, bytes contentHash){
+    function getMarketPackData(uint256 _marketId) external view returns(bytes32 stickersMerkleRoot, uint256 price, address owner, bytes memory contentHash){
         Pack memory packData = marketPacks[_marketId];
         stickersMerkleRoot = packData.stickersMerkleRoot;
         price = packData.price;
         owner = packData.owner;
         contentHash = packContenthash[stickersMerkleRoot];
     }
-    
+
     function marketPriceOf(uint256 _marketId) external view returns(uint256 price){
         price = marketPacks[_marketId].price;
     }
