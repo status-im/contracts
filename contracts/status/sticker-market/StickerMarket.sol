@@ -119,6 +119,11 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         contentHash = packContenthash[stickersMerkleRoot];
     }
 
+    function getUserPackData(uint256 _tokenId) external view returns(bytes32 stickersMerkleRoot, bytes memory contentHash){
+        stickersMerkleRoot = marketPacks[marketIds[dataHash[_tokenId]]].stickersMerkleRoot;
+        contentHash = packContenthash[stickersMerkleRoot];
+    }
+
     function marketPriceOf(uint256 _marketId) external view returns(uint256 price){
         price = marketPacks[_marketId].price;
     }
