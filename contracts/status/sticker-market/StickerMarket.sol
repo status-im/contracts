@@ -49,7 +49,7 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     function buyStickerPackToken(uint256 _marketId) external market returns (uint256 tokenId) {
         return _buy(msg.sender, marketPacks[_marketId]);
     }
-    
+
     function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external market {
         require(_token == address(snt), "Bad token");
         require(_token == address(msg.sender), "Bad call");
@@ -111,6 +111,14 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         emit ClaimedTokens(_token, controller, balance);
     }
 
+    function getMarketPackData(uint256 _marketId) external view returns(bytes32 stickersMerkleRoot, uint256 price, address owner, bytes contentHash){
+        Pack memory packData = marketPacks[_marketId];
+        stickersMerkleRoot = packData.stickersMerkleRoot;
+        price = packData.price;
+        owner = packData.owner;
+        contentHash = packContenthash[stickersMerkleRoot];
+    }
+    
     function marketPriceOf(uint256 _marketId) external view returns(uint256 price){
         price = marketPacks[_marketId].price;
     }
