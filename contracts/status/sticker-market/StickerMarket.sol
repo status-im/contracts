@@ -65,6 +65,11 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         marketPacks[_marketId].owner = _to;
     }
 
+    function setPriceMarketPack(uint256 _marketId, uint256 _value) external market {
+        require(marketPacks[_marketId].owner == msg.sender);
+        marketPacks[_marketId].price = _value;
+    }
+
     function setMarketState(bool enabled) external onlyController {
         marketEnabled = enabled;
         emit MarketState(enabled);
