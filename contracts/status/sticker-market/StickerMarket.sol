@@ -236,7 +236,7 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
      * @dev adds id from "available list" 
      */
     function addAvailablePack(uint256 _marketId) internal {
-        _availablePacksPos[_marketId] = _availablePacks.push(_marketId);
+        _availablePacksPos[_marketId] = _availablePacks.push(_marketId) + 1;
     }
     
     /** 
@@ -244,8 +244,11 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
      */
     function removeAvailablePack(uint256 _marketId) internal {
         uint pos = _availablePacksPos[_marketId];
+        if(pos == 0) {
+            return;
+        }
         uint256 movedElement = _availablePacks[_availablePacks.length-1]; //tokenId;
-        _availablePacks[pos] = movedElement;
+        _availablePacks[pos-1] = movedElement;
         _availablePacks.length--;
         _availablePacksPos[movedElement] = pos;
     }
