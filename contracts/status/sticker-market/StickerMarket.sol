@@ -129,10 +129,11 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     }
 
     /**
-     * @notice removes all market data about a marketed pack, can only be called by controller
+     * @notice removes all market data about a marketed pack, can only be called by listing owner or market controller
      * @param _marketId position to be deleted
      */
-    function unregisterMarketPack(uint256 _marketId) external onlyController {
+    function unregisterMarketPack(uint256 _marketId) external {
+        require(msg.sender == controller || msg.sender == marketPacks[_marketId].owner, "Unauthorized");
         bytes32 stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
         delete marketIds[stickersMerkleRoot];
         delete packContenthash[stickersMerkleRoot];
