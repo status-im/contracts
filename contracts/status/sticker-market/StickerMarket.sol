@@ -108,7 +108,9 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         require(msg.sender == controller || msg.sender == marketPacks[_marketId].owner, "Unauthorized");
         bytes32 stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
         delete marketIds[stickersMerkleRoot];
-        delete packContenthash[stickersMerkleRoot];
+        if(msg.sender == controller){
+            delete packContenthash[stickersMerkleRoot];
+        }
         delete marketPacks[_marketId];
         removeAvailablePack(_marketId);
         emit Unregister(_marketId, stickersMerkleRoot);
