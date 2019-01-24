@@ -75,7 +75,7 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         emit MarketState(enabled);
     }
 
-    function registerMarketPack(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external onlyController returns(uint256 marketId) {
+    function registerMarketPack(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external market returns(uint256 marketId) {
         require(marketPacks[marketIds[_stickersMerkleRoot]].stickersMerkleRoot != _stickersMerkleRoot, "Duplicated");
         marketId = marketCount++;
         marketPacks[marketId] = Pack(_stickersMerkleRoot, _price, _owner);
