@@ -10,7 +10,7 @@ import "../common/Introspective.sol";
  * @title ERC721 Non-Fungible Token Standard basic implementation
  * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
  */
-contract UnfungibleToken is Introspective, ERC721 {
+contract NonfungibleToken is Introspective, ERC721 {
     using SafeMath for uint256;
     using Address for address;
 

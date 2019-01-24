@@ -2,10 +2,10 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "../../common/Controlled.sol";
 import "../../common/MerkleProof.sol";
-import "../../token/UnfungibleToken.sol";
+import "../../token/NonfungibleToken.sol";
 
 
-contract StickerPack is Controlled, UnfungibleToken {
+contract StickerPack is Controlled, NonfungibleToken {
 
     uint256 public nextId;
     mapping(uint256 => bytes32) public dataHash; 
