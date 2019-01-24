@@ -50,14 +50,14 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         return _buy(msg.sender, marketPacks[_marketId]);
     }
 
-    function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external market {
-        require(_token == address(snt), "Bad token");
-        require(_token == address(msg.sender), "Bad call");
-        require(_data.length == 36, "Bad data length");
-        uint256 packId = abiDecodeBuyStickerPackToken(_data);
-        Pack memory pack = marketPacks[packId];
-        require(pack.price == _amount, "Bad amount");
-        _buy(_from, pack);
+    function registerMarketPack(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external market returns(uint256 marketId) {
+        require(marketPacks[marketIds[_stickersMerkleRoot]].stickersMerkleRoot != _stickersMerkleRoot, "Duplicated");
+        marketId = marketCount++;
+        marketPacks[marketId] = Pack(_stickersMerkleRoot, _price, _owner);
+        marketIds[_stickersMerkleRoot] = marketId;
+        packContenthash[_stickersMerkleRoot] = _packContenthash;
+        addAvailablePack(marketId);
+        emit Register(marketId, _stickersMerkleRoot, _price, _packContenthash);
     }
 
     function transferMarketPack(uint256 _marketId, address _to) external market {
@@ -69,22 +69,21 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         require(marketPacks[_marketId].owner == msg.sender);
         marketPacks[_marketId].price = _value;
     }
+    
+    function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external market {
+        require(_token == address(snt), "Bad token");
+        require(_token == address(msg.sender), "Bad call");
+        require(_data.length == 36, "Bad data length");
+        uint256 packId = abiDecodeBuyStickerPackToken(_data);
+        Pack memory pack = marketPacks[packId];
+        require(pack.price == _amount, "Bad amount");
+        _buy(_from, pack);
+    }
 
     function setMarketState(bool enabled) external onlyController {
         marketEnabled = enabled;
         emit MarketState(enabled);
     }
-
-    function registerMarketPack(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external market returns(uint256 marketId) {
-        require(marketPacks[marketIds[_stickersMerkleRoot]].stickersMerkleRoot != _stickersMerkleRoot, "Duplicated");
-        marketId = marketCount++;
-        marketPacks[marketId] = Pack(_stickersMerkleRoot, _price, _owner);
-        marketIds[_stickersMerkleRoot] = marketId;
-        packContenthash[_stickersMerkleRoot] = _packContenthash;
-        addAvailablePack(marketId);
-        emit Register(marketId, _stickersMerkleRoot, _price, _packContenthash);
-    }
-
 
     function unregisterMarketPack(uint256 _marketId) external onlyController {
         bytes32 stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
@@ -149,6 +148,18 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
         return generateStickerPackToken(_buyer, _pack.stickersMerkleRoot);
     }
 
+    function addAvailablePack(uint256 _marketId) internal {
+        _availablePacksPos[_marketId] = _availablePacks.push(_marketId);
+    }
+    
+    function removeAvailablePack(uint256 _marketId) internal {
+        uint pos = _availablePacksPos[_marketId];
+        uint256 movedElement = _availablePacks[_availablePacks.length-1]; //tokenId;
+        _availablePacks[pos] = movedElement;
+        _availablePacks.length--;
+        _availablePacksPos[movedElement] = pos;
+    }
+
     /**
      * @dev Decodes abi encoded data with selector for "buyStickerPackToken(uint256)".
      * @param _data Abi encoded data.
@@ -169,17 +180,5 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
             packId := mload(add(_data, 36))
         }
         require(sig == bytes4(keccak256("buyStickerPackToken(uint256)")), "Bad method sig");
-    }
-
-    function addAvailablePack(uint256 _marketId) internal {
-        _availablePacksPos[_marketId] = _availablePacks.push(_marketId);
-    }
-    
-    function removeAvailablePack(uint256 _marketId) internal {
-        uint pos = _availablePacksPos[_marketId];
-        uint256 movedElement = _availablePacks[_availablePacks.length-1]; //tokenId;
-        _availablePacks[pos] = movedElement;
-        _availablePacks.length--;
-        _availablePacksPos[movedElement] = pos;
     }
 }
