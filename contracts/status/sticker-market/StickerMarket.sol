@@ -101,6 +101,20 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     }
     
     /**
+     * @notice removes all market data about a marketed pack, can only be called by listing owner or market controller, and when market is open
+     * @param _marketId position to be deleted
+     */
+    function unregisterMarketPack(uint256 _marketId) external market {
+        require(msg.sender == controller || msg.sender == marketPacks[_marketId].owner, "Unauthorized");
+        bytes32 stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
+        delete marketIds[stickersMerkleRoot];
+        delete packContenthash[stickersMerkleRoot];
+        delete marketPacks[_marketId];
+        removeAvailablePack(_marketId);
+        emit Unregister(_marketId, stickersMerkleRoot);
+    }
+
+    /**
      * @dev Mints NFT StickerPack in `msg.sender` account, and Transfers SNT using user allowance
      * emit NonfungibleToken.Transfer(`address(0)`, `msg.sender`, `tokenId`)
      * @notice MiniMeToken ApproveAndCallFallBack support for buyStickerPackToken, can only be called by SNT contract and when market is open
@@ -126,20 +140,6 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     function setMarketState(bool enabled) external onlyController {
         marketEnabled = enabled;
         emit MarketState(enabled);
-    }
-
-    /**
-     * @notice removes all market data about a marketed pack, can only be called by listing owner or market controller
-     * @param _marketId position to be deleted
-     */
-    function unregisterMarketPack(uint256 _marketId) external {
-        require(msg.sender == controller || msg.sender == marketPacks[_marketId].owner, "Unauthorized");
-        bytes32 stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
-        delete marketIds[stickersMerkleRoot];
-        delete packContenthash[stickersMerkleRoot];
-        delete marketPacks[_marketId];
-        removeAvailablePack(_marketId);
-        emit Unregister(_marketId, stickersMerkleRoot);
     }
 
     /**
