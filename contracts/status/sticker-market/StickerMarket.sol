@@ -9,13 +9,13 @@ import "../../common/Controlled.sol";
  * StickerMarket allows any address register "StickerPack" which can be sold to any address in form of "StickerPack", an ERC721 token.
  */
 contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
-    event Register(uint256 indexed marketId, bytes32 indexed stickersMerkleRoot, uint256 dataPrice, bytes _contenthash);
-    event Unregister(uint256 indexed marketId, bytes32 indexed stickersMerkleRoot);
+    event Register(uint256 indexed marketId, uint256 dataPrice, bytes _contenthash);
+    event Unregister(uint256 indexed marketId);
     event ClaimedTokens(address indexed _token, address indexed _controller, uint256 _amount);
     event MarketState(bool enabled);
 
     struct Pack {
-        bytes32 stickersMerkleRoot; // merkle tree root of "EIP1577 sticker contenthash" leafs
+        bytes contenthash;
         uint256 price; //in "wei"
         address owner; //beneficiary of "buy"
     }
@@ -23,14 +23,13 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     bool public marketEnabled; //market state
     ERC20Token public snt; //payment token
     mapping(uint256 => Pack) public marketPacks;
-    mapping(bytes32 => uint256) public marketIds;
-    mapping(bytes32 => bytes) public packContenthash;
+    
 
     uint256 public marketCount; //total amount of market registrations
 
     uint256[] private _availablePacks; //array of available packs
     mapping (uint256 => uint256) private _availablePacksPos; //position on array of available packs
-
+    mapping(bytes32 => bool) private registered;
     /**
      * @dev can only be called when market is open
      */
@@ -58,26 +57,25 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
      * @return tokenId generated StickerPack token 
      */
     function buyStickerPackToken(uint256 _marketId) external market returns (uint256 tokenId) {
-        return _buy(msg.sender, marketPacks[_marketId]);
+        return _buy(msg.sender, _marketId);
     }
 
     /** 
-     * @dev emits StickerMarket.Register(`marketId`, `_stickersMerkleRoot`, `_price`, `_packContenthash`)
+     * @dev emits StickerMarket.Register(`marketId`, `_urlHash`, `_price`, `_contenthash`)
      * @notice Registers to sell a sticker pack 
-     * @param _stickersMerkleRoot unique merkle tree root of "EIP1577 sticker contenthash" leafs, can be used to split pack into separate stickers, defines class of NFT
-     * @param _price cost in wei to users minting with _stickersMerkleRoot metadata
+     * @param _price cost in wei to users minting with _urlHash metadata
      * @param _owner address of the beneficiary of buys
-     * @param _packContenthash EIP1577 pack contentHash for listings, content should include stickers merkle tree
+     * @param _contenthash EIP1577 pack contenthash for listings
      * @return marketId Market position of Sticker Pack data.
      */
-    function registerMarketPack(bytes32 _stickersMerkleRoot, uint256 _price, address _owner, bytes calldata _packContenthash) external market returns(uint256 marketId) {
-        require(marketPacks[marketIds[_stickersMerkleRoot]].stickersMerkleRoot != _stickersMerkleRoot, "Duplicated");
+    function registerMarketPack(uint256 _price, address _owner, bytes calldata _contenthash) external market returns(uint256 marketId) {
+        bytes32 _urlHash = keccak256(_contenthash);
+        require(!registered[_urlHash], "Duplicated");
+        registered[_urlHash] = true;
         marketId = marketCount++;
-        marketPacks[marketId] = Pack(_stickersMerkleRoot, _price, _owner);
-        marketIds[_stickersMerkleRoot] = marketId;
-        packContenthash[_stickersMerkleRoot] = _packContenthash;
+        marketPacks[marketId] = Pack(_contenthash, _price, _owner);
         addAvailablePack(marketId);
-        emit Register(marketId, _stickersMerkleRoot, _price, _packContenthash);
+        emit Register(marketId, _price, _contenthash);
     }
 
     /**
@@ -106,14 +104,9 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
      */
     function unregisterMarketPack(uint256 _marketId) external market {
         require(msg.sender == controller || msg.sender == marketPacks[_marketId].owner, "Unauthorized");
-        bytes32 stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
-        delete marketIds[stickersMerkleRoot];
-        if(msg.sender == controller){
-            delete packContenthash[stickersMerkleRoot];
-        }
         delete marketPacks[_marketId];
         removeAvailablePack(_marketId);
-        emit Unregister(_marketId, stickersMerkleRoot);
+        emit Unregister(_marketId);
     }
 
     /**
@@ -125,14 +118,12 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
      * @param _token must be exactly SNT contract
      * @param _data abi encoded call for buyStickerPackToken(uint256)
      */
-    function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external market {
+    function receiveApproval(address _from, uint256, address _token, bytes calldata _data) external market {
         require(_token == address(snt), "Bad token");
         require(_token == address(msg.sender), "Bad call");
         require(_data.length == 36, "Bad data length");
-        uint256 packId = abiDecodeBuyStickerPackToken(_data);
-        Pack memory pack = marketPacks[packId];
-        require(pack.price == _amount, "Bad amount");
-        _buy(_from, pack);
+        uint256 marketId = abiDecodeBuyStickerPackToken(_data);
+        _buy(_from, marketId);
     }
 
     /**
@@ -166,12 +157,11 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
      * @param _marketId position of query
      * @return all data about listing
      */
-    function getMarketPackData(uint256 _marketId) external view returns(bytes32 stickersMerkleRoot, uint256 price, address owner, bytes memory contentHash){
+    function getMarketPackData(uint256 _marketId) external view returns(uint256 price, address owner, bytes memory contenthash){
         Pack memory packData = marketPacks[_marketId];
-        stickersMerkleRoot = packData.stickersMerkleRoot;
         price = packData.price;
         owner = packData.owner;
-        contentHash = packContenthash[stickersMerkleRoot];
+        contenthash = packData.contenthash;
     }
 
     /**
@@ -193,15 +183,6 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     }
 
     /**
-     * @notice read market pack merkle root of stickers
-     * @param _marketId position of query
-     * @return stickerMerkleRoot unique merkle tree root of "EIP1577 sticker contenthash" leafs
-     */
-    function marketPackMerkleRoot(uint256 _marketId) external view returns(bytes32 stickersMerkleRoot){
-        stickersMerkleRoot = marketPacks[_marketId].stickersMerkleRoot;
-    }
-
-    /**
      * @notice read available market ids
      * @return array of market id registered
      */
@@ -212,24 +193,23 @@ contract StickerMarket is Controlled, StickerPack, ApproveAndCallFallBack {
     /**
      * @notice read token metadata,
      * @param _tokenId token being queried
-     * @return stickerMerkleRoot unique merkle tree root of "EIP1577 sticker contenthash" leafs
-     * @return EIP1577 pack contentHash , can be empty if listing was removed.
+     * @return EIP1577 pack contenthash , can be empty if listing was removed.
      */
-    function getUserPackData(uint256 _tokenId) external view returns(bytes32 stickersMerkleRoot, bytes memory contentHash){
-        stickersMerkleRoot = marketPacks[marketIds[dataHash[_tokenId]]].stickersMerkleRoot;
-        contentHash = packContenthash[stickersMerkleRoot];
+    function getUserPackData(uint256 _tokenId) external view returns(bytes memory contenthash){
+        contenthash = marketPacks[tokenMarketId[_tokenId]].contenthash;
     }
 
     /** 
      * @dev transfer SNT from buyer to pack owner and mint sticker pack token 
      */
-    function _buy(address _buyer, Pack memory _pack) internal returns (uint256 tokenId){
-        require(_pack.stickersMerkleRoot != bytes32(0), "Bad pack");
+    function _buy(address _buyer, uint256 _marketId) internal returns (uint256 tokenId){
+        Pack memory _pack = marketPacks[_marketId];
+        require(_pack.owner != address(0), "Bad pack");
         require(snt.allowance(_buyer, address(this)) >= _pack.price, "Bad argument");
         if(_pack.price > 0){
             require(snt.transferFrom(_buyer, _pack.owner, _pack.price), "Bad payment");
         }
-        return generateStickerPackToken(_buyer, _pack.stickersMerkleRoot);
+        return generateStickerPackToken(_buyer, _marketId);
     }
 
     /** 
