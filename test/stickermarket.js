@@ -35,11 +35,11 @@ contract("StickerMarket", function() {
     });
 
     it("should register pack", async function() {
-        await StickerMarket.methods.setMarketState(true).send();
+        await StickerMarket.methods.setMarketState(1).send();
         let testPack = "0x55c72bf3b3d468c7c36c848a4d49bb11101dc79bc2f6484bf1ef796fc498919a";
         let testPackPrice = "10000000000000000000";
         let packOwner = accounts[1];
-        await StickerMarket.methods.registerMarketPack(testPackPrice, packOwner, testPack).send();
+        await StickerMarket.methods.registerPack(testPackPrice, 0, "0x0CA15047", packOwner, testPack).send();
         
     });
 
@@ -47,10 +47,10 @@ contract("StickerMarket", function() {
         
         let packBuyer = accounts[2];
         let packId = "0";
-        let packPrice = await StickerMarket.methods.marketPriceOf(packId).call();
-        await TestStatusNetwork.methods.mint(packPrice).send({from: packBuyer });
-        await MiniMeToken.methods.approve(StickerMarket.address, packPrice).send({from: packBuyer });
-        await StickerMarket.methods.buyStickerPackToken(packId).send({from: packBuyer });
+        let pack = await StickerMarket.methods.getPackData(packId).call();
+        await TestStatusNetwork.methods.mint(pack.price).send({from: packBuyer });
+        await MiniMeToken.methods.approve(StickerMarket.address, pack.price).send({from: packBuyer });
+        await StickerMarket.methods.buyToken(packId, packBuyer).send({from: packBuyer });
 
     });
 
