@@ -9,6 +9,7 @@ import "../common/Introspective.sol";
 /**
  * @title ERC721 Non-Fungible Token Standard basic implementation
  * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
+ * Based on https://github.com/OpenZeppelin/openzeppelin-solidity/blob/8dd92fd6cafe4e4ce7b8ae297a4ba1212ca21ca6/contracts/token/ERC721/ERC721.sol
  */
 contract NonfungibleToken is Introspective, ERC721 {
     using SafeMath for uint256;
@@ -23,9 +24,6 @@ contract NonfungibleToken is Introspective, ERC721 {
 
     // Mapping from token ID to approved address
     mapping (uint256 => address) private _tokenApprovals;
-
-    // Mapping from owner to number of owned token
-    mapping (address => uint256) private _ownedTokensCount;
 
     // Cache view of user token list
     mapping (address => uint256[]) private _ownedTokens;
@@ -79,7 +77,7 @@ contract NonfungibleToken is Introspective, ERC721 {
      */
     function balanceOf(address owner) external view returns (uint256) {
         require(owner != address(0), "Bad address");
-        return _ownedTokensCount[owner];
+        return _ownedTokens[owner].length;
     }
 
     /**
@@ -194,6 +192,20 @@ contract NonfungibleToken is Introspective, ERC721 {
         transfer(from, to, tokenId);
     }
 
+    function tokensOwnedBy(address owner) external view returns (uint256[] memory tokenList) {
+        return _ownedTokens[owner];
+    }
+    /**
+     * @dev Gets the token ID at a given index of the tokens list of the requested owner
+     * @param owner address owning the tokens list to be accessed
+     * @param index uint256 representing the index to be accessed of the requested tokens list
+     * @return uint256 token ID at the given index of the tokens list owned by the requested address
+     */
+    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256) {
+        require(index < _ownedTokens[owner].length, "Index out of bounds");
+        return _ownedTokens[owner][index];
+    }
+
     /**
      * @dev Returns whether the specified token exists
      * @param tokenId uint256 ID of the token to query the existence of
@@ -215,7 +227,6 @@ contract NonfungibleToken is Introspective, ERC721 {
         require(!exists(tokenId), "Bad operation");
 
         _tokenOwner[tokenId] = to;
-        _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
         addOwnedTokens(_ownedTokens[to], tokenId);
         emit Transfer(address(0), to, tokenId);
     }
@@ -232,7 +243,6 @@ contract NonfungibleToken is Introspective, ERC721 {
 
         delete _tokenApprovals[tokenId];
 
-        _ownedTokensCount[owner] = _ownedTokensCount[owner].sub(1);
         _tokenOwner[tokenId] = address(0);
         removeOwnedTokens(_ownedTokens[owner], tokenId);
         emit Transfer(owner, address(0), tokenId);
@@ -259,8 +269,6 @@ contract NonfungibleToken is Introspective, ERC721 {
 
         delete _tokenApprovals[tokenId];
     
-        _ownedTokensCount[from] = _ownedTokensCount[from].sub(1);
-        _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
         _tokenOwner[tokenId] = to;
         removeOwnedTokens(_ownedTokens[from], tokenId);
         addOwnedTokens(_ownedTokens[to], tokenId);
@@ -276,14 +284,11 @@ contract NonfungibleToken is Introspective, ERC721 {
         if(pos == 0) {
             return;
         }
+        delete _ownedTokensPos[_tokenId];
         uint256 movedElement = tokenList[tokenList.length-1]; //tokenId;
         tokenList[pos-1] = movedElement;
         tokenList.length--;
         _ownedTokensPos[movedElement] = pos;
-    }
-
-    function tokensOwnedBy(address owner) external view returns (uint256[] memory tokenList) {
-        return _ownedTokens[owner];
     }
 
    /**
