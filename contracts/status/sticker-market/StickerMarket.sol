@@ -9,15 +9,19 @@ import "../../common/Controlled.sol";
  * StickerMarket allows any address register "StickerPack" which can be sold to any address in form of "StickerPack", an ERC721 token.
  */
 contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
-    event Register(uint256 indexed packId, bytes4 indexed category, uint256 dataPrice, bytes _contenthash);
+    event Register(uint256 indexed packId, uint256 dataPrice, bytes _contenthash);
+    event Categorized(bytes4 indexed category, uint256 indexed packId);
+    event Uncategorized(bytes4 indexed category, uint256 indexed packId);
     event Unregister(uint256 indexed packId);
     event ClaimedTokens(address indexed _token, address indexed _controller, uint256 _amount);
     event MarketState(State state);
+    event RegisterFee(uint256 value);
+    event BurnRate(uint256 value);
 
-    enum State { Invalid, Open, Controlled, Closed}
+    enum State { Invalid, Open, BuyOnly, Controlled, Closed }
 
     struct Pack {
-        bytes4 category;
+        bytes4[] category; 
         address owner; //beneficiary of "buy"
         bool mintable; 
         uint256 timestamp;
@@ -28,6 +32,9 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
 
     State public state = State.Open;
     uint256 registerFee;
+    uint256 burnRate;
+    
+    //include global var to set burn rate/percentage
     ERC20Token public snt; //payment token
     mapping(uint256 => Pack) public packs;
     mapping(uint256 => uint256) public tokenPackId; //packId
@@ -36,13 +43,21 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
 
     //auxilary views
     mapping(bytes4 => uint256[]) private availablePacks; //array of available packs
-    mapping(uint256 => uint256) private availablePacksIndex; //position on array of available packs
+    mapping(bytes4 => mapping(uint256 => uint256)) private availablePacksIndex; //position on array of available packs
+    mapping(uint256 => mapping(bytes4 => uint256)) private packCategoryIndex;
+    /**
+     * @dev can only be called when market is open
+     */
+    modifier marketManagement {
+        require(state == State.Open || (msg.sender == controller && state == State.Controlled), "Market Disabled");
+        _;
+    }
 
     /**
      * @dev can only be called when market is open
      */
-    modifier market {
-        require(state == State.Open || (msg.sender == controller && state == State.Controlled), "Market Disabled");
+    modifier marketSell {
+        require(state == State.Open || state == State.BuyOnly || (msg.sender == controller && state == State.Controlled), "Market Disabled");
         _;
     }
 
@@ -74,8 +89,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         uint256 _packId,
         address _destination
     ) 
-        external 
-        market 
+        external  
         returns (uint256 tokenId)
     {
         return buy(msg.sender, _packId, _destination);
@@ -94,12 +108,11 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
     function registerPack(
         uint256 _price,
         uint256 _donate,
-        bytes4 _category,
+        bytes4[] calldata _category, 
         address _owner,
         bytes calldata _contenthash
     ) 
-        external 
-        market 
+        external  
         returns(uint256 packId)
     {
         packId = register(msg.sender, _category, _owner, _price, _donate, _contenthash);
@@ -112,7 +125,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
      */
     function setPackOwner(uint256 _packId, address _to) 
         external 
-        market 
+        marketManagement 
         packOwner(_packId)
     {
         packs[_packId].owner = _to;
@@ -125,7 +138,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
      */
     function setPackPrice(uint256 _packId, uint256 _price, uint256 _donate) 
         external 
-        market 
+        marketManagement 
         packOwner(_packId)
     {
         require(_price >= _donate, "Bad argument, _donate > _price");
@@ -138,24 +151,36 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
      * @param _packId which market position is being transfered
      * @param _newCategory new category
      */
-    function setPackCategory(uint256 _packId, bytes4 _newCategory)
+
+    function addPackCategory(uint256 _packId, bytes4 _newCategory)
         external 
-        market 
+        marketManagement 
         packOwner(_packId)
     {
-        bytes4 oldCategory = packs[_packId].category;
-        packs[_packId].category = _newCategory;
-        removeAvailablePack(_packId, oldCategory);
         addAvailablePack(_packId, _newCategory);
+    }
+
+    /**
+     * @notice changes caregory of `_packId`, can only be called when market is open
+     * @param _packId which market position is being transfered
+     * @param _newCategory new category
+     */
+
+    function removePackCategory(uint256 _packId, bytes4 _newCategory)
+        external 
+        marketManagement 
+        packOwner(_packId)
+    {
+        removeAvailablePack(_packId, _newCategory);
     }
     
     /**
-     * @notice removes all market data about a marketed pack, can only be called by listing owner or market controller, and when market is open
+     * @notice 
      * @param _packId position edit
      */
     function setPackState(uint256 _packId, bool _mintable) 
         external 
-        market 
+        marketManagement 
         packOwner(_packId)
     {
         packs[_packId].mintable = _mintable;
@@ -174,7 +199,6 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         bytes calldata _data
     ) 
         external 
-        market 
     {
         require(_token == address(snt), "Bad token");
         require(_token == address(msg.sender), "Bad call");
@@ -185,7 +209,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
             buy(_from, packId, owner);
         } else if(msg.sig == bytes4(keccak256("registerPack(uint256,uint256,bytes4,address,bytes)"))) {
             require(_data.length > 60, "Bad data length");
-            (uint256 _price, uint256 _donate, bytes4 _category, address _owner, bytes memory _contenthash) = abi.decode(msg.data, (uint256,uint256,bytes4,address,bytes));
+            (uint256 _price, uint256 _donate, bytes4[] memory _category, address _owner, bytes memory _contenthash) = abi.decode(msg.data, (uint256,uint256,bytes4[],address,bytes));
             register(_from, _category, _owner, _price, _donate, _contenthash);
         } else {
             revert("Bad call");
@@ -196,14 +220,25 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
      * @notice removes all market data about a marketed pack, can only be called by listing owner or market controller, and when market is open
      * @param _packId position to be deleted
      */
-    function purgePack(uint256 _packId)
+    function purgePack(uint256 _packId, uint256 _limit)
         external
         onlyController 
     {
-        bytes4 _category = packs[_packId].category;
-        delete packs[_packId];
-        removeAvailablePack(_packId, _category);
-        emit Unregister(_packId);
+        bytes4[] memory _category = packs[_packId].category;
+        require(_limit >= _category.length, "Bad limit");
+        uint256 len = _category.length;
+        if(len > 0){
+            len--;
+        }
+        for(uint i = 0; i > _limit; i++){
+            removeAvailablePack(_packId, _category[len-i]);
+        }
+
+        if(packs[_packId].category.length == 0){
+            delete packs[_packId];
+            emit Unregister(_packId);
+        }
+        
     }
 
     /**
@@ -219,7 +254,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
     }
 
     /**
-     * @notice changes market state, only controller can call.
+     * @notice changes register fee, only controller can call.
      * @param _value new register fee
      */
     function setRegisterFee(uint256 _value)
@@ -227,6 +262,19 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         onlyController 
     {
         registerFee = _value;
+        emit RegisterFee(_value);
+    }
+
+        /**
+     * @notice changes burn rate, only controller can call.
+     * @param _value new burn rate
+     */
+    function setBurnRate(uint256 _value)
+        external
+        onlyController 
+    {
+        burnRate = _value;
+        emit BurnRate(_value);
     }
 
     /**
@@ -306,7 +354,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         external 
         view 
         returns (
-            bytes4 category,
+            bytes4[] memory category,
             address owner,
             bool mintable,
             uint256 timestamp,
@@ -332,7 +380,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         external 
         view 
         returns (
-            bytes4 category,
+            bytes4[] memory category,
             uint256 timestamp,
             bytes memory contenthash
         ) 
@@ -350,13 +398,14 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
      */
     function register(
         address _caller,
-        bytes4 _category,
+        bytes4[] memory _category,
         address _owner,
         uint256 _price,
         uint256 _donate,
         bytes memory _contenthash
     ) 
         internal 
+        marketManagement
         returns(uint256 packId) 
     {
         if(registerFee > 0){
@@ -364,9 +413,12 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         }
         require(_price >= _donate, "Bad argument, _donate > _price");
         packId = packCount++;
-        packs[packId] = Pack(_category, _owner, true, block.timestamp, _price, _donate, _contenthash);
-        addAvailablePack(packId, _category);
-        emit Register(packId, _category, _price, _contenthash);
+        packs[packId] = Pack(new bytes4[](0), _owner, true, block.timestamp, _price, _donate, _contenthash);
+        for(uint i = 0;i> _category.length; i++){
+            addAvailablePack(packId, _category[i]);
+        }
+        
+        emit Register(packId, _price, _contenthash);
     }
 
     /** 
@@ -378,19 +430,28 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         address _destination
     ) 
         internal 
+        marketSell
         returns (uint256 tokenId)
     {
         Pack memory _pack = packs[_packId];
         require(_pack.owner != address(0), "Bad pack");
         require(_pack.mintable, "Disabled");
         require(_pack.price > 0, "Unauthorized");
-
-        uint256 amount = _pack.price-_pack.donate;
-        if(amount > 0) {
-            require(snt.transferFrom(_caller, _pack.owner, amount), "Bad payment");
+      
+        uint256 amount = _pack.price;
+        
+        if(burnRate > 0) {
+            uint256 burned = (_pack.price * burnRate) / 10000;
+            amount -= burned;
+            require(snt.transferFrom(_caller, Controlled(address(snt)).controller(), burned), "Bad burn");
         }
         if(_pack.donate > 0) {
-            require(snt.transferFrom(_caller, address(this), _pack.donate), "Bad payment");
+            uint256 donate = (_pack.price * _pack.donate) / 10000;
+            amount -= donate;
+            require(snt.transferFrom(_caller, address(this), donate), "Bad donate");
+        } 
+        if(amount > 0) {
+            require(snt.transferFrom(_caller, _pack.owner, amount), "Bad payment");
         }
         return mintStickerPack(_destination, _packId);
     }
@@ -414,22 +475,37 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
      * @dev adds id from "available list" 
      */
     function addAvailablePack(uint256 _packId, bytes4 _category) private {
-        availablePacksIndex[_packId] = availablePacks[_category].push(_packId) + 1;
+        require(packCategoryIndex[_packId][_category] == 0, "Duplicate categorization");
+        availablePacksIndex[_category][_packId] = availablePacks[_category].push(_packId) + 1;
+        packCategoryIndex[_packId][_category] = packs[_packId].category.push(_category) + 1;
+        emit Categorized(_category, _packId);
     }
     
     /** 
      * @dev remove id from "available list" 
      */
     function removeAvailablePack(uint256 _packId, bytes4 _category) private {
-        uint pos = availablePacksIndex[_packId];
-        if(pos == 0) {
-            return;
+        uint pos = availablePacksIndex[_category][_packId];
+        require(pos > 0, "Not categorized [1]");
+        delete availablePacksIndex[_category][_packId];
+        if(pos != availablePacks[_category].length){
+            uint256 movedElement = availablePacks[_category][availablePacks[_category].length-1]; //tokenId;
+            availablePacks[_category][pos-1] = movedElement;
+            availablePacksIndex[_category][movedElement] = pos;
         }
-        delete availablePacksIndex[_packId];
-        uint256 movedElement = availablePacks[_category][availablePacks[_category].length-1]; //tokenId;
-        availablePacks[_category][pos-1] = movedElement;
         availablePacks[_category].length--;
-        availablePacksIndex[movedElement] = pos;
+
+        uint pos2 = packCategoryIndex[_packId][_category];
+        require(pos2 > 0, "Not categorized [2]");
+        delete packCategoryIndex[_packId][_category];
+        if(pos2 != packs[_packId].category.length){
+            bytes4 movedElement2 = packs[_packId].category[packs[_packId].category.length-1]; //tokenId;
+            packs[_packId].category[pos2-1] = movedElement2;
+            packCategoryIndex[_packId][movedElement2] = pos2;
+        }
+        packs[_packId].category.length--;
+        emit Uncategorized(_category, _packId);
+
     }
 
     /**

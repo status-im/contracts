@@ -39,7 +39,7 @@ contract("StickerMarket", function() {
         let testPack = "0x55c72bf3b3d468c7c36c848a4d49bb11101dc79bc2f6484bf1ef796fc498919a";
         let testPackPrice = "10000000000000000000";
         let packOwner = accounts[1];
-        await StickerMarket.methods.registerPack(testPackPrice, 0, "0x0CA15047", packOwner, testPack).send();
+        await StickerMarket.methods.registerPack(testPackPrice, 0, ["0x0CA15047","0x12345678","0x00000001","0x00000002"], packOwner, testPack).send();
         
     });
 
