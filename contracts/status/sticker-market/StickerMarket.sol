@@ -21,7 +21,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
     enum State { Invalid, Open, BuyOnly, Controlled, Closed }
 
     struct Pack {
-        bytes4[] category; 
+        bytes4[] category;
         address owner; //beneficiary of "buy"
         bool mintable; 
         uint256 timestamp;
@@ -141,7 +141,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         marketManagement 
         packOwner(_packId)
     {
-        require(_price >= _donate, "Bad argument, _donate > _price");
+        require(_donate <= 10000, "Bad argument, _donate cannot be more then 100.00%");
         packs[_packId].price = _price;
         packs[_packId].donate = _donate;
     }
@@ -225,12 +225,19 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         onlyController 
     {
         bytes4[] memory _category = packs[_packId].category;
-        require(_limit >= _category.length, "Bad limit");
+        uint limit;
+        if(_limit == 0) {
+            limit = _category.length;
+        } else {
+            require(_limit <= _category.length, "Bad limit");
+            limit = _limit;
+        }
+        
         uint256 len = _category.length;
         if(len > 0){
             len--;
         }
-        for(uint i = 0; i > _limit; i++){
+        for(uint i = 0; i < limit; i++){
             removeAvailablePack(_packId, _category[len-i]);
         }
 
@@ -392,7 +399,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
             pack.contenthash
         );
     }
-    
+
     /** 
      * @dev register new pack to owner
      */
@@ -411,10 +418,10 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         if(registerFee > 0){
             require(snt.transferFrom(_caller, address(this), registerFee), "Bad payment");
         }
-        require(_price >= _donate, "Bad argument, _donate > _price");
+        require(_donate <= 10000, "Bad argument, _donate cannot be more then 100.00%");
         packId = packCount++;
         packs[packId] = Pack(new bytes4[](0), _owner, true, block.timestamp, _price, _donate, _contenthash);
-        for(uint i = 0;i> _category.length; i++){
+        for(uint i = 0;i < _category.length; i++){
             addAvailablePack(packId, _category[i]);
         }
         
@@ -476,8 +483,8 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
      */
     function addAvailablePack(uint256 _packId, bytes4 _category) private {
         require(packCategoryIndex[_packId][_category] == 0, "Duplicate categorization");
-        availablePacksIndex[_category][_packId] = availablePacks[_category].push(_packId) + 1;
-        packCategoryIndex[_packId][_category] = packs[_packId].category.push(_category) + 1;
+        availablePacksIndex[_category][_packId] = availablePacks[_category].push(_packId);
+        packCategoryIndex[_packId][_category] = packs[_packId].category.push(_category);
         emit Categorized(_category, _packId);
     }
     

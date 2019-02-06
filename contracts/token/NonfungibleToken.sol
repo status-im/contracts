@@ -276,7 +276,7 @@ contract NonfungibleToken is Introspective, ERC721 {
     }
     
     function addOwnedTokens(uint256[] storage tokenList, uint256 _tokenId) internal {
-        _ownedTokensPos[_tokenId] = tokenList.push(_tokenId) + 1;
+        _ownedTokensPos[_tokenId] = tokenList.push(_tokenId);
     }
     
     function removeOwnedTokens(uint256[] storage tokenList, uint256 _tokenId) internal {
