@@ -281,6 +281,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         onlyController 
     {
         burnRate = _value;
+        require(_value <= 10000, "cannot be more then 100.00%");
         emit BurnRate(_value);
     }
 
@@ -427,7 +428,7 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         
         emit Register(packId, _price, _contenthash);
     }
-
+    
     /** 
      * @dev transfer SNT from buyer to pack owner and mint sticker pack token 
      */
@@ -443,17 +444,15 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
         Pack memory _pack = packs[_packId];
         require(_pack.owner != address(0), "Bad pack");
         require(_pack.mintable, "Disabled");
-        require(_pack.price > 0, "Unauthorized");
-      
         uint256 amount = _pack.price;
-        
-        if(burnRate > 0) {
-            uint256 burned = (_pack.price * burnRate) / 10000;
+        require(amount > 0, "Unauthorized");
+        if(amount > 0 && burnRate > 0) {
+            uint256 burned = (amount * burnRate) / 10000;
             amount -= burned;
             require(snt.transferFrom(_caller, Controlled(address(snt)).controller(), burned), "Bad burn");
         }
-        if(_pack.donate > 0) {
-            uint256 donate = (_pack.price * _pack.donate) / 10000;
+        if(amount > 0 && _pack.donate > 0) {
+            uint256 donate = (amount * _pack.donate) / 10000;
             amount -= donate;
             require(snt.transferFrom(_caller, address(this), donate), "Bad donate");
         } 
