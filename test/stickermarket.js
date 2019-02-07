@@ -136,7 +136,7 @@ contract("StickerMarket", function() {
     it("should mint packs", async function() {
         let burnRate = 10;
         await StickerMarket.methods.setBurnRate(burnRate).send();
-        let packBuyer = accounts[2];registeredPacks[i].data
+        let packBuyer = accounts[2];
         for(let i = 0; i < registeredPacks.length; i++){
             await TestStatusNetwork.methods.mint(registeredPacks[i].data.price).send({from: packBuyer });
             await MiniMeToken.methods.approve(StickerMarket.address, registeredPacks[i].data.price).send({from: packBuyer });
