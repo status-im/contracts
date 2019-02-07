@@ -149,29 +149,29 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
     /**
      * @notice changes caregory of `_packId`, can only be called when market is open
      * @param _packId which market position is being transfered
-     * @param _newCategory new category
+     * @param _category new category
      */
 
-    function addPackCategory(uint256 _packId, bytes4 _newCategory)
+    function addPackCategory(uint256 _packId, bytes4 _category)
         external 
         marketManagement 
         packOwner(_packId)
     {
-        addAvailablePack(_packId, _newCategory);
+        addAvailablePack(_packId, _category);
     }
 
     /**
      * @notice changes caregory of `_packId`, can only be called when market is open
      * @param _packId which market position is being transfered
-     * @param _newCategory new category
+     * @param _category category to unlist
      */
 
-    function removePackCategory(uint256 _packId, bytes4 _newCategory)
+    function removePackCategory(uint256 _packId, bytes4 _category)
         external 
         marketManagement 
         packOwner(_packId)
     {
-        removeAvailablePack(_packId, _newCategory);
+        removeAvailablePack(_packId, _category);
     }
     
     /**
