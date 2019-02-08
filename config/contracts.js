@@ -20,11 +20,12 @@ module.exports = {
       "MiniMeToken": {
         "args":["$MiniMeTokenFactory", "0x0", "0x0", "Status Test Token", 18, "STT", true],
       },
-      "TestStatusNetwork": {
+      "StatusRoot": {
+        "instanceOf": "TestStatusNetwork",
         "args": ["0x0", "$MiniMeToken"],
         "onDeploy": [
           "await MiniMeToken.methods.changeController(TestStatusNetwork.address).send()",
-          "await TestStatusNetwork.methods.setOpen(true).send()",
+          "await StatusRoot.methods.setOpen(true).send()",
         ]
       },
       "StickerMarket": {
@@ -58,6 +59,10 @@ module.exports = {
         "instanceOf": "TestStatusNetwork",
         "deploy": false,
         "address": "0x34358C45FbA99ef9b78cB501584E8cBFa6f85Cef"
+      }, 
+      "StickerMarket": {
+        "deploy": false,
+        "address": "0x82694E3DeabE4D6f4e6C180Fe6ad646aB8EF53ae"
       }
     }
   },
