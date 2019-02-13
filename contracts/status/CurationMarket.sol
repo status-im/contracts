@@ -6,7 +6,7 @@ import "./Ranking.sol";
 
 contract CurationMarket is Controlled {
     ERC20Token token;
-    Ranking ranking;
+    Ranking ranking = new Ranking();
     
     constructor(ERC20Token _token) public {
         token = _token;
