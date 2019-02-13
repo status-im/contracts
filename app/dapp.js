@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs, Tab } from 'react-bootstrap';
 import EmbarkJS from 'Embark/EmbarkJS';
-import TestTokenUI from './components/TestStatusNetwork';
+import TestStatusNetworkUI from './components/TestStatusNetwork';
 
 import './dapp.css';
 
@@ -31,8 +31,8 @@ class DApp extends React.Component {
       <div>
 
         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-          <Tab eventKey={1} title="TestToken">
-              <TestTokenUI />
+          <Tab eventKey={1} title="TestStatusNetwork">
+              <TestStatusNetworkUI />
           </Tab>
         </Tabs>
       </div>);

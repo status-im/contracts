@@ -1,5 +1,5 @@
 import EmbarkJS from 'Embark/EmbarkJS';
-import TestStatusNetwork from 'Embark/contracts/TestStatusNetwork';
+import StatusRoot from 'Embark/contracts/StatusRoot';
 import MiniMeToken from 'Embark/contracts/MiniMeToken';
 import React from 'react';
 import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
@@ -22,9 +22,9 @@ class TestTokenUI extends React.Component {
       e.preventDefault();
       await EmbarkJS.enableEthereum();
       var value = parseInt(this.state.amountToMint, 10);
-      TestStatusNetwork.methods.mint(value).send({ gas: 1000000 })
+      StatusRoot.methods.mint(value).send({ gas: 1000000 })
 
-      console.log(TestStatusNetwork.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
+      console.log(StatusRoot.options.address +".mint("+value+").send({from: " + web3.eth.defaultAccount + "})");
     }
     
     render(){
