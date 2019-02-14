@@ -170,6 +170,60 @@ contract("StickerMarket", function() {
         }
     });
 
+    it("should mint packs with approveAndCall", async function() {
+        let burnRate = 10;
+        await StickerMarket.methods.setBurnRate(burnRate).send();
+        let packBuyer = accounts[2];
+        for(let i = 0; i < registeredPacks.length; i++){
+            
+            await TestStatusNetwork.methods.mint(registeredPacks[i].data.price).send({from: packBuyer });
+            const buyCall = StickerMarket.methods.buyToken(registeredPacks[i].id, packBuyer).encodeABI();
+            let buy = await MiniMeToken.methods.approveAndCall(StickerMarket.address, registeredPacks[i].data.price, buyCall).send({from: packBuyer });
+            let tokenId;
+            let toArtist = 0;
+            let donated = 0;
+            let burned = 0;
+            let burnAddress =(await MiniMeToken.methods.controller().call());
+
+            for(let j = 0; j < buy.events.Transfer.length; j++) {
+                if(buy.events.Transfer[j].address == MiniMeToken.address){
+                    if(buy.events.Transfer[j].returnValues[1] == StickerMarket.address){
+                        donated = parseInt(buy.events.Transfer[j].raw.data, 16).toString(10)
+                    }else if(buy.events.Transfer[j].returnValues[1] == registeredPacks[i].data.owner){
+                        toArtist = parseInt(buy.events.Transfer[j].raw.data, 16).toString(10)
+                    }else if(buy.events.Transfer[j].returnValues[1] == burnAddress){
+                        burned = parseInt(buy.events.Transfer[j].raw.data, 16).toString(10)
+                    }
+                }else if(buy.events.Transfer[j].address == StickerMarket.address){
+                    tokenId = parseInt(buy.events.Transfer[j].raw.data, 16).toString(10);
+                }
+            }
+            assert.equal(registeredPacks[i].data.price, (+toArtist + +donated + +burned), "Bad payment")
+            assert.equal(burned, (registeredPacks[i].data.price * burnRate) / 10000, "Bad burn") 
+            assert.equal(donated, ((+registeredPacks[i].data.price - burned) * registeredPacks[i].data.donate)/10000, "Bad donate")
+            assert.equal(toArtist, registeredPacks[i].data.price - (+donated + +burned), "Bad profit")
+            assert.equal(await StickerMarket.methods.ownerOf(tokenId).call(), packBuyer, "Bad owner")
+            
+        }
+    });
+
+    it("should register pack with approveAndCall", async function() {
+        let registerFee = "1000000000000000000";
+        await StickerMarket.methods.setRegisterFee(registerFee).send();
+        await TestStatusNetwork.methods.mint(registerFee).send();
+        let pack = testPacks[0];
+        let regCall = await StickerMarket.methods.registerPack(pack.price, pack.donate, pack.category, pack.owner, pack.contentHash).encodeABI();  
+        let packId = await StickerMarket.methods.packCount().call();
+        let reg = await MiniMeToken.methods.approveAndCall(StickerMarket.address, registerFee, regCall).send();  
+        
+        for(let j = 0; j < pack.category.length; j++) {
+            assert.notEqual((await StickerMarket.methods.getAvailablePacks(pack.category[j]).call()).indexOf(packId), -1);    
+        }
+
+        await StickerMarket.methods.purgePack(packId, 0).send();  
+        await StickerMarket.methods.setRegisterFee("0").send();
+    });
+
     it("should purge packs", async function() {
         var i = 0;
         await StickerMarket.methods.purgePack(registeredPacks[i].id, 0).send();  
