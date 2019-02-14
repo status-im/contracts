@@ -1,39 +1,37 @@
-pragma solidity ^0.4.23;
+pragma solidity >=0.5.0 <0.6.0;
 
 
 /**
  * @title DelegatedCall
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
- * @dev Abstract contract that delegates calls by `delegated` modifier to result of `targetDelegatedCall()`
- *      Important to avoid overwriting wrong storage pointers is that never define storage to this contract
+ * @dev Encapsulates delegatecall related logic.
  */
 contract DelegatedCall {
 
-    constructor() internal {
-
+    constructor(address _init, bytes memory _initMsg) internal {
+        if(_init == address(0)) return;
+        bool success;
+        (success, ) = _init.delegatecall(_initMsg);
+        require(success, "Delegated Construct fail");
     }
     /**
      * @dev delegates the call of this function
      */
-    modifier delegated {
-        //require successfull delegate call to remote `_target()`
-        require(targetDelegatedCall().delegatecall(msg.data)); 
-        assembly {
-            let outSize := returndatasize 
-            let outDataPtr := mload(0x40) //load memory
-            returndatacopy(outDataPtr, 0, outSize) //copy last return into pointer
-            return(outDataPtr, outSize) 
-        }
-        assert(false); //should never reach here
-        _; //never will execute local logic
-    }
+    modifier delegateAndReturn(address _target) {
+        if(_target == address(0)) {
+            _; //normal execution 
+        } else {
+            //delegated execution
+            bytes memory returnData;
+            bool success;
+            (success, returnData) = _target.delegatecall(msg.data);
+            require(success, "Delegated Call failed"); 
 
-    /**
-     * @dev defines the address for delegation of calls
-     */
-    function targetDelegatedCall()
-        internal
-        view
-        returns(address);
+            //exit-return delegatecall returnData
+            assembly {
+                return(add(returnData, 0x20), returnData) 
+            }
+        }
+    }
 
 }
