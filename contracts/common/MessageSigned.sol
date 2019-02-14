@@ -1,13 +1,11 @@
-pragma solidity ^0.4.21;
+pragma solidity >=0.5.0 <0.6.0;
 
 /** 
  * @notice Uses ethereum signed messages
  */
 contract MessageSigned {
     
-    constructor() internal {
-
-    }
+    constructor() internal {}
 
     /**
      * @notice recovers address who signed the message
@@ -16,10 +14,10 @@ contract MessageSigned {
      */
     function recoverAddress(
         bytes32 _signHash, 
-        bytes _messageSignature
+        bytes memory _messageSignature
     )
-        pure
         internal
+        pure
         returns(address) 
     {
         uint8 v;
@@ -42,8 +40,8 @@ contract MessageSigned {
     function getSignHash(
         bytes32 _hash
     )
-        pure
         internal
+        pure
         returns (bytes32 signHash)
     {
         signHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash));
@@ -52,9 +50,9 @@ contract MessageSigned {
     /**
      * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s` 
      */
-    function signatureSplit(bytes _signature)
-        pure
+    function signatureSplit(bytes memory _signature)
         internal
+        pure
         returns (uint8 v, bytes32 r, bytes32 s)
     {
         // The signature format is a compact form of:
@@ -71,7 +69,7 @@ contract MessageSigned {
             v := and(mload(add(_signature, 65)), 0xff)
         }
 
-        require(v == 27 || v == 28);
+        require(v == 27 || v == 28, "Bad signature");
     }
     
 }

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity >=0.5.0 <0.6.0;
 
 import "./MiniMeToken.sol";
 
@@ -28,13 +28,13 @@ contract MiniMeTokenFactory {
     function createCloneToken(
         address _parentToken,
         uint _snapshotBlock,
-        string _tokenName,
+        string memory _tokenName,
         uint8 _decimalUnits,
-        string _tokenSymbol,
+        string memory _tokenSymbol,
         bool _transfersEnabled
     ) public returns (MiniMeToken) {
         MiniMeToken newToken = new MiniMeToken(
-            this,
+            address(this),
             _parentToken,
             _snapshotBlock,
             _tokenName,

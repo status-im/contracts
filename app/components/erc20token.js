@@ -1,9 +1,7 @@
 import EmbarkJS from 'Embark/EmbarkJS';
 import ERC20Token from 'Embark/contracts/ERC20Token';
 import React from 'react';
-import { connect } from 'react-redux';
 import { Form, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
-import { getCurrentAccount, accountsIsLoading } from '../reducers/accounts';
  
 class ERC20TokenUI extends React.Component {
 
@@ -30,39 +28,34 @@ class ERC20TokenUI extends React.Component {
     transfer(e){
       var to = this.state.transferTo;
       var amount = this.state.transferAmount;
-      var tx = ERC20Token.methods.transfer(to, amount).send({from: web3.eth.defaultAccount});
-      this._addToLog(ERC20Token.options.address+".transfer(" + to + ", "+amount+")");
+      this._addToLog(ERC20Token.options.address+".methods.transfer(" + to + ", "+amount+").send({from: " + web3.eth.defaultAccount + "})");
+      var tx = ERC20Token.methods.transfer(to, amount);
+      tx.estimateGas().then((r) => {
+        tx.send({gas: r, from: web3.eth.defaultAccount});
+      });
+
     }
 
     approve(e){
       var to = this.state.transferTo;
       var amount = this.state.transferAmount;
+      this._addToLog(ERC20Token.options.address+".methods.approve(" + to + ", "+amount+").send({from: " + web3.eth.defaultAccount + "})");
       var tx = ERC20Token.methods.approve(to, amount).send({from: web3.eth.defaultAccount});
-      this._addToLog(ERC20Token.options.address+".approve(" + to + ", "+amount+")");
+
     }
 
     balanceOf(e){
       e.preventDefault();
       var who = e.target.value;
-      if (EmbarkJS.isNewWeb3()) {
-        ERC20Token.methods.balanceOf(who).call()
-          .then(_value => this.setState({balanceOf: _value}))
-      } else {
-        ERC20Token.balanceOf(who)
-          .then(_value => this.x({balanceOf: _value}));
-      }
-      this._addToLog(ERC20Token.options.address+".balanceOf(" + who + ")");
+      this._addToLog(ERC20Token.options.address+".methods.balanceOf(" + who + ").call()");
+      ERC20Token.methods.balanceOf(who).call()
+        .then(_value => this.setState({balanceOf: _value}))
     }
   
     getDefaultAccountBalance(){
-      if (EmbarkJS.isNewWeb3()) {
-        ERC20Token.methods.balanceOf(web3.eth.defaultAccount).call()
-          .then(_value => this.setState({accountBalance: _value}))
-      } else {
-        ERC20Token.balanceOf(web3.eth.defaultAccount)
-          .then(_value => this.x({valueGet: _value}))
-      }
-      this._addToLog(ERC20Token.options.address + ".balanceOf(" + web3.eth.defaultAccount + ")");
+      this._addToLog(ERC20Token.options.address + ".methods.balanceOf(" + web3.eth.defaultAccount + ").call()");
+      ERC20Token.methods.balanceOf(web3.eth.defaultAccount).call()
+        .then(_value => this.setState({accountBalance: _value}))
     }
 
     _addToLog(txt){
@@ -70,16 +63,9 @@ class ERC20TokenUI extends React.Component {
     }
   
   render() {
-    const { account, isLoading } = this.props;
+
     return (
       <React.Fragment>
-        <h3> Read your account token balance </h3>
-        <Form inline>
-          <FormGroup>
-            {!isLoading && <HelpBlock>Your test token balance is <span className="accountBalance">{account.ERC20TokenBalance}</span></HelpBlock>}
-          </FormGroup>
-        </Form>
-        
         <h3> Read account token balance</h3>
         <Form inline>
           <FormGroup>
@@ -122,11 +108,7 @@ class ERC20TokenUI extends React.Component {
       </React.Fragment>
     );
   }
-  }
+}
 
-const mapStateToProps = state => ({
-  account: getCurrentAccount(state),
-  isLoading: accountsIsLoading(state),
-});
 
-export default connect(mapStateToProps)(ERC20TokenUI);
+export default ERC20TokenUI;
