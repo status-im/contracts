@@ -1,6 +1,6 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-import "../token/MiniMeTokenInterface.sol";
+import "../token/MiniMeToken.sol";
 import "./DelegationFactory.sol";
 import "./TrustNetwork.sol";
 import "./ProposalCuration.sol";
@@ -9,46 +9,31 @@ import "./ProposalManager.sol";
 
 contract Democracy {
 
-    MiniMeTokenInterface public token;
+    MiniMeToken public token;
     TrustNetwork public trustNet;
     ProposalManager public proposalManager;
     
-    mapping (bytes32 => Allowance) topicAllowance;
+    mapping (bytes32 => mapping (address => mapping (bytes32 => bool))) allowance;
     mapping (uint256 => bool) executedProposals;
 
-    struct Allowance {
-        mapping(address => bool) anyCall;
-        mapping(bytes32 => bool) calls;
+    modifier selfOnly {
+        require(msg.sender == address(this), "Unauthorized");
+        _;
     }
 
-    constructor(MiniMeTokenInterface _token, DelegationFactory _DelegationFactory) public {
+    constructor(MiniMeToken _token, DelegationFactory _DelegationFactory) public {
         token = _token;
         trustNet = new TrustNetwork(_DelegationFactory);
         proposalManager = new ProposalCuration(_token, trustNet).proposalManager();
     }
 
-    function allowTopicSpecific(bytes32 _topic, address _destination, bytes4 _allowedCall, bool allowance)
-        external
-    {
-        require(msg.sender == address(this));
-        topicAllowance[_topic].calls[keccak256(_destination, _allowedCall)] = allowance;
-    }
-
-    function allowTopicAnyCall(bytes32 _topic, address _destination, bool allowance)
-        external
-    {
-        require(msg.sender == address(this));
-        topicAllowance[_topic].anyCall[_destination] = allowance;
-    }
-
     function executeProposal(
         uint256 _proposalId,
         address _destination,
-        uint _value,
-        bytes _data
+        bytes calldata _data
     ) 
         external 
-        returns (bool success) 
+        returns (bool success, bytes memory r) 
     {
         require(!executedProposals[_proposalId]);
         executedProposals[_proposalId] = true;
@@ -60,27 +45,64 @@ contract Democracy {
         require(approved);
         require(
             txHash == keccak256(
-                _destination,
-                _value,
-                _data
+                abi.encodePacked(
+                    _destination,
+                    _data
+                )
             )
         );
 
-        if(topic != 0x0) { //if not root topic
-            Allowance storage allowed = topicAllowance[topic];
-            if(!allowed.anyCall[_destination]){ //if topic not allowed any call to destination
-                bytes memory data = _data;
-                bytes4 calling; 
-                assembly {
-                    calling := mload(add(data, 4))
-                }
-                delete data;
-                require(allowed.calls[keccak256(_destination, calling)]); //require call allowance
+        if(topic != bytes32(0)) { //if not root topic
+            bytes memory data = _data;
+            bytes4 sig; 
+            assembly {
+                sig := mload(add(data, 4))
             }
+            delete sig;
+            require(isTopicAllowed(topic, _destination, sig)); //require call allowance
         }
 
         //execute the call
-        return _destination.call.value(_value)(_data);
+        (success, r) = _destination.call(_data);
     }
 
+    function setTopicAllowance(bytes32 _topic, address _destination, bytes4 _callSig, bool _allowed) external selfOnly {
+        require(_topic != bytes32(0), "Cannot change root topic");
+        allowance[_topic][_destination][_callSig] = _allowed;
+    }
+
+    function setProposalManager(ProposalManager _proposalManager) external selfOnly {
+        require(address(_proposalManager) != address(0), "Bad call");
+        proposalManager = _proposalManager;
+    }
+
+    function setTrustNetwork(TrustNetwork _trustNet) external selfOnly {
+        require(address(_trustNet) != address(0), "Bad call");
+        trustNet = _trustNet;
+    }
+
+    function setToken(MiniMeToken _token) external selfOnly {
+        require(address(_token) != address(0), "Bad call");
+        token = _token;
+    }
+
+    function isTopicAllowed(
+        bytes32 topic, 
+        address destinAddr, 
+        bytes4 calledSig
+    ) 
+        public 
+        view 
+        returns (bool) 
+    {
+
+        return allowance[topic][destinAddr][calledSig]
+            || allowance[topic][destinAddr][bytes4(0)]
+            || allowance[topic][address(0)][calledSig]
+            || allowance[topic][address(0)][bytes4(0)]
+            || allowance[topic][destinAddr][calledSig]
+            || allowance[topic][destinAddr][bytes4(0)]
+            || allowance[topic][address(0)][calledSig]
+            || allowance[topic][address(0)][bytes4(0)];
+    }
 }

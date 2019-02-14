@@ -1,8 +1,6 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-import "./DelegationInterface.sol";
-import "./DelegationKernel.sol";
-import "../deploy/Factory.sol";
+import "../deploy/InstanceFactory.sol";
 import "../deploy/Instance.sol";
 
 /**
@@ -10,20 +8,21 @@ import "../deploy/Instance.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @dev Upgradable delegation proxy factory
  */
-contract DelegationFactory is Factory {
+contract DelegationFactory is InstanceFactory {
 
-    constructor() 
-        Factory(new DelegationKernel()) 
-        public 
+    constructor(InstanceAbstract _base, InstanceAbstract _init, InstanceAbstract _emergency) 
+        InstanceFactory(_base, _init, _emergency)
+        public
     { }
 
-    function createDelegation(address _parent) 
+    function createDelegation(
+        address
+    ) 
         external 
-        returns (DelegationInterface)
-    { 
-        DelegationKernel instance = DelegationKernel(address(new Instance(latestKernel)));
-        instance.initializeDelegation(_parent);
-        return DelegationInterface(address(instance));
+        returns (InstanceAbstract instance)
+    {
+        instance = new Instance(base, prototypes[address(base)].init, msg.data);
+        emit InstanceCreated(instance);
     }
 
 }

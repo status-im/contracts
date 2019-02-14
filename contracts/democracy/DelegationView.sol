@@ -1,14 +1,14 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-import "./Delegation.sol";
+import "./DelegationBase.sol";
 
 
 /**
- * @title Delegation
+ * @title DelegationView
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * @dev Creates a delegation proxy layer for MiniMeTokenInterface. 
+ * @dev Creates a delegation proxy layer for MiniMeToken. 
  */
-contract DelegationView is Delegation {
+contract DelegationView is DelegationBase {
 
     //storage of preprocessed view of FinalDelegate
     mapping(bytes32 => FinalDelegate) public delegationView;
@@ -18,7 +18,7 @@ contract DelegationView is Delegation {
         bool found;
     }
     
-    constructor(address _parentDelegation) Delegation(_parentDelegation) public {
+    constructor(address _parentDelegation) DelegationBase(_parentDelegation) public {
 
     }
     
@@ -28,20 +28,20 @@ contract DelegationView is Delegation {
      * @param _block From what block.
      * @return Final delegate address.
      */
-    function delegationOfAt(
+    function findDelegationOfAt(
         address _who,
         uint _block
     )
-        public
+        internal
         view
         returns(address finalDelegate)
     {
-        bytes32 searchIndex = keccak256(_who, _block);
+        bytes32 searchIndex = keccak256(abi.encodePacked(_who, _block));
         FinalDelegate memory search = delegationView[searchIndex];
         if (search.found) {
             return search.delegate;
         } else {
-            return super.delegationOfAt(_who, _block);
+            return super.findDelegationOfAt(_who, _block);
         }
              
     } 
@@ -61,14 +61,14 @@ contract DelegationView is Delegation {
         external
         returns (bool) 
     {
-        bytes32 searchIndex = keccak256(_delegator,_block);
+        bytes32 searchIndex = keccak256(abi.encodePacked(_delegator,_block));
         FinalDelegate memory search = delegationView[searchIndex];
         require(!search.found);
         for (uint i = 0; i < loopLimit; i++) {
             if (search.delegate == address(0)) {
                 search.delegate = _delegator;
             }
-            address delegateFrom = delegatedToAt(search.delegate, _block);
+            address delegateFrom = findDelegatedToAt(search.delegate, _block);
             if (delegateFrom == address(0)) {
                 // search.delegate demonsted this address didnt delegated, 
                 search.found = true; // so its the final delegate
@@ -100,11 +100,11 @@ contract DelegationView is Delegation {
         returns (address lastDelegate, bool found) 
     {
         require(_block > block.number); //cannot renderize current state view ?
-        bytes32 searchIndex = keccak256(_delegator, _block);
+        bytes32 searchIndex = keccak256(abi.encodePacked(_delegator, _block));
         FinalDelegate memory search = delegationView[searchIndex];
         if (!search.found) {
             if (search.delegate == address(0)) {
-                lastDelegate = delegatedToAt(_delegator, _block);
+                lastDelegate = findDelegatedToAt(_delegator, _block);
                 if (lastDelegate == address(0)) {
                     //`_delegator` FinalDelegate is itself
                     lastDelegate = _delegator;

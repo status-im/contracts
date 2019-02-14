@@ -2,8 +2,8 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "../common/Controlled.sol";
 import "../common/MessageSigned.sol";
-import "../token/MiniMeTokenInterface.sol";
-import "./DelegationInterface.sol";
+import "../token/MiniMeToken.sol";
+import "./Delegation.sol";
 import "./TrustNetworkInterface.sol";
 
 /**
@@ -15,7 +15,7 @@ contract ProposalManager is Controlled, MessageSigned {
     event ProposalSet(bytes32 indexed topic, uint256 proposalId, bytes32 txHash);
     event ProposalResult(uint256 proposalId, uint8 finalResult);
 
-    MiniMeTokenInterface public token;
+    MiniMeToken public token;
     TrustNetworkInterface public trustNet;
     uint256 public tabulationBlockDelay;
     Proposal[] public proposals;
@@ -43,7 +43,7 @@ contract ProposalManager is Controlled, MessageSigned {
     }
 
     constructor(
-        MiniMeTokenInterface _token,
+        MiniMeToken _token,
         TrustNetworkInterface _trustNet
     ) 
         public
@@ -91,8 +91,8 @@ contract ProposalManager is Controlled, MessageSigned {
     }
 
 
-    function tabulateVote(uint _proposalId, Vote _vote, uint256 _position, bytes32[] _proof, bytes _signature) 
-        public
+    function tabulateVote(uint _proposalId, Vote _vote, uint256 _position, bytes32[] calldata _proof, bytes calldata _signature) 
+        external
     {
         Proposal storage proposal = proposals[_proposalId];
         require(block.number > proposal.voteBlockEnd, "Voting running");

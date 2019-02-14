@@ -2,7 +2,7 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "../common/Controlled.sol";
 import "./TrustNetworkInterface.sol";
-import "./DelegationInterface.sol";
+import "./Delegation.sol";
 import "./DelegationFactory.sol";
 
 
@@ -17,30 +17,30 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     DelegationFactory delegationFactory;
     
     struct Topic {
-        DelegationInterface voteDelegation;
-        DelegationInterface vetoDelegation;
+        Delegation voteDelegation;
+        Delegation vetoDelegation;
     }
     
-    constructor(address _delegationFactory) public {
-        delegationFactory = DelegationFactory(_delegationFactory);
-        topics[0x0] = newTopic(0x0, 0x0);
+    constructor(DelegationFactory _delegationFactory) public {
+        delegationFactory = _delegationFactory;
+        topics[bytes32(0)] = newTopic(address(0), address(0));
     }
     
     function addTopic(bytes32 topicId, bytes32 parentTopic) public onlyController {
         Topic memory parent = topics[parentTopic];
         address vote = address(parent.voteDelegation);
         address veto = address(parent.vetoDelegation);
-        require(vote != 0x0);
-        require(veto != 0x0);
+        require(vote != address(0));
+        require(veto != address(0));
 
         Topic storage topic = topics[topicId]; 
-        require(address(topic.voteDelegation) == 0x0);
-        require(address(topic.vetoDelegation) == 0x0);
+        require(address(topic.voteDelegation) == address(0));
+        require(address(topic.vetoDelegation) == address(0));
 
         topics[topicId] = newTopic(vote, veto);
     }
     
-    function getTopic(bytes32 _topicId) public view returns (DelegationInterface vote, DelegationInterface veto) {
+    function getTopic(bytes32 _topicId) public view returns (Delegation vote, Delegation veto) {
         Topic memory topic = topics[_topicId];
         vote = topic.voteDelegation;
         veto = topic.vetoDelegation;
@@ -51,7 +51,7 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     )
         public
         view
-        returns (DelegationInterface voteDelegation) 
+        returns (Delegation voteDelegation) 
     {
         return topics[_topicId].voteDelegation;
     }
@@ -61,16 +61,16 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     )
         public
         view 
-        returns (DelegationInterface vetoDelegation)
+        returns (Delegation vetoDelegation)
     {
         return topics[_topicId].vetoDelegation;
     }
 
     
-    function newTopic(address _vote, address _veto) internal returns (Topic topic) {
+    function newTopic(address _vote, address _veto) internal returns (Topic memory topic) {
         topic = Topic ({ 
-            voteDelegation: delegationFactory.createDelegation(_vote),
-            vetoDelegation: delegationFactory.createDelegation(_veto)
+            voteDelegation: Delegation(address(delegationFactory.createDelegation(_vote))),
+            vetoDelegation: Delegation(address(delegationFactory.createDelegation(_veto)))
         });
     }
 

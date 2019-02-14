@@ -43,6 +43,7 @@ contract TestStatusNetwork is StatusNetwork {
     function _generateTokens(address _who, uint _amount) private {
         require(msg.sender == owner || open, "Test Mint Disabled");
         address statusNetwork = snt.controller();
+        
         if(statusNetwork == address(this)){
             snt.generateTokens(_who, _amount);
         } else {

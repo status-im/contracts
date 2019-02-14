@@ -1,7 +1,7 @@
 pragma solidity >=0.5.0 <0.6.0;
 
 import "../common/Controlled.sol";
-import "../token/MiniMeTokenInterface.sol";
+import "../token/MiniMeToken.sol";
 import "./ProposalManager.sol";
 
 contract ProposalCuration is Controlled {
@@ -15,7 +15,7 @@ contract ProposalCuration is Controlled {
     ProposalManager public proposalManager;
     
     uint256 public approvalTimeLimit;
-    MiniMeTokenInterface token;
+    MiniMeToken token;
 
     mapping (address => SubmitPrice) submitAllowances;
 
@@ -34,7 +34,7 @@ contract ProposalCuration is Controlled {
     }
 
     constructor(
-        MiniMeTokenInterface _token,
+        MiniMeToken _token,
         TrustNetworkInterface _trustNet
     ) 
         public 
@@ -47,8 +47,8 @@ contract ProposalCuration is Controlled {
         bytes32 _topic,
         address _to,
         uint256 _value,
-        bytes _data,
-        bytes _description
+        bytes calldata _data,
+        bytes calldata _description
     )
         external
         returns (uint256 proposalId) 
@@ -56,7 +56,7 @@ contract ProposalCuration is Controlled {
         uint256 submitPrice = getSubmitPrice(msg.sender);
         require(token.allowance(msg.sender, address(this)) >= submitPrice);
         require(token.transferFrom(msg.sender, address(this), submitPrice));
-        proposalId = proposalManager.addProposal(_topic,keccak256(_to,_value,_data));
+        proposalId = proposalManager.addProposal(_topic,keccak256(abi.encodePacked(_to,_value,_data)));
         proposals[proposalId] = ProposalData(
             msg.sender,
             _to,

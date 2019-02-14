@@ -31,6 +31,17 @@ module.exports = {
           "await MiniMeToken.methods.changeController(StatusRoot.address).send()",
           "await StatusRoot.methods.setOpen(true).send()",
         ]
+      },
+      "DelegationView": {
+        "args": [ "0x0" ]
+      },
+      "DelegationInit": {
+      },
+      "DelegationFactory": {
+        "args": ["$DelegationView", "$DelegationInit", "0x0"]
+      },
+      "Democracy": {
+        "args": ["$MiniMeToken", "$DelegationFactory"]
       }
     }
   },
