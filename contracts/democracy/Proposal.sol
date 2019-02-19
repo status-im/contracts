@@ -61,7 +61,7 @@ contract Proposal is Controlled, MessageSigned {
         voteBlockEnd = blockStart + _blockEndDelay;
     }
 
-    function vote(bytes32 _signatures)
+    function addVotes(bytes32 _signatures)
         external
     {
         require(block.number >= blockStart, "Voting not started");
@@ -69,61 +69,31 @@ contract Proposal is Controlled, MessageSigned {
         signatures.push(_signatures);
     } 
 
-    function vote(Vote _vote) 
+    function tabulateSigned(Vote _vote, uint256 _position, bytes32[] calldata _proof, bytes calldata _signature) 
         external
     {
-        require(block.number >= blockStart, "Voting not started");
-        require(block.number <= voteBlockEnd, "Voting ended");
-        voteMap[msg.sender] = _vote;
-
-    }
-
-    function tabulate(Vote _vote, uint256 _position, bytes32[] calldata _proof, bytes calldata _signature) 
-        external
-    {
+        require(block.number > voteBlockEnd, "Voting running");
         require(MerkleProof.verifyProof(_proof, signatures[_position], keccak256(_signature)), "Invalid proof");
         address _voter = recoverAddress(keccak256(abi.encodePacked(address(this), _vote)), _signature);
         voteMap[_voter] = _vote;
-        _tabulate(_voter);
+        setTabulation(_voter, _voter, _vote);
     }
 
-    function tabulate(address _voter) 
+    function tabulateDelegated(address _voter) 
         external
     {
-        _tabulate(_voter);
-    }
-
-    function _tabulate(address _voter) 
-        internal
-    {
         require(block.number > voteBlockEnd, "Voting running");
-        address _claimer = _voter;
-        Vote _vote = voteMap[_claimer];
-        if(_vote == Vote.Null) { //not voted, can be claimed by delegate
-            _claimer = delegation.delegationOfAt(_voter, voteBlockEnd);
-            _vote = voteMap[_claimer]; //loads delegate vote.
-            _claimer = _voter; // try finding first delegate from chain which voted
-            while(_vote == Vote.Null) {
-                _claimer = delegation.delegatedToAt(_claimer, voteBlockEnd);    
-                _vote = voteMap[_claimer]; //loads delegate vote.
-            }
+        
+        Vote _vote;
+        
+        address _claimer = delegation.delegationOfAt(_voter, voteBlockEnd); //get delegate chain tail
+        _vote = voteMap[_claimer]; //loads delegate vote.
+        if(_vote == Vote.Null) {
+            (_claimer, _vote) = findNearestDelegatable(_voter); // try finding first delegate from chain which voted
         }
+        setTabulation(_voter, _claimer, _vote);
+    }   
 
-        require(_vote != Vote.Null, "Cannot be Vote.Null");
-        uint256 voterBalance = token.balanceOfAt(_voter, voteBlockEnd);
-        address currentClaimer = tabulated[_voter];
-        if(currentClaimer != address(0))
-        {
-            require(currentClaimer != _voter, "Voter already tabulated");
-            require(currentClaimer != _claimer, "Claimer already tabulated");
-            Vote oldVote = voteMap[currentClaimer];
-            require(oldVote != _vote, "Doesn't changes tabulation");
-            results[uint8(oldVote)] -= voterBalance;
-        }
-        tabulated[_voter] = _claimer;
-        results[uint8(_vote)] += voterBalance;
-        lastTabulationBlock = block.number;
-    }
 
     function finalize()
         external
@@ -148,6 +118,37 @@ contract Proposal is Controlled, MessageSigned {
     {
         require(result != Vote.Null, "Not finalized");
         selfdestruct(controller);
+    }
+
+
+    function setTabulation(address _voter, address _claimer, Vote _vote) internal {
+        require(_vote != Vote.Null, "Cannot be Vote.Null");
+        uint256 voterBalance = token.balanceOfAt(_voter, voteBlockEnd);
+        address currentClaimer = tabulated[_voter];
+        if(currentClaimer != address(0))
+        {
+            require(currentClaimer != _voter, "Voter already tabulated");
+            require(currentClaimer != _claimer, "Claimer already tabulated");
+            Vote oldVote = voteMap[currentClaimer];
+            require(oldVote != _vote, "Doesn't changes tabulation");
+            results[uint8(oldVote)] -= voterBalance;
+        }
+        tabulated[_voter] = _claimer;
+        results[uint8(_vote)] += voterBalance;
+        lastTabulationBlock = block.number;
+    }
+
+    function findNearestDelegatable(address _voter) internal view returns (address claimer, Vote vote){
+        require(voteMap[_voter] == Vote.Null, "Not delegatable");
+        vote = Vote.Null;
+        claimer = _voter; // try finding first delegate from chain which voted
+        while(vote == Vote.Null) {
+            claimer = delegation.delegatedToAt(claimer, voteBlockEnd);  
+            if(claimer == address(0)){
+                revert("No delegate vote found");
+            }
+            vote = voteMap[claimer]; //loads delegate vote.
+        }
     }
 
 }
