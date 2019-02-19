@@ -30,7 +30,7 @@ contract ProposalManager is Controlled, MessageSigned {
         bytes32[] signatures;
         mapping(address => Vote) voteMap;
 
-        mapping(address => bool) tabulated;
+        mapping(address => address) tabulated;
         mapping(uint8 => uint256) results;
         Vote result;
         uint256 lastTabulationTimestamp;
@@ -104,7 +104,7 @@ contract ProposalManager is Controlled, MessageSigned {
         }
         require(proposal.signatures[_position] == merkleHash, "Invalid proof");
         address _voter = recoverAddress(keccak256(abi.encodePacked(address(this),_proposalId,_vote)), _signature);
-        require(!proposal.tabulated[_voter], "Address already tabulated");
+        require(proposal.tabulated[_voter] == address(0), "Address already tabulated");
         
         proposal.results[uint8(_vote)] += token.balanceOfAt(_voter, proposal.voteBlockEnd);
 
@@ -117,12 +117,14 @@ contract ProposalManager is Controlled, MessageSigned {
     {
         Proposal storage proposal = proposals[_proposalId];
         require(block.number > proposal.voteBlockEnd);
-        require(!proposal.tabulated[_delegator]);
-        proposal.tabulated[_delegator] = true;
+        require(proposal.tabulated[_delegator] == address(0), "Already tabulated");
         Vote _vote = proposal.voteMap[_delegator];
-        if(_vote == Vote.Null) {
+        if(_vote == Vote.Null) { //not voted, can be claimed by delegate
             address delegate = trustNet.getVoteDelegation(proposal.topic).delegationOfAt(_delegator, proposal.voteBlockEnd);
+            proposal.tabulated[_delegator] = delegate;
             _vote = proposal.voteMap[delegate];
+        } else { //voted by themselves
+            proposal.tabulated[_delegator] = _delegator;
         }
 
         if (_vote == Vote.Reject || _vote == Vote.Approve) {
