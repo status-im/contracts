@@ -22,9 +22,9 @@ contract Democracy {
         _;
     }
 
-    constructor(MiniMeToken _token, DelegationFactory _DelegationFactory) public {
+    constructor(MiniMeToken _token, DelegationFactory _DelegationFactory, address defaultDelegate) public {
         token = _token;
-        trustNet = new TrustNetwork(_DelegationFactory, new DefaultDelegation());
+        trustNet = new TrustNetwork(_DelegationFactory, new DefaultDelegation(defaultDelegate));
         proposalManager = new ProposalCuration(_token, trustNet).proposalManager();
     }
 
