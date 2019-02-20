@@ -21,9 +21,9 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
         Delegation vetoDelegation;
     }
     
-    constructor(DelegationFactory _delegationFactory) public {
+    constructor(DelegationFactory _delegationFactory, Delegation defaultDelegation) public {
         delegationFactory = _delegationFactory;
-        topics[bytes32(0)] = newTopic(address(0), address(0));
+        topics[bytes32(0)] = newTopic(defaultDelegation, defaultDelegation);
     }
     
     function addTopic(bytes32 topicId, bytes32 parentTopic) public onlyController {
@@ -67,10 +67,10 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     }
 
     
-    function newTopic(address _vote, address _veto) internal returns (Topic memory topic) {
+    function newTopic(Delegation _vote, Delegation _veto) internal returns (Topic memory topic) {
         topic = Topic ({ 
-            voteDelegation: Delegation(address(delegationFactory.createDelegation(_vote))),
-            vetoDelegation: Delegation(address(delegationFactory.createDelegation(_veto)))
+            voteDelegation: Delegation(address(delegationFactory.createDelegation(address(_vote)))),
+            vetoDelegation: Delegation(address(delegationFactory.createDelegation(address(_vote))))
         });
     }
 
