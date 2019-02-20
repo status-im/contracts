@@ -89,7 +89,8 @@ contract Proposal is Controlled, MessageSigned {
         setTabulation(_voter, _claimer, _vote);
     }   
 
-    function precomputeDelegateChain(address _start, bool _clean) external {
+    function precomputeDelegation(address _start, bool _clean) external {
+        require(block.number > voteBlockEnd, "Voting running");
         cacheDelegation(_start,_clean);
     }
 
