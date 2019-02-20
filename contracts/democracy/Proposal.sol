@@ -62,13 +62,31 @@ contract Proposal is Controlled, MessageSigned {
         voteBlockEnd = blockStart + _blockEndDelay;
     }
 
-    function addVotes(bytes32 _signatures)
+    function voteSigned(bytes32 _signatures)
         external
     {
         require(block.number >= blockStart, "Voting not started");
         require(block.number <= voteBlockEnd, "Voting ended");
         signatures.push(_signatures);
     } 
+
+    function voteDirect(Vote _vote)
+        external
+    {
+        require(block.number >= blockStart, "Voting not started");
+        require(block.number <= voteBlockEnd, "Voting ended");
+        voteMap[msg.sender] = _vote;
+    } 
+
+    function tabulateDirect(address _voter) 
+        external
+    {
+        require(block.number > voteBlockEnd, "Voting running");
+        Vote vote = voteMap[_voter];
+        require(vote != Vote.Null, "Not voted");
+        setTabulation(_voter, _voter, vote );
+    }
+
 
     function tabulateSigned(Vote _vote, uint256 _position, bytes32[] calldata _proof, bytes calldata _signature) 
         external
