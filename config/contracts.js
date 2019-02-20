@@ -32,13 +32,13 @@ module.exports = {
           "await StatusRoot.methods.setOpen(true).send()",
         ]
       },
-      "DelegationView": {
+      "DelegationBase": {
         "args": [ "0x0" ]
       },
       "DelegationInit": {
       },
       "DelegationFactory": {
-        "args": ["$DelegationView", "$DelegationInit", "0x0"]
+        "args": ["$DelegationBase", "$DelegationInit", "0x0"]
       },
       "Democracy": {
         "args": ["$MiniMeToken", "$DelegationFactory"]

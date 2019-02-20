@@ -28,6 +28,7 @@ contract Proposal is Controlled, MessageSigned {
 
     //tabulation process 
     uint256 lastTabulationBlock;
+    mapping(address => address) delegationOf;
     mapping(address => address) tabulated;
     mapping(uint8 => uint256) results;
 
@@ -84,17 +85,13 @@ contract Proposal is Controlled, MessageSigned {
         external
     {
         require(block.number > voteBlockEnd, "Voting running");
-        
-        Vote _vote;
-        
-        address _claimer = delegation.delegationOfAt(_voter, voteBlockEnd); //get delegate chain tail
-        _vote = voteMap[_claimer]; //loads delegate vote.
-        if(_vote == Vote.Null) {
-            (_claimer, _vote) = findNearestDelegatable(_voter); // try finding first delegate from chain which voted
-        }
+        (address _claimer, Vote _vote) = findNearestDelegatable(_voter); // try finding first delegate from chain which voted
         setTabulation(_voter, _claimer, _vote);
     }   
 
+    function precomputeDelegateChain(address _start, bool _clean) external {
+        cacheDelegation(_start,_clean);
+    }
 
     function finalize()
         external
@@ -140,16 +137,35 @@ contract Proposal is Controlled, MessageSigned {
     }
 
     function findNearestDelegatable(address _voter) internal view returns (address claimer, Vote vote){
-        require(voteMap[_voter] == Vote.Null, "Not delegatable");
-        vote = Vote.Null;
+        vote = voteMap[_voter];
+        require(vote == Vote.Null, "Not delegatable");
         claimer = _voter; // try finding first delegate from chain which voted
         while(vote == Vote.Null) {
-            claimer = delegation.delegatedToAt(claimer, voteBlockEnd);  
+            claimer = delegationOf[claimer];
             if(claimer == address(0)){
-                revert("No delegate vote found");
+                claimer = delegation.delegatedToAt(claimer, voteBlockEnd);  
             }
+            require(claimer != address(0), "No delegate vote found");
             vote = voteMap[claimer]; //loads delegate vote.
         }
+    }
+
+    function cacheDelegation(address _delegator, bool _clean) private returns (address) {
+        address delegate;
+        if(!_clean) {
+            delegate = delegationOf[_delegator];
+        }
+        if(delegate == address(0)){
+            delegate = delegation.delegatedToAt(_delegator, voteBlockEnd); //get delegate chain tail
+        }
+        require(delegate != address(0), "No delegate vote found");
+        if(voteMap[delegate] == Vote.Null) {
+            delegate = cacheDelegation(delegate, _clean);
+        }
+        delegationOf[_delegator] = delegate;
+        
+        return delegate;
+        
     }
 
 }
