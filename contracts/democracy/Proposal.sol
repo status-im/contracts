@@ -75,6 +75,7 @@ contract Proposal is Controlled, MessageSigned {
         require(block.number > voteBlockEnd, "Voting running");
         require(MerkleProof.verifyProof(_proof, signatures[_position], keccak256(_signature)), "Invalid proof");
         address _voter = recoverAddress(keccak256(abi.encodePacked(address(this), _vote)), _signature);
+        require(voteMap[_voter] == Vote.Null, "Already tabulated");
         voteMap[_voter] = _vote;
         setTabulation(_voter, _voter, _vote);
     }
