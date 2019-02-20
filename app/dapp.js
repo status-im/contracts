@@ -1,15 +1,11 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { Tabs, Tab } from 'react-bootstrap';
-
 import EmbarkJS from 'Embark/EmbarkJS';
-import TopNavbar from './components/topnavbar';
-import TestTokenUI from './components/testtoken';
-import ERC20TokenUI from './components/erc20token';
+import TestStatusNetworkUI from './components/TestStatusNetwork';
 
 import './dapp.css';
 
-class App extends React.Component {
+class DApp extends React.Component {
 
   constructor(props) {
     super(props);
@@ -18,9 +14,7 @@ class App extends React.Component {
   }
 
   componentDidMount(){ 
-    __embarkContext.execWhenReady(() => {
-      
-    });
+
   }
 
 
@@ -35,17 +29,14 @@ class App extends React.Component {
   render(){
     return (
       <div>
-        <TopNavbar />
+
         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-          <Tab eventKey={1} title="TestToken">
-              <TestTokenUI />
-          </Tab>
-          <Tab eventKey={2} title="ERC20Token">
-              <ERC20TokenUI />
+          <Tab eventKey={1} title="TestStatusNetwork">
+              <TestStatusNetworkUI />
           </Tab>
         </Tabs>
       </div>);
   }
 }
 
-ReactDOM.render(<App></App>, document.getElementById('app'));
+export default DApp;

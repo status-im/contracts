@@ -1,38 +1,41 @@
-pragma solidity ^0.4.21;
+pragma solidity >=0.5.0 <0.6.0;
 
-import "./InstanceStorage.sol";
+import "./InstanceAbstract.sol";
 import "./DelegatedCall.sol";
 
 /**
  * @title Instance
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
- * @dev Contract that forward everything through delegatecall to defined kernel
+ * @dev Contract that forward everything through delegatecall to defined base
  */
-contract Instance is InstanceStorage, DelegatedCall {
+contract Instance is InstanceAbstract, DelegatedCall {
 
-    constructor(address _kernel) public {
-        kernel = _kernel;
+    /**
+     * @notice delegatecall `_init` with `_initMsg` and set base as `_base` 
+     * @param _base base for delegatecall 
+     * @param _init constructor contract 
+     * @param _initMsg arguments to be passed for the single delegatecall on `_init` 
+     */
+    constructor(
+        InstanceAbstract _base,
+        InstanceAbstract _init,
+        bytes memory _initMsg
+    ) 
+        public 
+        payable
+        DelegatedCall(address(_init), _initMsg)
+    {
+        base = _base;
     }
 
     /**
      * @dev delegatecall everything (but declared functions) to `_target()`
-     * @notice Verify `kernel()` code to predict behavior
+     * @notice Verify `base()` code to predict behavior
      */
-    function () external delegated {
-        //all goes to kernel
-    }
-
-    /**
-     * @dev returns kernel if kernel that is configured
-     * @return kernel address
-     */
-    function targetDelegatedCall()
-        internal
-        view
-        returns(address)
-    {
-        return kernel;
-    }
-
+    function () 
+        external 
+        payable 
+        delegateAndReturn(address(base)) 
+    { }
 
 }
