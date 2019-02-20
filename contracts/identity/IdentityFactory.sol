@@ -1,59 +1,91 @@
-pragma solidity ^0.4.17;
+pragma solidity >=0.5.0 <0.6.0;
 
-import "../deploy/Factory.sol";
-import "../deploy/DelayedUpdatableInstance.sol";
-import "./IdentityKernel.sol";
+import "../deploy/InstanceFactory.sol";
+/**
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
+ * @notice creates Instance as Identity 
+ */
+contract IdentityFactory is InstanceFactory {
 
-
-contract IdentityFactory is Factory {
-
-    event IdentityCreated(address instance);
-
-    constructor() 
+    constructor(InstanceAbstract _base, InstanceAbstract _init, InstanceAbstract _emergency) 
+        InstanceFactory(_base, _init, _emergency)
         public
-        Factory(new IdentityKernel()) 
-    {
-    }
-
+    { }
+    
     function createIdentity() 
         external 
-        returns (address)
-    {      
+        returns (InstanceAbstract instance)
+    {
+        bytes32 senderKey = keccak256(abi.encodePacked(msg.sender));
+        instance = newInstance(
+            base,
+            prototypes[address(base)].init,
+            abi.encodeWithSignature(
+                "createIdentity(bytes32)",
+                senderKey
+            ),
+            uint256(senderKey)
+        );
         
-        bytes32[] memory initKeys = new bytes32[](2);
-        uint256[] memory initPurposes = new uint256[](2);
-        uint256[] memory initTypes = new uint256[](2);
-        initKeys[0] = keccak256(msg.sender);
-        initKeys[1] = initKeys[0];
-        initPurposes[0] = 0;
-        initPurposes[1] = 1;
-        initTypes[0] = 0;
-        initTypes[1] = 0;
-        return createIdentity(
-            initKeys,
-            initPurposes,
-            initTypes,
-            1,
-            1,
-            0
-            );
+        emit InstanceCreated(instance);
+    }
+
+
+    function createIdentity(
+        bytes32 _senderKey
+    ) 
+        external 
+        returns (InstanceAbstract instance) 
+    {
+        instance = newInstance(base, prototypes[address(base)].init, msg.data, uint256(_senderKey));
+        emit InstanceCreated(instance);
+    }
+
+
+    function createIdentity(
+        bytes32 _senderKey,
+        uint256 _salt
+    ) 
+        external 
+        returns (InstanceAbstract instance) 
+    {
+        instance = newInstance(
+            base,
+            prototypes[address(base)].init,
+            abi.encodeWithSignature(
+                "createIdentity(bytes32)",
+                _senderKey
+            ),
+            _salt
+        );
+        emit InstanceCreated(instance);
     }
 
     function createIdentity(   
-        bytes32[] _keys,
-        uint256[] _purposes,
-        uint256[] _types,
+        bytes32[] calldata _keys,
+        uint8[] calldata _purposes,
+        uint256[] calldata _types,
         uint256 _managerThreshold,
         uint256 _actorThreshold,
-        address _recoveryContract
+        uint256 _salt
     ) 
-        public 
-        returns (address)
+        external 
+        returns (InstanceAbstract instance)
     {
-        IdentityKernel instance = IdentityKernel(new DelayedUpdatableInstance(address(latestKernel)));
-        instance.initIdentity(_keys,_purposes,_types,_managerThreshold,_actorThreshold,_recoveryContract);
-        emit IdentityCreated(address(instance));
-        return instance;
+        instance = newInstance(
+            base,
+            prototypes[address(base)].init,
+            abi.encodeWithSignature(
+                "createIdentity(bytes32[],uint8[],uint256[],uint256,uint256)",
+                _keys,
+                _purposes,
+                _types,
+                _managerThreshold,
+                _actorThreshold
+            ),
+            _salt
+        );
+        emit InstanceCreated(instance);
     }
 
 }

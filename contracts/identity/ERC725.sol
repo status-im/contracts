@@ -1,31 +1,23 @@
-pragma solidity ^0.4.21;
-
-contract ERC725 {
-
-    uint256 constant MANAGEMENT_KEY = 1;
-    uint256 constant ACTION_KEY = 2;
-    uint256 constant CLAIM_SIGNER_KEY = 3;
-    uint256 constant ENCRYPTION_KEY = 4;
-    
-    event KeyAdded(bytes32 indexed key, uint256 indexed purpose, uint256 indexed keyType);
-    event KeyRemoved(bytes32 indexed key, uint256 indexed purpose, uint256 indexed keyType);
+pragma solidity >=0.5.0 <0.6.0;
+interface ERC725 {
+    event KeyAdded(bytes32 indexed key, Purpose indexed purpose, uint256 indexed keyType);
+    event KeyRemoved(bytes32 indexed key, Purpose indexed purpose, uint256 indexed keyType);
     event ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
-    event Executed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
-    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
     event Approved(uint256 indexed executionId, bool approved);
 
+    enum Purpose { DisabledKey, ManagementKey, ActionKey, ClaimSignerKey, EncryptionKey }
     struct Key {
-        uint256[] purposes; //e.g., MANAGEMENT_KEY = 1, ACTION_KEY = 2, etc.
+        Purpose[] purposes; 
         uint256 keyType; // e.g. 1 = ECDSA, 2 = RSA, etc.
         bytes32 key;
     }
-    
-    function execute(address _to, uint256 _value, bytes _data) public returns (uint256 executionId);
-    function approve(uint256 _id, bool _approve) public returns (bool success);
-    function addKey(bytes32 _key, uint256 _purpose, uint256 _keyType) public returns (bool success);
-    function removeKey(bytes32 _key, uint256 _purpose) public returns (bool success);
-    function getKey(bytes32 _key) public view returns(uint256[] purposes, uint256 keyType, bytes32 key);
-    function getKeyPurpose(bytes32 _key) public view returns(uint256[] purpose);
-    function getKeysByPurpose(uint256 _purpose) public view returns(bytes32[] keys);
-    function keyHasPurpose(bytes32 _key, uint256 purpose) public view returns(bool exists);
+
+    function execute(address _to, uint256 _value, bytes calldata _data) external returns (uint256 executionId);
+    function approve(uint256 _id, bool _approve) external returns (bool success);
+    function addKey(bytes32 _key, Purpose _purpose, uint256 _keyType) external returns (bool success);
+    function removeKey(bytes32 _key, Purpose _purpose) external returns (bool success);
+    function getKey(bytes32 _key) external view returns(Purpose[] memory purposes, uint256 keyType, bytes32 key);
+    function getKeyPurpose(bytes32 _key) external view returns(Purpose[] memory purpose);
+    function getKeysByPurpose(Purpose _purpose) external view returns(bytes32[] memory keys);
+    function keyHasPurpose(bytes32 _key, Purpose purpose) external view returns(bool exists);
 }
