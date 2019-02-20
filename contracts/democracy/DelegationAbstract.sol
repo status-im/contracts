@@ -95,7 +95,7 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
         }
         DelegateSet memory d = getMemoryAt(checkpoints, _block);
         // Case user set delegate to parentDelegation address
-        if (d.to == parentDelegation && d.to != address(0x0)) {
+        if (d.to == parentDelegation) {
             return Delegation(parentDelegation).delegatedToAt(_who, _block); 
         }
         return d.to;
