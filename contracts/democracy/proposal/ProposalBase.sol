@@ -1,65 +1,22 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-import "../common/Controlled.sol";
-import "../common/MessageSigned.sol";
-import "../common/MerkleProof.sol";
-import "../token/MiniMeToken.sol";
-import "./Delegation.sol";
-import "./TrustNetworkInterface.sol";
+import "../../common/MessageSigned.sol";
+import "../../common/MerkleProof.sol";
+import "./ProposalAbstract.sol";
 
 /**
  * @title Proposal
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * Store votes and tabulate results for Democracy  
  */
-contract Proposal is Controlled, MessageSigned {
-    MiniMeToken public token;
-    Delegation public delegation;
-    uint256 public tabulationBlockDelay;
-    
-    bytes32 topic; 
-    bytes32 txHash;
-    uint blockStart;
-    uint voteBlockEnd;
+contract ProposalBase is ProposalAbstract, MessageSigned {
 
-    //votes storage
-    bytes32[] signatures;
-    mapping(address => Vote) voteMap;
 
-    //tabulation process 
-    uint256 lastTabulationBlock;
-    mapping(address => address) delegationOf;
-    mapping(address => address) tabulated;
-    mapping(uint8 => uint256) results;
-
-    Vote result;
-    
-
-    enum Vote { 
-        Null,
-        Reject, 
-        Approve
-    }
-
-    constructor(
-        MiniMeToken _token,
-        Delegation _delegation,
-        bytes32 _topic,
-        bytes32 _txHash,
-        uint256 _tabulationBlockDelay,
-        uint256 _blockStart,
-        uint256 _blockEndDelay
-    ) 
+    constructor() 
         public
-
     {
-        delegation = _delegation;
-        token = _token;
-        tabulationBlockDelay = _tabulationBlockDelay;
-        topic = _topic;
-        txHash = _txHash;
-        blockStart = _blockStart;
-        voteBlockEnd = blockStart + _blockEndDelay;
+        blockStart =  uint256(-1);
+        voteBlockEnd = uint256(-1);
     }
 
     function voteSigned(bytes32 _signatures)
@@ -169,20 +126,22 @@ contract Proposal is Controlled, MessageSigned {
         }
     }
 
-    function cacheDelegation(address _delegator, bool _clean) private returns (address) {
-        address delegate;
-        if(!_clean) {
-            delegate = delegationOf[_delegator];
+    function cacheDelegation(address _delegator, bool _clean) private returns (address delegate) {
+        delegate =  _delegator;
+        if(voteMap[_delegator] == Vote.Null) { 
+            if(!_clean) {
+                delegate = delegationOf[delegate];
+            }
+            if(delegate == address(0)){
+                delegate = delegation.delegatedToAt(_delegator, voteBlockEnd); //get delegate chain tail
+            }
         }
-        if(delegate == address(0)){
-            delegate = delegation.delegatedToAt(_delegator, voteBlockEnd); //get delegate chain tail
-        }
+        
         require(delegate != address(0), "No delegate vote found");
         if(voteMap[delegate] == Vote.Null) {
             delegate = cacheDelegation(delegate, _clean);
         }
         delegationOf[_delegator] = delegate;
-        
         return delegate;
         
     }
