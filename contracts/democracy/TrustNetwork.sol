@@ -1,7 +1,6 @@
 pragma solidity >=0.5.0 <0.6.0;
 
 import "../common/Controlled.sol";
-import "./TrustNetworkInterface.sol";
 import "./Delegation.sol";
 import "./DelegationFactory.sol";
 
@@ -12,7 +11,7 @@ import "./DelegationFactory.sol";
  * Defines two contolled Delegation chains: vote and veto chains.
  * New layers need to be defined under a unique topic address topic, and all fall back to root topic (topic 0x0)   
  */
-contract TrustNetwork is TrustNetworkInterface, Controlled {
+contract TrustNetwork is  Controlled {
     mapping (bytes32 => Topic) topics;
     DelegationFactory delegationFactory;
     
@@ -69,8 +68,8 @@ contract TrustNetwork is TrustNetworkInterface, Controlled {
     
     function newTopic(Delegation _vote, Delegation _veto) internal returns (Topic memory topic) {
         topic = Topic ({ 
-            voteDelegation: Delegation(address(delegationFactory.createDelegation(address(_vote)))),
-            vetoDelegation: Delegation(address(delegationFactory.createDelegation(address(_vote))))
+            voteDelegation: delegationFactory.createDelegation(_vote),
+            vetoDelegation: delegationFactory.createDelegation(_vote)
         });
     }
 

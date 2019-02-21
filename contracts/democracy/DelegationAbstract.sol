@@ -13,7 +13,7 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
         address to; //who recieved this delegaton
     }
     //default delegation proxy, being used when user didn't set any delegation at this level.
-    address public parentDelegation;
+    Delegation public parentDelegation;
 
     //snapshots of changes, allow delegation changes be done at any time without compromising vote results.
     mapping (address => DelegateSet[]) public delegations;
@@ -87,7 +87,7 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
 
         //In case there is no registry
         if (checkpoints.length == 0) {
-            if (parentDelegation != address(0)) {
+            if (address(parentDelegation) != address(0)) {
                 return Delegation(parentDelegation).delegatedToAt(_who, _block);
             } else {
                 return address(0); 
@@ -95,7 +95,7 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
         }
         DelegateSet memory d = getMemoryAt(checkpoints, _block);
         // Case user set delegate to parentDelegation address
-        if (d.to == parentDelegation) {
+        if (d.to == address(parentDelegation)) {
             return Delegation(parentDelegation).delegatedToAt(_who, _block); 
         }
         return d.to;

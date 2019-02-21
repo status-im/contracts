@@ -2,6 +2,7 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "../deploy/InstanceFactory.sol";
 import "../deploy/Instance.sol";
+import "./DelegationAbstract.sol";
 
 /**
  * @title DelegationFactory
@@ -16,10 +17,10 @@ contract DelegationFactory is InstanceFactory {
     { }
 
     function createDelegation(
-        address
+        Delegation _parent
     ) 
         external 
-        returns (InstanceAbstract instance)
+        returns (DelegationAbstract instance)
     {
         instance = new Instance(base, prototypes[address(base)].init, msg.data);
         emit InstanceCreated(instance);

@@ -12,7 +12,7 @@ contract DelegationBase is DelegationAbstract {
     /**
      * @notice Calls Constructor
      */
-    constructor(address _parentDelegation) public {
+    constructor(Delegation _parentDelegation) public {
         parentDelegation = _parentDelegation;
     }
 

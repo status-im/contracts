@@ -12,14 +12,14 @@ contract DelegationInit is DelegationAbstract {
      * @notice Constructor of the model - only knows about watchdog that can trigger upgrade
      */
     constructor() public {
-        parentDelegation = address(-1); //avoids calling create delegation within the Init contract.
+        parentDelegation = Delegation(address(-1)); //avoids calling create delegation within the Init contract.
     }
 
     /**
      * @notice Creates a new Delegation with `_parentDelegation` as default delegation.
      */
-    function createDelegation(address _parentDelegation) external {
-        require(parentDelegation == address(0), "Bad call"); //avoids control of Init contract
+    function createDelegation(Delegation _parentDelegation) external {
+        require(address(parentDelegation) == address(0), "Bad call"); //avoids control of Init contract
         parentDelegation = _parentDelegation;
     }
     
