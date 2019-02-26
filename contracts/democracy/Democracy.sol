@@ -1,85 +1,182 @@
 pragma solidity >=0.5.0 <0.6.0;
 
 import "../token/MiniMeToken.sol";
-import "./DelegationFactory.sol";
-import "./DefaultDelegation.sol";
-import "./TrustNetwork.sol";
-import "./ProposalCuration.sol";
-import "./ProposalManager.sol";
+import "./delegation/DelegationFactory.sol";
+import "./proposal/ProposalFactory.sol";
 
 
 contract Democracy {
 
+    struct Topic {
+        bytes32 parent;
+        Delegation delegation;
+        Proposal.QuorumType quorum;
+        uint256 startBlockDelay;
+        uint256 votingBlockDelay;
+        uint256 tabulationBlockDelay;
+        mapping (address => mapping (bytes4 => bool)) allowance;
+    }
+
+    struct ProposalData {
+        bytes32 topic;
+        address destination;
+        bytes data;
+    }
+
     MiniMeToken public token;
-    TrustNetwork public trustNet;
-    ProposalManager public proposalManager;
-    
-    mapping (bytes32 => mapping (address => mapping (bytes32 => bool))) allowance;
-    mapping (uint256 => bool) executedProposals;
+    DelegationFactory public delegationFactory;
+    ProposalFactory public proposalFactory;
+
+    mapping (bytes32 => Topic) topics;
+    mapping (address => ProposalData) proposals;
 
     modifier selfOnly {
         require(msg.sender == address(this), "Unauthorized");
         _;
     }
 
-    constructor(MiniMeToken _token, DelegationFactory _DelegationFactory, address defaultDelegate) public {
+    constructor(
+        MiniMeToken _token, 
+        DelegationFactory _delegationFactory, 
+        ProposalFactory _proposalFactory, 
+        Delegation _parentDelegation, 
+        Proposal.QuorumType _quorumType,
+        uint256 startBlockDelay,
+        uint256 votingBlockDelay,
+        uint256 tabulationBlockDelay
+    ) 
+        public 
+    {
         token = _token;
-        trustNet = new TrustNetwork(_DelegationFactory, new DefaultDelegation(defaultDelegate));
-        proposalManager = new ProposalCuration(_token, trustNet).proposalManager();
+        proposalFactory = _proposalFactory;
+        delegationFactory = _delegationFactory;
+
+        topics[bytes32(0)] = Topic(
+            bytes32(0),
+            _delegationFactory.createDelegation(_parentDelegation),
+            _quorumType,
+            startBlockDelay,
+            votingBlockDelay,
+            tabulationBlockDelay
+        );
+        
+    }
+
+    function newProposal(
+        bytes32 _topicId,
+        address _destination,
+        bytes calldata _data,
+        uint256 blockStart
+    ) 
+        external
+    {
+        Topic memory topic = topics[_topicId];
+        Delegation delegation = topic.delegation;
+        require(address(delegation) != address(0), "Invalid topic");
+        require(isTopicAllowed(_topicId, _destination, _data)); //require call allowance
+        require(blockStart >= block.number + topic.startBlockDelay, "Bad blockStart");
+        uint256 blockEnd = blockStart + topic.votingBlockDelay;
+        bytes32 dataHash = keccak256(
+            abi.encodePacked(
+                _topicId,
+                _destination,
+                _data
+            )
+        );
+        Proposal proposal = proposalFactory.createProposal(token, delegation, dataHash, topic.tabulationBlockDelay, blockStart, blockEnd, topic.quorum);
+        proposals[address(proposal)] = ProposalData(_topicId, _destination, _data);
     }
 
     function executeProposal(
-        uint256 _proposalId,
-        address _destination,
-        bytes calldata _data
+        Proposal proposal
     ) 
         external 
         returns (bool success, bytes memory r) 
     {
-        require(!executedProposals[_proposalId]);
-        executedProposals[_proposalId] = true;
+        ProposalData memory pdata = proposals[address(proposal)];
+        require(pdata.destination != address(0), "Invalid proposal");
+        delete proposals[address(proposal)];
+        bool approved = proposal.isApproved();
+        proposal.clear();
 
-        bytes32 topic;
-        bytes32 txHash;
-        bool approved;
-        (topic, txHash, approved) = proposalManager.getProposal(_proposalId);
-        require(approved);
-        require(
-            txHash == keccak256(
-                abi.encodePacked(
-                    _destination,
-                    _data
-                )
-            )
+        if(approved){
+            require(isTopicAllowed(pdata.topic, pdata.destination, pdata.data)); //require call allowance
+            //execute the call
+            (success, r) = pdata.destination.call(pdata.data);
+        }
+        
+    }
+
+    function executeDelegateCall(
+        address destination,
+        bytes calldata data
+    ) 
+        external selfOnly
+        returns (bool success, bytes memory r) 
+    {
+        (success, r) = destination.delegatecall(data);
+    }
+
+    function addTopic(
+        bytes32 topicId,
+        bytes32 parentTopic,
+        Proposal.QuorumType quorum,
+        uint256 startBlockDelay,
+        uint256 votingBlockDelay,
+        uint256 tabulationBlockDelay,
+        address[] calldata allowedDests,
+        bytes4[] calldata allowedSigs 
+    ) 
+        external
+        selfOnly  
+    {
+        require(address(topics[topicId].delegation) == address(0), "Duplicated topicId");
+        require(votingBlockDelay > 0, "Bad parameter votingBlockDelay");
+        uint256 len = allowedDests.length;
+        require(len == allowedSigs.length);
+        Delegation parentDelegation;
+
+        parentDelegation = topics[parentTopic].delegation;
+        require(address(parentDelegation) != address(0), "Invalid parent topic");
+
+        topics[topicId] = Topic(
+            parentTopic,
+            delegationFactory.createDelegation(parentDelegation),
+            quorum,
+            startBlockDelay,
+            votingBlockDelay,
+            tabulationBlockDelay
         );
+        Topic storage topic = topics[topicId];
 
-        if(topic != bytes32(0)) { //if not root topic
-            bytes memory data = _data;
-            bytes4 sig; 
-            assembly {
-                sig := mload(add(data, 4))
-            }
-            delete sig;
-            require(isTopicAllowed(topic, _destination, sig)); //require call allowance
+        for(uint i = 0; i > len; i++) {
+            topic.allowance[allowedDests[i]][allowedSigs[i]] = true;
         }
 
-        //execute the call
-        (success, r) = _destination.call(_data);
     }
 
-    function setTopicAllowance(bytes32 _topic, address _destination, bytes4 _callSig, bool _allowed) external selfOnly {
-        require(_topic != bytes32(0), "Cannot change root topic");
-        allowance[_topic][_destination][_callSig] = _allowed;
+    function changeTopicAllowance(
+        bytes32 _topicId, 
+        address[] calldata allowedDests,
+        bytes4[] calldata allowedSigs,
+        bool[] calldata _allowed
+    ) 
+        external 
+        selfOnly 
+    {
+        require(_topicId != bytes32(0), "Cannot change root topic");
+        uint256 len = allowedDests.length;
+        require(len == allowedSigs.length);
+        require(len == _allowed.length);
+        require(address(topics[_topicId].delegation) != address(0), "Invalid topic");
+        for(uint i = 0; i > len; i++) {
+            topics[_topicId].allowance[allowedDests[i]][allowedSigs[i]] = _allowed[i];
+        }
     }
 
-    function setProposalManager(ProposalManager _proposalManager) external selfOnly {
-        require(address(_proposalManager) != address(0), "Bad call");
-        proposalManager = _proposalManager;
-    }
-
-    function setTrustNetwork(TrustNetwork _trustNet) external selfOnly {
-        require(address(_trustNet) != address(0), "Bad call");
-        trustNet = _trustNet;
+    function setProposalFactory(ProposalFactory _proposalFactory) external selfOnly {
+        require(address(_proposalFactory) != address(0), "Bad call");
+        proposalFactory = _proposalFactory;
     }
 
     function setToken(MiniMeToken _token) external selfOnly {
@@ -89,21 +186,26 @@ contract Democracy {
 
     function isTopicAllowed(
         bytes32 topic, 
-        address destinAddr, 
-        bytes4 calledSig
+        address destination, 
+        bytes memory data
     ) 
         public 
         view 
         returns (bool) 
     {
+        if(topic == bytes32(0)) {
+            return true; //root topic can always everything
+        }
+        
+        bytes4 calledSig; 
+        assembly {
+            calledSig := mload(add(data, 4))
+        }
+        
+        return topics[topic].allowance[destination][bytes4(0)]
+            || topics[topic].allowance[destination][calledSig]
+            || topics[topic].allowance[address(0)][bytes4(0)]
+            || topics[topic].allowance[address(0)][calledSig];
 
-        return allowance[topic][destinAddr][calledSig]
-            || allowance[topic][destinAddr][bytes4(0)]
-            || allowance[topic][address(0)][calledSig]
-            || allowance[topic][address(0)][bytes4(0)]
-            || allowance[topic][destinAddr][calledSig]
-            || allowance[topic][destinAddr][bytes4(0)]
-            || allowance[topic][address(0)][calledSig]
-            || allowance[topic][address(0)][bytes4(0)];
     }
 }

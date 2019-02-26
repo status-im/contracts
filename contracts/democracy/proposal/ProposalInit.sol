@@ -5,7 +5,7 @@ import "./ProposalAbstract.sol";
 /**
  * @title Proposal
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * Store votes and tabulate results for Democracy  
+ * @dev Initialization of Proposal, used in Instance construtor. 
  */
 contract ProposalInit is ProposalAbstract {
 
@@ -16,11 +16,11 @@ contract ProposalInit is ProposalAbstract {
     function createProposal(
         MiniMeToken _token,
         Delegation _delegation,
-        bytes32 _topic,
-        bytes32 _txHash,
+        bytes32 _dataHash,
         uint256 _tabulationBlockDelay,
         uint256 _blockStart,
-        uint256 _blockEndDelay
+        uint256 _blockEndDelay,
+        QuorumType _quorum
     ) 
         external
     {
@@ -28,10 +28,10 @@ contract ProposalInit is ProposalAbstract {
         delegation = _delegation;
         token = _token;
         tabulationBlockDelay = _tabulationBlockDelay;
-        topic = _topic;
-        txHash = _txHash;
+        dataHash = _dataHash;
         blockStart = _blockStart;
         voteBlockEnd = blockStart + _blockEndDelay;
+        quorum = _quorum;
     }
 
 

@@ -1,24 +1,24 @@
 const utils = require("../utils/testUtils")
 
-const DelegationView = require('Embark/contracts/DelegationView');
+const DelegationBase = require('Embark/contracts/DelegationBase');
 const ChildDelegation = require('Embark/contracts/ChildDelegation');
 
 config({
     contracts: {
-        "DelegationView": {
+        "DelegationBase": {
             "args": [ "0x0" ]
         },
         "ChildDelegation": {
-            "instanceOf": "DelegationView",
+            "instanceOf": "DelegationBase",
             "args": [
-                "$DelegationView"
+                "$DelegationBase"
             ]
         }
 
       }
   });
 
-contract("DelegationView", function() {
+contract("DelegationBase", function() {
     this.timeout(0);
 
     var accounts;
@@ -31,41 +31,41 @@ contract("DelegationView", function() {
 
 
     it("starts with no delegate", async function () {
-        let result = await DelegationView.methods.delegatedTo(accounts[0]).call()
+        let result = await DelegationBase.methods.delegatedTo(accounts[0]).call()
         assert.equal(result, utils.zeroAddress)
     })
 
     it("starts with delegation to self", async function () {
-        result = await DelegationView.methods.delegationOf(accounts[0]).call()
+        result = await DelegationBase.methods.delegationOf(accounts[0]).call()
         assert.equal(result, accounts[0])        
     })
 
     it("a0 delegate to a1", async function () {
-        result = await DelegationView.methods.delegate(accounts[1]).send({from: accounts[0]})
+        result = await DelegationBase.methods.delegate(accounts[1]).send({from: accounts[0]})
         const delegateArgs = result.events.Delegate.returnValues;
         assert.equal(delegateArgs.who, accounts[0])
         assert.equal(delegateArgs.to, accounts[1])
 
-        result = await DelegationView.methods.delegatedTo(accounts[0]).call()
+        result = await DelegationBase.methods.delegatedTo(accounts[0]).call()
         assert.equal(result, accounts[1])
 
-        result = await DelegationView.methods.delegationOf(accounts[0]).call()
+        result = await DelegationBase.methods.delegationOf(accounts[0]).call()
         assert.equal(result, accounts[1])
         
     })
 
     it("a1 delegate to a2", async function () {
-        result = await DelegationView.methods.delegate(accounts[2]).send({from: accounts[1]})
+        result = await DelegationBase.methods.delegate(accounts[2]).send({from: accounts[1]})
         const delegateArgs = result.events.Delegate.returnValues;
         assert.equal(delegateArgs.who, accounts[1])
         assert.equal(delegateArgs.to, accounts[2])
 
-        result = await DelegationView.methods.delegatedTo(accounts[1]).call()
+        result = await DelegationBase.methods.delegatedTo(accounts[1]).call()
         assert.equal(result, accounts[2])
 
-        result = await DelegationView.methods.delegationOf(accounts[0]).call()
+        result = await DelegationBase.methods.delegationOf(accounts[0]).call()
         assert.equal(result, accounts[2])
-        result = await DelegationView.methods.delegationOf(accounts[1]).call()
+        result = await DelegationBase.methods.delegationOf(accounts[1]).call()
         assert.equal(result, accounts[2])
 
         
@@ -73,20 +73,20 @@ contract("DelegationView", function() {
 
 
     it("a2 delegate to a3", async function () {
-        result = await DelegationView.methods.delegate(accounts[3]).send({from: accounts[2]})
+        result = await DelegationBase.methods.delegate(accounts[3]).send({from: accounts[2]})
         const delegateArgs = result.events.Delegate.returnValues;
         assert.equal(delegateArgs.who, accounts[2])
         assert.equal(delegateArgs.to, accounts[3])
 
         
-        result = await DelegationView.methods.delegatedTo(accounts[2]).call()
+        result = await DelegationBase.methods.delegatedTo(accounts[2]).call()
         assert.equal(result, accounts[3])
         
-        result = await DelegationView.methods.delegationOf(accounts[0]).call()
+        result = await DelegationBase.methods.delegationOf(accounts[0]).call()
         assert.equal(result, accounts[3])
-        result = await DelegationView.methods.delegationOf(accounts[1]).call()
+        result = await DelegationBase.methods.delegationOf(accounts[1]).call()
         assert.equal(result, accounts[3])
-        result = await DelegationView.methods.delegationOf(accounts[2]).call()
+        result = await DelegationBase.methods.delegationOf(accounts[2]).call()
         assert.equal(result, accounts[3])
 
         

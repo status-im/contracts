@@ -11,7 +11,7 @@ import "./DelegationAbstract.sol";
  */
 contract DelegationFactory is InstanceFactory {
 
-    constructor(InstanceAbstract _base, InstanceAbstract _init, InstanceAbstract _emergency) 
+    constructor(DelegationAbstract _base, DelegationAbstract _init, DelegationAbstract _emergency) 
         InstanceFactory(_base, _init, _emergency)
         public
     { }
@@ -22,7 +22,7 @@ contract DelegationFactory is InstanceFactory {
         external 
         returns (DelegationAbstract instance)
     {
-        instance = DelegationAbstract(new Instance(base, prototypes[address(base)].init, msg.data));
+        instance = DelegationAbstract(address(new Instance(base, prototypes[address(base)].init, msg.data)));
         emit InstanceCreated(instance);
     }
 

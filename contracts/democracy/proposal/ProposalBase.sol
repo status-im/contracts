@@ -5,9 +5,9 @@ import "../../common/MerkleProof.sol";
 import "./ProposalAbstract.sol";
 
 /**
- * @title Proposal
+ * @title ProposalBase
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * Store votes and tabulate results for Democracy  
+ * Store votes and tabulate results for Democracy. Cannot be used stand alone, only as base of Instance.
  */
 contract ProposalBase is ProposalAbstract, MessageSigned {
 
@@ -68,22 +68,36 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         require(block.number > voteBlockEnd, "Voting running");
         cacheDelegation(_start,_clean);
     }
+    
+    /**
+    * Quorum types:
+     - qualified majority 60% + 1 of all influence (change rules)
+     - absolute majority: 50% + 1 of all influence (agregate rules)
+     - simple majority: 50% +1 of participants influence  (non critical changes)
+     */
 
+    
     function finalize()
         external
     {
         require(block.number > voteBlockEnd, "Voting running");
         require(lastTabulationBlock + tabulationBlockDelay > block.number, "Tabulation running");
         require(result == Vote.Null, "Already finalized");
-        uint256 totalTokens = token.totalSupplyAt(voteBlockEnd);
         uint256 approvals = results[uint8(Vote.Approve)];
-        uint256 rejects = results[uint8(Vote.Reject)];
-        uint256 approvalQuorum = (totalTokens / 2);
-        if(approvals-rejects >= approvalQuorum) {
-            result = Vote.Approve;
+        bool approved;
+
+        if(quorum == QuorumType.Simple){
+            uint256 rejects = results[uint8(Vote.Reject)];
+            approved = approvals > rejects;
         } else {
-            result = Vote.Reject;
+            uint256 totalTokens = token.totalSupplyAt(voteBlockEnd);
+            if(quorum == QuorumType.Absolute) {
+                approved = approvals > (totalTokens / 2);
+            } else if(quorum == QuorumType.Qualified) {
+                approved = approvals > (totalTokens * 3) / 5;
+            }
         }
+        result = approved ? Vote.Approve : Vote.Reject;
     }
 
     function clear() 
@@ -93,6 +107,15 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         require(result != Vote.Null, "Not finalized");
         selfdestruct(controller);
     }
+
+    function isApproved() external view returns (bool) {
+        require(result != Vote.Null, "Not finalized");
+        return result == Vote.Approve;
+    }
+
+    function isFinalized() external view returns (bool) {
+        return result != Vote.Null;
+    }  
 
 
     function setTabulation(address _voter, address _claimer, Vote _vote) internal {

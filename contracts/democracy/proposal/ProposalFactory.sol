@@ -5,9 +5,9 @@ import "../../deploy/Instance.sol";
 import "./ProposalAbstract.sol";
 
 /**
- * @title DelegationFactory
+ * @title ProposalFactory
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * @dev Upgradable delegation proxy factory
+ * @dev Creates Proposal instances. 
  */
 contract ProposalFactory is InstanceFactory {
 
@@ -19,16 +19,16 @@ contract ProposalFactory is InstanceFactory {
     function createProposal(
         MiniMeToken _token,
         Delegation _delegation,
-        bytes32 _topic,
-        bytes32 _txHash,
+        bytes32 _dataHash,
         uint256 _tabulationBlockDelay,
         uint256 _blockStart,
-        uint256 _blockEndDelay
+        uint256 _blockEndDelay,
+        Proposal.QuorumType _quorum
     ) 
         external
         returns (ProposalAbstract instance)
     {
-        instance = ProposalAbstract(new Instance(base, prototypes[address(base)].init, msg.data));
+        instance = ProposalAbstract(address(new Instance(base, prototypes[address(base)].init, msg.data)));
         emit InstanceCreated(instance);
     }
 
