@@ -21,10 +21,7 @@ contract DelegatedCall {
         if(_target == address(0)) {
             _; //normal execution 
         } else {
-            //delegated execution
-            bytes memory returnData;
-            bool success;
-            (success, returnData) = _target.delegatecall(msg.data);
+            (bool success, bytes memory returnData) = _target.delegatecall(msg.data);
             require(success, "Delegated Call failed"); 
 
             //exit-return delegatecall returnData
