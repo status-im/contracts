@@ -62,7 +62,7 @@ module.exports = {
       }, 
       "StickerMarket": {
         "deploy": false,
-        "address": "0x82694E3DeabE4D6f4e6C180Fe6ad646aB8EF53ae"
+        "address": "0x39d16cdb56b5a6a89e1a397a13fe48034694316e"
       }
     }
   },
