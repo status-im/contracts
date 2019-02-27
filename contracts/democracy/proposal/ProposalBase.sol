@@ -140,11 +140,12 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         require(vote == Vote.Null, "Not delegatable");
         claimer = _voter; // try finding first delegate from chain which voted
         while(vote == Vote.Null) {
-            claimer = delegationOf[claimer];
-            if(claimer == address(0)){
-                claimer = delegation.delegatedToAt(claimer, voteBlockEnd);  
+            address claimerDelegate = delegationOf[claimer];
+            if(claimerDelegate == address(0)){
+                claimerDelegate = delegation.delegatedToAt(claimer, voteBlockEnd);  
             }
-            require(claimer != address(0), "No delegate vote found");
+            require(claimer != claimerDelegate, "No delegate vote found");
+            claimer = claimerDelegate; 
             vote = voteMap[claimer]; //loads delegate vote.
         }
     }

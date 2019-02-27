@@ -90,7 +90,7 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
             if (address(parentDelegation) != address(0)) {
                 return Delegation(parentDelegation).delegatedToAt(_who, _block);
             } else {
-                return address(0); 
+                return _who; 
             }
         }
         DelegateSet memory d = getMemoryAt(checkpoints, _block);
@@ -116,7 +116,7 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
         returns(address finalDelegate)
     {
         finalDelegate = findDelegatedToAt(_who, _block);
-        if (finalDelegate != address(0)) { //_who is delegating?
+        if (finalDelegate != _who) { //_who is delegating?
             return findDelegationOfAt(finalDelegate, _block); //load the delegation of _who delegation
         } else {
             return _who; //reached the endpoint of delegation
