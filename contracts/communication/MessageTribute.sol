@@ -14,12 +14,13 @@ import "../common/Controlled.sol";
  */
 contract MessageTribute is Controlled {
     event DefaultFee(uint256 _value);
-    event CustomFee(address indexed _user, uint256 _value);
+    event CustomFee(address indexed _user, uint256 _value, string _message);
     event ResetFee(address indexed _user);
 
     struct Fee {
         bool custom;
-        uint128 value; 
+        uint128 value;
+        string message; 
     }
 
     uint256 public defaultValue;
@@ -33,10 +34,11 @@ contract MessageTribute is Controlled {
     /**
      * @notice Set tribute for accounts or everyone
      * @param _value Required tribute value (using token from constructor)
+     * @param _message Welcome message
      */
-    function setRequiredTribute(uint256 _value) external {
-        feeCatalog[msg.sender] = Fee(true, uint128(_value));
-        emit CustomFee(msg.sender, _value);
+    function setRequiredTribute(uint256 _value, string calldata _message) external {
+        feeCatalog[msg.sender] = Fee(true, uint128(_value), _message);
+        emit CustomFee(msg.sender, _value, _message);
     }
 
     /**
@@ -62,10 +64,12 @@ contract MessageTribute is Controlled {
      * @return Fee
      */
     function getFee(address _to) public view
-        returns (uint256) 
+        returns (uint256 fee, string memory message) 
     {
-        Fee storage fee = feeCatalog[_to];
-        return fee.custom ? uint256(fee.value) : defaultValue;
+        Fee storage f = feeCatalog[_to];
+
+        fee = f.custom ? uint256(f.value) : defaultValue;
+        message = f.message;
     }
 
 }
