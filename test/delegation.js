@@ -47,10 +47,10 @@ contract("DelegationBase", function() {
     it("creates root delegation", async function () {
         let result = await DelegationFactory.methods.createDelegation(DefaultDelegation._address).send();
         RootDelegation = new web3.eth.Contract(Delegation._jsonInterface, result.events.InstanceCreated.returnValues[0]);
+        defaultDelegate = await DefaultDelegation.methods.defaultDelegate().call();
     })
 
     it("starts with default delegate", async function () {
-        defaultDelegate = await DefaultDelegation.methods.defaultDelegate().call();
         let result = await RootDelegation.methods.delegatedTo(accounts[0]).call()
         assert.equal(result, defaultDelegate)
         result = await RootDelegation.methods.delegationOf(accounts[0]).call()
