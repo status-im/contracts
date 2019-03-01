@@ -10,6 +10,8 @@ contract Democracy {
     struct Topic {
         bytes32 parent;
         Delegation delegation;
+        ProposalFactory proposalFactory;
+        uint256 stakeValue;
         Proposal.QuorumType quorum;
         uint256 startBlockDelay;
         uint256 votingBlockDelay;
@@ -18,6 +20,8 @@ contract Democracy {
     }
 
     struct ProposalData {
+        address proponent;
+        uint256 lockedStake;
         bytes32 topic;
         address destination;
         bytes data;
@@ -25,7 +29,7 @@ contract Democracy {
 
     MiniMeToken public token;
     DelegationFactory public delegationFactory;
-    ProposalFactory public proposalFactory;
+    
 
     mapping (bytes32 => Topic) topics;
     mapping (address => ProposalData) proposals;
@@ -40,6 +44,7 @@ contract Democracy {
         DelegationFactory _delegationFactory, 
         ProposalFactory _proposalFactory, 
         Delegation _parentDelegation, 
+        uint256 _stakeValue,
         Proposal.QuorumType _quorumType,
         uint256 startBlockDelay,
         uint256 votingBlockDelay,
@@ -54,6 +59,8 @@ contract Democracy {
         topics[bytes32(0)] = Topic(
             bytes32(0),
             _delegationFactory.createDelegation(_parentDelegation),
+            _proposalFactory,
+            _stakeValue,
             _quorumType,
             startBlockDelay,
             votingBlockDelay,
@@ -75,6 +82,9 @@ contract Democracy {
         require(address(delegation) != address(0), "Invalid topic");
         require(isTopicAllowed(_topicId, _destination, _data)); //require call allowance
         require(blockStart >= block.number + topic.startBlockDelay, "Bad blockStart");
+        if(topic.stakeValue > 0) {
+            require(token.transferFrom(msg.sender, address(this), topic.stakeValue), "Stake payment failed");
+        }
         uint256 blockEnd = blockStart + topic.votingBlockDelay;
         bytes32 dataHash = keccak256(
             abi.encodePacked(
@@ -83,8 +93,9 @@ contract Democracy {
                 _data
             )
         );
-        Proposal proposal = proposalFactory.createProposal(token, delegation, dataHash, topic.tabulationBlockDelay, blockStart, blockEnd, topic.quorum);
-        proposals[address(proposal)] = ProposalData(_topicId, _destination, _data);
+        Proposal proposal = topic.proposalFactory.createProposal(token, delegation, dataHash, topic.tabulationBlockDelay, blockStart, blockEnd, topic.quorum);
+
+        proposals[address(proposal)] = ProposalData(msg.sender, topic.stakeValue, _topicId, _destination, _data);
     }
 
     function executeProposal(
@@ -98,11 +109,11 @@ contract Democracy {
         delete proposals[address(proposal)];
         bool approved = proposal.isApproved();
         proposal.clear();
-
-        if(approved){
-            require(isTopicAllowed(pdata.topic, pdata.destination, pdata.data)); //require call allowance
-            //execute the call
-            (success, r) = pdata.destination.call(pdata.data);
+        if(pdata.lockedStake > 0) {
+            token.transfer(pdata.proponent, pdata.lockedStake);
+        }
+        if(approved && isTopicAllowed(pdata.topic, pdata.destination, pdata.data)){
+            (success, r) = pdata.destination.call(pdata.data); //execute the call
         }
         
     }
@@ -119,7 +130,9 @@ contract Democracy {
 
     function addTopic(
         bytes32 topicId,
+        ProposalFactory _proposalFactory,
         bytes32 parentTopic,
+        uint256 stakeValue,
         Proposal.QuorumType quorum,
         uint256 startBlockDelay,
         uint256 votingBlockDelay,
@@ -142,6 +155,8 @@ contract Democracy {
         topics[topicId] = Topic(
             parentTopic,
             delegationFactory.createDelegation(parentDelegation),
+            _proposalFactory,
+            _stakeValue,
             quorum,
             startBlockDelay,
             votingBlockDelay,
