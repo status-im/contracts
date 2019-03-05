@@ -6,14 +6,14 @@ import "../common/Controlled.sol";
  * @notice Linked list which requires entries being linked in points descending order, from head to tai* @author Ricardo Guilherme Schmidt
  */
 contract Ranking is Controlled {
-    event NewEntry(bytes32 indexed uid, address indexed owner);
-    event PointsUpdate(bytes32 indexed uid, uint256 newValue);
+    event EntryOwned(bytes32 indexed uid, address indexed owner);
+    event EntryValueChange(bytes32 indexed uid, uint256 newValue);
     struct Entry {
         uint256 timestamp;
         address owner;
         uint256 points;
         bytes32 next;
-        //bytes32 previous;
+        bytes32 previous;
     }
 
     bytes32 public top;
@@ -34,27 +34,27 @@ contract Ranking is Controlled {
             require(entries[next].points <= _points, "Bad position 2");
             entries[_before].next = _uid;
         }
-        entries[_uid] = Entry(block.timestamp, _owner, _points, next);
-        emit NewEntry(_uid, _owner);
-        emit PointsUpdate(_uid, _points);
+        entries[_uid] = Entry(block.timestamp, _owner, _points, next, _before);
+        emit EntryOwned(_uid, _owner);
+        emit EntryValueChange(_uid, _points);
     }
 
-    function increase(bytes32 _uid, uint256 _points, bytes32 _oldPrevious, bytes32 _newPrevious) external onlyController {
+    function increase(bytes32 _uid, uint256 _points, bytes32 _newPrevious) external onlyController {
         require(entries[_uid].timestamp != uint256(0), "Unknown entry");
         uint256 oldValue = entries[_uid].points;
-        move(_uid, _oldPrevious, _newPrevious, oldValue + _points);
+        move(_uid, _newPrevious, oldValue + _points);
     }
 
-    function decrease(bytes32 _uid, uint256 _points, bytes32 _oldPrevious, bytes32 _newPrevious) external onlyController {
+    function decrease(bytes32 _uid, uint256 _points, bytes32 _newPrevious) external onlyController {
         require(entries[_uid].timestamp != uint256(0), "Unknown entry");
         uint256 oldValue = entries[_uid].points;
         require(oldValue >= _points, "Bad points");
         uint256 newValue = oldValue - _points;
         if(newValue > 0) {
-            move(_uid, _oldPrevious, _newPrevious, newValue);
+            move(_uid, _newPrevious, newValue);
         } else {
             require(_newPrevious == bytes32(0), "Bad argument");
-            exclude(_uid, _oldPrevious);
+            exclude(_uid);
         }
         
     }
@@ -79,9 +79,10 @@ contract Ranking is Controlled {
         return entries[_uid].timestamp;
     }
 
-    function move(bytes32 _uid, bytes32 _oldPrevious, bytes32 _newPrevious, uint256 _newValue) private {
+    function move(bytes32 _uid, bytes32 _newPrevious, uint256 _newValue) private {
         bytes32 newNext;
         Entry storage moving = entries[_uid];
+        bytes32 _oldPrevious = moving.previous;
         require(moving.timestamp != 0, "Unknown uid");
         if(_oldPrevious != bytes32(0)){
             Entry storage oldBefore = entries[_oldPrevious];
@@ -92,7 +93,7 @@ contract Ranking is Controlled {
             require(top == _uid, "Bad argument");
         }
          
-        if(_newPrevious != bytes32(0)){
+        if(_newPrevious != bytes32(0)) {
             Entry storage newBefore = entries[_newPrevious];
             require(newBefore.timestamp != 0, "Unknown newPrevious");
             newNext = newBefore.next;
@@ -117,11 +118,12 @@ contract Ranking is Controlled {
         }
         moving.next = newNext;
         moving.points = _newValue;
-        emit PointsUpdate(_uid, _newValue);
+        emit EntryValueChange(_uid, _newValue);
     }
 
-    function exclude(bytes32 _uid, bytes32 _oldPrevious) private {
+    function exclude(bytes32 _uid) private {
         Entry memory excluded = entries[_uid];
+        bytes32 _oldPrevious = excluded.previous;
         require(excluded.timestamp != 0, "Unknown uid");
         if(_oldPrevious != bytes32(0)){
             Entry storage oldBefore = entries[_oldPrevious];
