@@ -9,30 +9,31 @@ config({
     }
 });
 
-const item_0a = "0x000000000000000000000000000000000000000000000000000000000000000a"
-const item_0b = "0x000000000000000000000000000000000000000000000000000000000000000b"
-const item_0c = "0x000000000000000000000000000000000000000000000000000000000000000c"
-const item_0d = "0x000000000000000000000000000000000000000000000000000000000000000d"
-const item_0e = "0x000000000000000000000000000000000000000000000000000000000000000e"
-const item_0f = "0x000000000000000000000000000000000000000000000000000000000000000f"
-const item_aa = "0x00000000000000000000000000000000000000000000000000000000000000aa"
-const item_bb = "0x00000000000000000000000000000000000000000000000000000000000000bb"
-const item_cc = "0x00000000000000000000000000000000000000000000000000000000000000cc"
-const item_dd = "0x00000000000000000000000000000000000000000000000000000000000000dd"
-const item_ee = "0x00000000000000000000000000000000000000000000000000000000000000ee"
-const item_ff = "0x00000000000000000000000000000000000000000000000000000000000000ff"
+const item_0a = "0x0a00000000000000000000000000000000000000000000000000000000000000"
+const item_0b = "0x0b00000000000000000000000000000000000000000000000000000000000000"
+const item_0c = "0x0c00000000000000000000000000000000000000000000000000000000000000"
+const item_0d = "0x0d00000000000000000000000000000000000000000000000000000000000000"
+const item_0e = "0x0e00000000000000000000000000000000000000000000000000000000000000"
+const item_0f = "0x0f00000000000000000000000000000000000000000000000000000000000000"
+const item_aa = "0xaa00000000000000000000000000000000000000000000000000000000000000"
+const item_bb = "0xbb00000000000000000000000000000000000000000000000000000000000000"
+const item_cc = "0xcc00000000000000000000000000000000000000000000000000000000000000"
+const item_dd = "0xdd00000000000000000000000000000000000000000000000000000000000000"
+const item_ee = "0xee00000000000000000000000000000000000000000000000000000000000000"
+const item_ff = "0xff00000000000000000000000000000000000000000000000000000000000000"
 
 async function printRanking(Ranking) {
     var next = await Ranking.methods.top().call();
-    var i = 0;
     console.log("Ranking: ")
+    var i = 0;
     while(next != utils.zeroBytes32){
         console.log(
             i++,
-            "current " + (next).substring(0,8), 
-            await Ranking.methods.pointsOf(next).call(),
-            "previous " + (await Ranking.methods.previousOf(next).call()).substring(0,8),
-            "next " + (await Ranking.methods.nextOf(next).call()).substring(0,8),  
+            "item_" + (next).substring(2,4), 
+            "points " + await Ranking.methods.pointsOf(next).call(),
+            "timestamp " + await Ranking.methods.timestampOf(next).call(),
+            "prev item_" + (await Ranking.methods.previousOf(next).call()).substring(2,4),
+            "next item_" + (await Ranking.methods.nextOf(next).call()).substring(2,4),  
         );
         next = await Ranking.methods.nextOf(next).call();
     }
@@ -74,9 +75,9 @@ contract("Ranking", function() {
             100000000,
             utils.zeroBytes32
         ).send({from: accounts[0]});
-        assert.equal(await Ranking.methods.top().call(), item_0a, "top is item 0a")
-        assert.equal(await Ranking.methods.previousOf(item_0a).call(), utils.zeroBytes32, "item 0a previous is null (head)")
-        assert.equal(await Ranking.methods.nextOf(item_0a).call(), utils.zeroBytes32, "item 0a next is null (tail)")
+        assert.equal(await Ranking.methods.top().call(), item_0a, "top is item_0a")
+        assert.equal(await Ranking.methods.previousOf(item_0a).call(), utils.zeroBytes32, "item_0a previous is null (head)")
+        assert.equal(await Ranking.methods.nextOf(item_0a).call(), utils.zeroBytes32, "item_0a next is null (tail)")
     })
 
     it("should not include as top if new not top", async function() {
@@ -119,17 +120,17 @@ contract("Ranking", function() {
         assert.equal(
             await Ranking.methods.nextOf(item_0a).call(),
             item_0b, 
-            "item 0a next is item 0b"
+            "item_0a next is item_0b"
         )   
         assert.equal(
             await Ranking.methods.previousOf(item_0b).call(), 
             item_0a, 
-            "item 0b previous is item 0a"
+            "item_0b previous is item_0a"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0b).call(),
             utils.zeroBytes32, 
-            "item 0b next is null (tail)"
+            "item_0b next is null (tail)"
         )
 
     })
@@ -145,17 +146,17 @@ contract("Ranking", function() {
         assert.equal(
             await Ranking.methods.nextOf(item_0b).call(),
             item_0c, 
-            "item 0b next is item 0c"
+            "item_0b next is item_0c"
         )   
         assert.equal(
             await Ranking.methods.previousOf(item_0c).call(), 
             item_0b, 
-            "item 0c previous is item 0b"
+            "item_0c previous is item_0b"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0c).call(),
             utils.zeroBytes32, 
-            "item 0c next is null (tail)"
+            "item_0c next is null (tail)"
         )
     })
     
@@ -205,58 +206,60 @@ contract("Ranking", function() {
         assert.equal(
             await Ranking.methods.nextOf(item_0c).call(),
             item_0d, 
-            "item 0c next is item 0d"
+            "item_0c next is item_0d"
         )   
         assert.equal(
             await Ranking.methods.nextOf(item_0d).call(),
             item_0e, 
-            "item 0d next is item 0e"
+            "item_0d next is item_0e"
         )   
         assert.equal(
             await Ranking.methods.previousOf(item_0d).call(), 
             item_0c, 
-            "item 0d previous is item 0c"
+            "item_0d previous is item_0c"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0e).call(), 
             item_0d, 
-            "item 0e previous is item 0d"
+            "item_0e previous is item_0d"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0e).call(),
             utils.zeroBytes32, 
-            "item 0e next is null (tail)"
+            "item_0e next is null (tail)"
         )
+        await printRanking(Ranking)
 
     })
 
     it("should include a new position in middle", async function() {
+        console.log("Ranking.methods.include(item_0f,accounts[1],99999965,item_0d)")
         await Ranking.methods.include(
             item_0f,
             accounts[1],
             99999965,
             item_0d
         ).send({from: accounts[0]});
-    
+        await printRanking(Ranking)
         assert.equal(
             await Ranking.methods.nextOf(item_0d).call(),
             item_0f, 
-            "item 0d next is item 0f"
+            "item_0d next is item_0f"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0f).call(), 
             item_0d, 
-            "item 0f previous is item 0d"
+            "item_0f previous is item_0d"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0f).call(),
             item_0e, 
-            "item 0f next is item 0e"
+            "item_0f next is item_0e"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0e).call(), 
             item_0f, 
-            "item 0e previous is item 0f"
+            "item_0e previous is item_0f"
         )
     })
 
@@ -291,36 +294,37 @@ contract("Ranking", function() {
 
 
     it("should increase points and move to correct position", async function() {
+        console.log("Ranking.methods.increase(item_0f,10,item_0c)")
         await Ranking.methods.increase(
             item_0f,
             10,
             item_0c
         ).send({from: accounts[0]});
-        
+        await printRanking(Ranking)
         assert.equal(
             await Ranking.methods.nextOf(item_0c).call(),
             item_0f, 
-            "item 0c next is item 0f"
+            "item_0c next is item_0f"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0f).call(), 
             item_0c, 
-            "item 0f previous is item 0c"
+            "item_0f previous is item_0c"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0f).call(),
             item_0d, 
-            "item 0f next is item 0d"
+            "item_0f next is item_0d"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0d).call(), 
             item_0f, 
-            "item 0d previous is item 0f"
+            "item_0d previous is item_0f"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0d).call(),
             item_0e, 
-            "item 0d next is item 0e"
+            "item_0d next is item_0e"
         )
     })
     it("should decrease points and move to correct position", async function() {
@@ -333,27 +337,27 @@ contract("Ranking", function() {
         assert.equal(
             await Ranking.methods.nextOf(item_0d).call(),
             item_0f, 
-            "item 0d next is item 0f"
+            "item_0d next is item_0f"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0f).call(), 
             item_0d, 
-            "item 0f previous is item 0d"
+            "item_0f previous is item_0d"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0f).call(),
             item_0e, 
-            "item 0f next is item 0e"
+            "item_0f next is item_0e"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0e).call(), 
             item_0f, 
-            "item 0e previous is item 0f"
+            "item_0e previous is item_0f"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0c).call(),
             item_0d, 
-            "item 0c next is item 0d"
+            "item_0c next is item_0d"
         )
     })
 
@@ -377,32 +381,32 @@ contract("Ranking", function() {
             utils.zeroBytes32
         ).send({from: accounts[0]});
 
-        assert.equal(await Ranking.methods.top().call(), item_0f, "top is item 0f")
+        assert.equal(await Ranking.methods.top().call(), item_0f, "top is item_0f")
         assert.equal(
             await Ranking.methods.previousOf(item_0f).call(), 
             utils.zeroBytes32, 
-            "item 0f previous is null (top)"
+            "item_0f previous is null (top)"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0f).call(),
             item_0a, 
-            "item 0f next is item 0a"
+            "item_0f next is item_0a"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0a).call(), 
             item_0f, 
-            "item 0a previous is item 0f"
+            "item_0a previous is item_0f"
         )
 
         assert.equal(
             await Ranking.methods.nextOf(item_0d).call(),
             item_0e, 
-            "item 0d next is item 0e"
+            "item_0d next is item_0e"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0e).call(), 
             item_0d, 
-            "item 0e previous is item 0d"
+            "item_0e previous is item_0d"
         )
     })
 
@@ -413,26 +417,26 @@ contract("Ranking", function() {
             item_0e
         ).send({from: accounts[0]});
 
-        assert.equal(await Ranking.methods.top().call(), item_0a, "top is item 0a")
+        assert.equal(await Ranking.methods.top().call(), item_0a, "top is item_0a")
         assert.equal(
             await Ranking.methods.previousOf(item_0a).call(), 
             utils.zeroBytes32, 
-            "item 0a previous is null (top)"
+            "item_0a previous is null (top)"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0f).call(),
             "0x0000000000000000000000000000000000000000000000000000000000000000", 
-            "item 0f next is null (tail)"
+            "item_0f next is null (tail)"
         )
         assert.equal(
             await Ranking.methods.previousOf(item_0f).call(), 
             item_0e, 
-            "item 0f previous is item 0e"
+            "item_0f previous is item_0e"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0e).call(),
             item_0f, 
-            "item 0e next is item 0f"
+            "item_0e next is item_0f"
         )
     })
     it("should decrease points and be excluded from tail of list", async function() {
@@ -442,11 +446,11 @@ contract("Ranking", function() {
             points,
             utils.zeroBytes32
         ).send({from: accounts[0]});
-        // assert item 0f is gone
+        // assert item_0f is gone
         assert.equal(
             await Ranking.methods.nextOf(item_0e).call(),
             utils.zeroBytes32, 
-            "item 0e next is null (tail)"
+            "item_0e next is null (tail)"
         )
     })
     it("should decrease points and be excluded from middle of list", async function() {
@@ -457,16 +461,16 @@ contract("Ranking", function() {
             utils.zeroBytes32
         ).send({from: accounts[0]});
         
-        // assert item 0c is gone
+        // assert item_0c is gone
         assert.equal(
             await Ranking.methods.previousOf(item_0d).call(), 
             item_0b, 
-            "item 0b is previous of item 0d"
+            "item_0b is previous of item_0d"
         )
         assert.equal(
             await Ranking.methods.nextOf(item_0b).call(),
             item_0d, 
-            "item 0d is next of item 0b"
+            "item_0d is next of item_0b"
         )
     })
     it("should decrease points and be excluded from top of list", async function() {
@@ -477,12 +481,12 @@ contract("Ranking", function() {
             utils.zeroBytes32
         ).send({from: accounts[0]});  
         
-        // assert item 0a is gone
-        assert.equal(await Ranking.methods.top().call(), item_0b, "top is item 0f")
+        // assert item_0a is gone
+        assert.equal(await Ranking.methods.top().call(), item_0b, "top is item_0f")
         assert.equal(
             await Ranking.methods.previousOf(item_0b).call(), 
             utils.zeroBytes32, 
-            "null is previous of item 0b (head)"
+            "null is previous of item_0b (head)"
         )  
     })
     it("should include at top", async function() {
@@ -492,13 +496,13 @@ contract("Ranking", function() {
             200000000,
             utils.zeroBytes32
         ).send({from: accounts[0]});
-        assert.equal(await Ranking.methods.top().call(), item_aa, "top is item aa")
-        assert.equal(await Ranking.methods.previousOf(item_aa).call(), utils.zeroBytes32, "item aa previous is null (head)")
-        assert.equal(await Ranking.methods.nextOf(item_aa).call(), item_0b, "item aa next is item 0b")
+        assert.equal(await Ranking.methods.top().call(), item_aa, "top is item_aa")
+        assert.equal(await Ranking.methods.previousOf(item_aa).call(), utils.zeroBytes32, "item_aa previous is null (head)")
+        assert.equal(await Ranking.methods.nextOf(item_aa).call(), item_0b, "item_aa next is item_0b")
         assert.equal(
             await Ranking.methods.previousOf(item_0b).call(), 
             item_aa, 
-            "item aa is previous of item 0b"
+            "item_aa is previous of item_0b"
         )
     })
     it("should include a couple with same points", async function() {
