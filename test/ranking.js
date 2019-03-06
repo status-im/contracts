@@ -4,7 +4,6 @@ const Ranking = require('Embark/contracts/Ranking');
 config({
     contracts: {
         "Ranking": {
-            "args":["$MiniMeTokenFactory", "0x0", "0x0", "Status Test Token", 18, "STT", true],
         }
     }
 });
