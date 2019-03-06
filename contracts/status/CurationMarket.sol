@@ -17,19 +17,19 @@ contract CurationMarket is Controlled {
         ranking.include(_uid, _owner, _points, _before);
     }
 
-    function increase(bytes32 _uid, uint256 _points, bytes32 _oldPrevious, bytes32 _newPrevious) external {
+    function increase(bytes32 _uid, uint256 _points, bytes32 _newPrevious) external {
         require(token.transferFrom(msg.sender, address(this), _points), "Bad transfer");
-        ranking.increase(_uid, _points, _oldPrevious, _newPrevious);
+        ranking.increase(_uid, _points, _newPrevious);
     }
 
-    function decrease(bytes32 _uid, uint256 _points, bytes32 _oldPrevious, bytes32 _newPrevious) external {
+    function decrease(bytes32 _uid, uint256 _points, bytes32 _newPrevious) external {
         uint256 cost = (_points * 6) / 10; //TODO: bound curve
         require(token.transfer(Controlled(address(token)).controller(), _points-cost), "Bad transfer");
         require(token.transferFrom(msg.sender, ranking.ownerOf(_uid), cost), "Bad transfer");
-        ranking.decrease(_uid, _points, _oldPrevious, _newPrevious);
+        ranking.decrease(_uid, _points, _newPrevious);
     }
 
-    function migrate(address destination) external onlyController {
+    function migrate(address payable destination) external onlyController {
         require(destination != address(0), "Bad destination");
         require(token.transfer(destination, token.balanceOf(address(this))), "Bad transfer");
         ranking.changeController(destination);
