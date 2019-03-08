@@ -53,7 +53,6 @@ contract Democracy {
         public 
     {
         token = _token;
-        proposalFactory = _proposalFactory;
         delegationFactory = _delegationFactory;
 
         topics[bytes32(0)] = Topic(
@@ -132,7 +131,7 @@ contract Democracy {
         bytes32 topicId,
         ProposalFactory _proposalFactory,
         bytes32 parentTopic,
-        uint256 stakeValue,
+        uint256 _stakeValue,
         Proposal.QuorumType quorum,
         uint256 startBlockDelay,
         uint256 votingBlockDelay,
@@ -142,14 +141,34 @@ contract Democracy {
     ) 
         external
         selfOnly  
-    {
+    {       
+        newTopic(
+            topicId,
+            _proposalFactory,
+            parentTopic,
+            _stakeValue,
+            quorum,
+            startBlockDelay,
+            votingBlockDelay,
+            tabulationBlockDelay
+        );
+        allowMultiple(topicId, allowedDests, allowedSigs);
+
+    }
+
+    function newTopic(
+        bytes32 topicId,
+        ProposalFactory _proposalFactory,
+        bytes32 parentTopic,
+        uint256 _stakeValue,
+        Proposal.QuorumType quorum,
+        uint256 startBlockDelay,
+        uint256 votingBlockDelay,
+        uint256 tabulationBlockDelay
+    ) private {
         require(address(topics[topicId].delegation) == address(0), "Duplicated topicId");
         require(votingBlockDelay > 0, "Bad parameter votingBlockDelay");
-        uint256 len = allowedDests.length;
-        require(len == allowedSigs.length);
-        Delegation parentDelegation;
-
-        parentDelegation = topics[parentTopic].delegation;
+        Delegation parentDelegation = topics[parentTopic].delegation;
         require(address(parentDelegation) != address(0), "Invalid parent topic");
 
         topics[topicId] = Topic(
@@ -162,13 +181,21 @@ contract Democracy {
             votingBlockDelay,
             tabulationBlockDelay
         );
-        Topic storage topic = topics[topicId];
+    }
 
+    function allowMultiple(
+        bytes32 topicId,
+        address[] memory allowedDests,
+        bytes4[] memory allowedSigs 
+    ) private {
+        uint256 len = allowedDests.length;
+        require(len == allowedSigs.length);
+        Topic storage topic = topics[topicId];
         for(uint i = 0; i > len; i++) {
             topic.allowance[allowedDests[i]][allowedSigs[i]] = true;
         }
-
     }
+
 
     function changeTopicAllowance(
         bytes32 _topicId, 
@@ -189,9 +216,9 @@ contract Democracy {
         }
     }
 
-    function setProposalFactory(ProposalFactory _proposalFactory) external selfOnly {
+    function setProposalFactory(bytes32 topicId, ProposalFactory _proposalFactory) external selfOnly {
         require(address(_proposalFactory) != address(0), "Bad call");
-        proposalFactory = _proposalFactory;
+        topics[topicId].proposalFactory = _proposalFactory;
     }
 
     function setToken(MiniMeToken _token) external selfOnly {
