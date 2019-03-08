@@ -11,7 +11,9 @@ import "./ProposalAbstract.sol";
  */
 contract ProposalBase is ProposalAbstract, MessageSigned {
 
-
+    /**
+     * @notice constructs a "ProposalAbstract Library Contract" for Instance and ProposalFactory
+     */
     constructor() 
         public
     {
@@ -19,6 +21,15 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         voteBlockEnd = uint256(-1);
     }
 
+    /** 
+     * @notice include a merkle root of vote signatures 
+     * @dev votes can be included as bytes32 hash(signature), in a merkle tree format, 
+     * makes possible:
+     * - include multiple signatures by the same cost 
+     * - voters don't have to pay anything to vote 
+     * - the cost of ballot processing can be subsided to the party interested in the outcome
+     * @param _signatures merkle root of keccak256(address(this),uint8(vote))` leaf
+     */
     function voteSigned(bytes32 _signatures)
         external
     {
@@ -27,6 +38,14 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         signatures.push(_signatures);
     } 
 
+    /**
+     * @notice include `msg.sender` vote
+     * @dev votes can be included by a direct call for contracts to vote directly
+     * contracts can also delegate to a externally owned account and submit by voteSigned method
+     * still important that contracts are able to vote directly is to allow a multisig to take a decision
+     * this is important because the safest delegates would be a Multisig
+     * @param _vote vote 
+     */
     function voteDirect(Vote _vote)
         external
     {
@@ -35,6 +54,10 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         voteMap[msg.sender] = _vote;
     } 
 
+    /**
+     * @notice tabulates influence of a direct vote
+     * @param _voter address which called voteDirect
+     */
     function tabulateDirect(address _voter) 
         external
     {
@@ -44,7 +67,13 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         setTabulation(_voter, _voter, vote );
     }
 
-
+    /**
+     * @notice tabulate influence of signed vote
+     * @param _vote vote used in signature
+     * @param _position position where the signature is sealed
+     * @param _proof merkle proof
+     * @param _signature plain signature used to produce the merkle leaf
+     */
     function tabulateSigned(Vote _vote, uint256 _position, bytes32[] calldata _proof, bytes calldata _signature) 
         external
     {
@@ -56,27 +85,53 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         setTabulation(_voter, _voter, _vote);
     }
 
-    function tabulateDelegated(address _voter) 
+    /**
+     * @notice tabulates influence of non voter to his nearest delegate that voted
+     * @dev might run out of gas, to prevent this, precompute the delegation
+     * Should be called every time a nearer delegate tabulate their vote
+     * @param _abstainer holder which not voted but have a delegate that voted
+     */
+    function tabulateDelegated(address _abstainer) 
         external
     {
         require(block.number > voteBlockEnd, "Voting running");
-        (address _claimer, Vote _vote) = findNearestDelegatable(_voter); // try finding first delegate from chain which voted
-        setTabulation(_voter, _claimer, _vote);
+        (address _claimer, Vote _vote) = findNearestDelegatable(_abstainer); // try finding first delegate from chain which voted
+        setTabulation(_abstainer, _claimer, _vote);
     }   
 
+    /** 
+     * @notice precomputes a delegate vote based on current votes tabulated
+     * @dev to precompute a very long delegate chain, go from the end to start with _clean false. 
+     * @param _start who will have delegate precomputed
+     * @param _clean if true dont use precomputed results 
+     * TODO: fix long delegate chain recompute in case new votes
+     */
     function precomputeDelegation(address _start, bool _clean) external {
         require(block.number > voteBlockEnd, "Voting running");
         cacheDelegation(_start,_clean);
     }
     
-    /**
-    * Quorum types:
-     - qualified majority 60% + 1 of all influence (change rules)
-     - absolute majority: 50% + 1 of all influence (agregate rules)
-     - simple majority: 50% +1 of participants influence  (non critical changes)
+    /** 
+     * TODO: 
+     * veto -> function that can run while is voting, in a block period just for veto collection, and while tabulation. 
+     * veto is a different delegate chain, which can disable delegator from getting votes tabulated
+     * veto can be done by any delegate on the chain of a user
+     * function veto(address _abstainer) external;
      */
-
-    
+     
+    /**
+     * TODO:
+     * cannot have votes claimed for votes: accumulators(hold more than 1%) and burned SNT (held by TokenController address).  
+     * when informed to contract, these accounts reduces totalSupply used for Qualified and Absolute quorums. 
+     * if someone rich wants to use their influence, they will have to devide their balance in multiple addresses and delegate them to one address
+     * the objective is to make one rule for all on how to remove "out of circulation" in addresses like "Dev Reserve" 
+     * this enhances the democracy, otherwise this locked accounts will end up influence of defaultDelegate
+     * function invalidate(address _accumulator) external;
+     */
+     
+    /**
+     * @notice finalizes and set result
+     */
     function finalize()
         external
     {
@@ -100,6 +155,10 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         result = approved ? Vote.Approve : Vote.Reject;
     }
 
+    /**
+     * @notice wipes all from state
+     * @dev once the proposal result was read, it might be cleared up to free up state
+     */
     function clear() 
         external
         onlyController 

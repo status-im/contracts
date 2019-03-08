@@ -12,6 +12,12 @@ interface Proposal {
         Approve
     }
     
+    /**
+     * Quorum types:
+     * - qualified majority 60% + 1 of all influence (change rules)
+     * - absolute majority: 50% + 1 of all influence (agregate rules)
+     * - simple majority: 50% +1 of participants influence  (non critical changes)
+    */
     enum QuorumType {
         Qualified, //60% of all influence
         Absolute, //50% of all influence
