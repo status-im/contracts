@@ -17,7 +17,7 @@ contract DelegationFactory is InstanceFactory {
     { }
 
     function createDelegation(
-        Delegation _parent
+        Delegation /*_parent*/
     ) 
         external 
         returns (DelegationAbstract instance)

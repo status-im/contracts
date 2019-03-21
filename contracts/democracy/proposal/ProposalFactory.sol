@@ -17,13 +17,13 @@ contract ProposalFactory is InstanceFactory {
     { }
 
     function createProposal(
-        MiniMeToken _token,
-        Delegation _delegation,
-        bytes32 _dataHash,
-        uint256 _tabulationBlockDelay,
-        uint256 _blockStart,
-        uint256 _blockEndDelay,
-        Proposal.QuorumType _quorum
+        MiniMeToken /*_token*/,
+        Delegation /*_delegation*/,
+        bytes32 /*_dataHash*/,
+        uint256 /*_tabulationBlockDelay*/,
+        uint256 /*_blockStart*/,
+        uint256 /*_blockEndDelay*/,
+        Proposal.QuorumType /*_quorum*/
     ) 
         external
         returns (ProposalAbstract instance)
