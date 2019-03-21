@@ -20,8 +20,8 @@ contract ProposalInit is ProposalAbstract {
         uint256 _tabulationBlockDelay,
         uint256 _blockStart,
         uint256 _blockEndDelay,
-        QuorumType _quorum
-    ) 
+        Proposal.QuorumType _quorum
+    )
         external
     {
         require(address(token) == address(0), "Already initialized");
@@ -34,6 +34,17 @@ contract ProposalInit is ProposalAbstract {
         quorum = _quorum;
     }
 
+    function voteSigned(bytes32) external{}
+    function voteDirect(Vote) external{}
+    function tabulateDirect(address ) external{}
+    function tabulateSigned(Vote, uint256, bytes32[] calldata, bytes calldata) external{}
+    function tabulateDelegated(address) external{}
+    function precomputeDelegation(address, bool) external{}
+    function finalize() external{}
+    function clear() external{}
+    function isApproved() external view returns (bool){}
+    function isFinalized() external view returns (bool){}
+    function getVoteHash(Vote) external view returns (bytes32){}
 
 
 }
