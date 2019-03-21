@@ -219,6 +219,18 @@ contract StickerMarket is Controlled, NonfungibleToken, ApproveAndCallFallBack {
     }
 
     /**
+     * @notice changes contenthash of `_packId`, can only be called by controller
+     * @param _packId which market position is being altered
+     * @param _contenthash new contenthash
+     */
+    function setPackContenthash(uint256 _packId, bytes calldata _contenthash) 
+        external 
+        onlyController 
+    {
+        packs[_packId].contenthash = _contenthash;
+    }
+    
+    /**
      * @notice removes all market data about a marketed pack, can only be called by listing owner or market controller, and when market is open
      * @param _packId position to be deleted
      */
