@@ -35,6 +35,10 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
     {
         require(block.number >= blockStart, "Voting not started");
         require(block.number <= voteBlockEnd, "Voting ended");
+        emit VoteSignatures(
+            signatures.length, 
+            _signatures
+        );
         signatures.push(_signatures);
     } 
 
@@ -51,7 +55,9 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
     {
         require(block.number >= blockStart, "Voting not started");
         require(block.number <= voteBlockEnd, "Voting ended");
+        require(_vote != Vote.Null, "Bad _vote parameter");
         voteMap[msg.sender] = _vote;
+        emit Voted(_vote, msg.sender);
     } 
 
     /**
@@ -61,7 +67,7 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
     function tabulateDirect(address _voter) 
         external
     {
-        require(block.number > voteBlockEnd, "Voting running");
+        require(block.number > voteBlockEnd, "Block end not reached");
         Vote vote = voteMap[_voter];
         require(vote != Vote.Null, "Not voted");
         setTabulation(_voter, _voter, vote );
@@ -77,11 +83,12 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
     function tabulateSigned(Vote _vote, uint256 _position, bytes32[] calldata _proof, bytes calldata _signature) 
         external
     {
-        require(block.number > voteBlockEnd, "Voting running");
+        require(block.number > voteBlockEnd, "Block end not reached");
         require(MerkleProof.verifyProof(_proof, signatures[_position], keccak256(_signature)), "Invalid proof");
-        address _voter = recoverAddress(keccak256(abi.encodePacked(address(this), _vote)), _signature);
-        require(voteMap[_voter] == Vote.Null, "Already tabulated");
+        address _voter = recoverAddress(getSignHash(voteHash(_vote)), _signature);
+        require(voteMap[_voter] == Vote.Null, "Already voted");
         voteMap[_voter] = _vote;
+        emit Voted(_vote, _voter);
         setTabulation(_voter, _voter, _vote);
     }
 
@@ -89,14 +96,14 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      * @notice tabulates influence of non voter to his nearest delegate that voted
      * @dev might run out of gas, to prevent this, precompute the delegation
      * Should be called every time a nearer delegate tabulate their vote
-     * @param _abstainer holder which not voted but have a delegate that voted
+     * @param _source holder which not voted but have a delegate that voted
      */
-    function tabulateDelegated(address _abstainer) 
+    function tabulateDelegated(address _source) 
         external
     {
-        require(block.number > voteBlockEnd, "Voting running");
-        (address _claimer, Vote _vote) = findNearestDelegatable(_abstainer); // try finding first delegate from chain which voted
-        setTabulation(_abstainer, _claimer, _vote);
+        require(block.number > voteBlockEnd, "Block end not reached");
+        (address _claimer, Vote _vote) = findNearestDelegatable(_source); // try finding first delegate from chain which voted
+        setTabulation(_source, _claimer, _vote);
     }   
 
     /** 
@@ -107,7 +114,7 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      * TODO: fix long delegate chain recompute in case new votes
      */
     function precomputeDelegation(address _start, bool _clean) external {
-        require(block.number > voteBlockEnd, "Voting running");
+        require(block.number > voteBlockEnd, "Block end not reached");
         cacheDelegation(_start,_clean);
     }
     
@@ -116,7 +123,7 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      * veto -> function that can run while is voting, in a block period just for veto collection, and while tabulation. 
      * veto is a different delegate chain, which can disable delegator from getting votes tabulated
      * veto can be done by any delegate on the chain of a user
-     * function veto(address _abstainer) external;
+     * function veto(address _source) external;
      */
      
     /**
@@ -135,8 +142,8 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
     function finalize()
         external
     {
-        require(block.number > voteBlockEnd, "Voting running");
-        require(lastTabulationBlock + tabulationBlockDelay > block.number, "Tabulation running");
+        require(block.number > voteBlockEnd, "Block end not reached");
+        require(lastTabulationBlock + tabulationBlockDelay > block.number, "Tabulation end not reached");
         require(result == Vote.Null, "Already finalized");
         uint256 approvals = results[uint8(Vote.Approve)];
         bool approved;
@@ -176,28 +183,57 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         return result != Vote.Null;
     }  
 
+    function checkSignedVote(
+        Vote _vote,
+        uint256 _position,
+        bytes32[] calldata _proof,
+        bytes calldata _signature
+    ) 
+        external 
+        view 
+        returns (address) 
+    {
+        require(MerkleProof.verifyProof(_proof, signatures[_position], keccak256(_signature)), "Invalid proof");
+        return recoverAddress(getSignHash(voteHash(_vote)), _signature);
+    }
 
-    function setTabulation(address _voter, address _claimer, Vote _vote) internal {
+    function getVoteHash(Vote _vote) external view returns (bytes32) { 
+        return voteHash(_vote);
+    }
+
+    function getVotePrefixedHash(Vote _vote) external view returns (bytes32) { 
+        return getSignHash(voteHash(_vote));
+    }
+
+    function setTabulation(address _source, address _claimer, Vote _vote) internal {
         require(_vote != Vote.Null, "Cannot be Vote.Null");
-        uint256 voterBalance = token.balanceOfAt(_voter, voteBlockEnd);
-        address currentClaimer = tabulated[_voter];
+        uint256 voterBalance = token.balanceOfAt(_source, voteBlockEnd);
+        address currentClaimer = tabulated[_source];
+        tabulated[_source] = _claimer;
+        emit Claimed(_vote, _claimer, _source);
         if(currentClaimer != address(0))
         {
-            require(currentClaimer != _voter, "Voter already tabulated");
+            require(currentClaimer != _source, "Voter already tabulated");
             require(currentClaimer != _claimer, "Claimer already tabulated");
             Vote oldVote = voteMap[currentClaimer];
-            require(oldVote != _vote, "Doesn't changes tabulation");
-            results[uint8(oldVote)] -= voterBalance;
-        }
-        tabulated[_voter] = _claimer;
-        results[uint8(_vote)] += voterBalance;
+            if(oldVote == _vote) {
+                return;
+            }
+            emit PartialResult(oldVote, results[uint8(oldVote)] -= voterBalance);
+        } 
+        emit PartialResult(_vote, results[uint8(_vote)] += voterBalance);
         lastTabulationBlock = block.number;
     }
 
-    function findNearestDelegatable(address _voter) internal view returns (address claimer, Vote vote){
-        vote = voteMap[_voter];
+    function voteHash(Vote _vote) internal view returns (bytes32) { 
+        require(_vote != Vote.Null, "Bad _vote parameter");
+        return keccak256(abi.encodePacked(address(this), _vote));
+    }
+
+    function findNearestDelegatable(address _source) internal view returns (address claimer, Vote vote){
+        vote = voteMap[_source];
         require(vote == Vote.Null, "Not delegatable");
-        claimer = _voter; // try finding first delegate from chain which voted
+        claimer = _source; // try finding first delegate from chain which voted
         while(vote == Vote.Null) {
             address claimerDelegate = delegationOf[claimer];
             if(claimerDelegate == address(0)){
@@ -209,14 +245,14 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         }
     }
 
-    function cacheDelegation(address _delegator, bool _clean) private returns (address delegate) {
-        delegate =  _delegator;
-        if(voteMap[_delegator] == Vote.Null) { 
+    function cacheDelegation(address _source, bool _clean) private returns (address delegate) {
+        delegate =  _source;
+        if(voteMap[_source] == Vote.Null) { 
             if(!_clean) {
                 delegate = delegationOf[delegate];
             }
             if(delegate == address(0)){
-                delegate = delegation.delegatedToAt(_delegator, voteBlockEnd); //get delegate chain tail
+                delegate = delegation.delegatedToAt(_source, voteBlockEnd); //get delegate chain tail
             }
         }
         
@@ -224,7 +260,7 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
         if(voteMap[delegate] == Vote.Null) {
             delegate = cacheDelegation(delegate, _clean);
         }
-        delegationOf[_delegator] = delegate;
+        delegationOf[_source] = delegate;
         return delegate;
         
     }
