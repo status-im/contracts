@@ -49,17 +49,6 @@ module.exports = {
     }
   },
 
-  development: {
-    deployment: {
-      accounts: [
-        {
-          privateKey: "b2ab40d549e67ba67f278781fec03b3a90515ad4d0c898a6326dd958de1e46fa",
-          balance: "5 ether"  // You can set the balance of the account in the dev environment
-                              // Balances are in Wei, but you can specify the unit with its name
-        }
-      ]
-    }
-  },
   testnet: {
     contracts: {
       "MiniMeTokenFactory": {
