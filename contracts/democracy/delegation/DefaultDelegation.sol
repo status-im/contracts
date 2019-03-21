@@ -16,6 +16,7 @@ contract DefaultDelegation is Delegation, Controlled {
      */
     function delegate(address _to) external onlyController {
         defaultDelegate = _to;
+        emit Delegate(address(0), _to);
     }
 
     function delegatedTo(address)
