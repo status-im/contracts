@@ -5,7 +5,11 @@ pragma solidity >=0.5.0 <0.6.0;
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)  
  */
 interface Proposal {
-
+    event VoteSignatures(uint256 position, bytes32 merkleTree);
+    event Voted(Vote indexed vote, address voter);
+    event PartialResult(Vote indexed vote, uint256 total);
+    event Claimed(Vote indexed vote, address claimer, address source);
+    
     enum Vote { 
         Null,
         Reject, 
@@ -34,6 +38,7 @@ interface Proposal {
     function clear() external;
     function isApproved() external view returns (bool);
     function isFinalized() external view returns (bool);
+    function getVoteHash(Vote _vote) external view returns (bytes32);
 
 
 }
