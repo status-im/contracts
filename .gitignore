@@ -7,6 +7,9 @@ __pycache__/
 .embark/
 chains.json
 .password
+config/livenet/password
+config/production/password
+embarkArtifacts
 
 # egg-related
 viper.egg-info/
