@@ -5,16 +5,16 @@ interface Delegation {
     event Delegate(address who, address to);
 
     /** 
-     * @notice Changes the delegation of `msg.sender` to `_to`. if _to 0x00: delegate to self. 
-     *         In case of having a parent proxy, if never defined, fall back to parent proxy. 
-     *         If once defined and want to delegate to parent proxy, set `_to` as parent address. 
-     * @param _to To what address the caller address will delegate to.
+     * @notice Set `msg.sender` delegate.
+     * `_to == address(0)` resets to parent delegation
+     * `_to == msg.sender` ends delegate chain.
+     * @param _to Address the caller will delegate to.
      */
     function delegate(address _to) external;
 
     /**
-     * @notice Reads `_who` configured delegation in this level, 
-     *         or from parent level if `_who` never defined/defined to parent address.
+     * @notice Reads `_who` configured delegation in this level or
+     * from parent level if `_who` never defined/reset.
      * @param _who What address to lookup.
      * @return The address `_who` choosen delegate to.
      */ 
@@ -24,18 +24,8 @@ interface Delegation {
         returns (address directDelegate);
     
     /**
-     * @notice Reads the final delegate of `_who` at block number `_block`.
-     * @param _who Address to lookup.
-     * @return Final delegate address.
-     */
-    function delegationOf(address _who)
-        external
-        view
-        returns(address finalDelegate);
-
-    /**
-     * @notice Reads `_who` configured delegation at block number `_block` in this level, 
-     *         or from parent level if `_who` never defined/defined to parent address.
+     * @notice Reads `_who` configured delegation at block number `_block` or 
+     * from parent level if `_who` never defined/reset.
      * @param _who What address to lookup.
      * @param _block Block number of what height in history.
      * @return The address `_who` choosen delegate to.
@@ -47,6 +37,16 @@ interface Delegation {
         external
         view
         returns (address directDelegate);
+    
+    /**
+     * @notice Reads the final delegate of `_who` at block number `_block`.
+     * @param _who Address to lookup.
+     * @return Final delegate address.
+     */
+    function delegationOf(address _who)
+        external
+        view
+        returns(address finalDelegate);
     
     /**
      * @notice Reads the final delegate of `_who` at block number `_block`.

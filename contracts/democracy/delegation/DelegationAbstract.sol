@@ -24,9 +24,9 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
     }
 
     /** 
-     * @dev Changes the delegation of `_from` to `_to`. if _to 0x00: delegate to self. 
-     *         In case of having a parent proxy, if never defined, fall back to parent proxy. 
-     *         If once defined and want to delegate to parent proxy, set `_to` as parent address. 
+     * @dev Changes the delegation of `_from` to `_to`. 
+     * If `_to` is set to 0x00, fall to parent proxy.
+     * If `_to == _from` removes delegation.
      * @param _from Address delegating.
      * @param _to Address delegated.
      */
@@ -94,9 +94,14 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
             }
         }
         DelegateSet memory d = getMemoryAt(checkpoints, _block);
-        // Case user set delegate to parentDelegation address
-        if (d.to == address(parentDelegation)) {
-            return Delegation(parentDelegation).delegatedToAt(_who, _block); 
+        
+        // Case user unset delegation
+        if (d.to == address(0)) {
+            if (address(parentDelegation) != address(0)) {
+                return Delegation(parentDelegation).delegatedToAt(_who, _block);
+            } else {
+                return _who; 
+            }
         }
         return d.to;
     }
@@ -116,10 +121,10 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
         returns(address finalDelegate)
     {
         finalDelegate = findDelegatedToAt(_who, _block);
-        if (finalDelegate != _who) { //_who is delegating?
-            return findDelegationOfAt(finalDelegate, _block); //load the delegation of _who delegation
+        if (finalDelegate == _who) { //_who is delegating to someone?
+            return _who; //no, reached the endpoint of delegation
         } else {
-            return _who; //reached the endpoint of delegation
+            return findDelegationOfAt(finalDelegate, _block);  //yes, load the delegation of _who delegation
         }
              
     } 
