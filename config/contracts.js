@@ -39,10 +39,13 @@ module.exports = {
       },
       "DelegationFactory": {
         "args": ["$DelegationBase", "$DelegationInit", "0x0"]
-      },
-      "Democracy": {
-        "args": ["$MiniMeToken", "$DelegationFactory", "0x0"]
+      },        
+      "ProposalBase": {},
+      "ProposalInit": {},
+      "ProposalFactory": {
+          "args": ["$ProposalBase", "$ProposalInit", "0x0"]
       }
+      
     }
   },
 
