@@ -22,12 +22,16 @@ contract DelegatedCall {
             _; //normal execution 
         } else {
             (bool success, bytes memory returnData) = _target.delegatecall(msg.data);
-            require(success, "Delegated Call failed"); 
-
-            //exit-return delegatecall returnData
-            assembly {
-                return(add(returnData, 0x20), returnData) 
+            if(success){
+                assembly {
+                    return(add(returnData, 0x20), returnData) 
+                }
+            } else {
+                assembly {
+                    revert(add(returnData, 0x20), returnData) 
+                }
             }
+
         }
     }
 
