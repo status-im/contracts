@@ -13,17 +13,26 @@ import "../common/Controlled.sol";
         a reply from the recipient.
  */
 contract MessageTribute is Controlled {
-    event DefaultFee(uint256 _value);
-    event CustomFee(address indexed _user, uint256 _value);
-    event ResetFee(address indexed _user);
+    event DefaultFee(uint256 value);
+    event CustomFee(address indexed user, uint256 value);
+    event PublicMessage(address indexed user, bytes message);
+    event ResetFee(address indexed user);
+    event Stopped(bool stop);
 
     struct Fee {
         bool custom;
         uint128 value; 
     }
 
+    bool public stopped;
     uint256 public defaultValue;
     mapping(address => Fee) public feeCatalog;
+    mapping(address => bytes) contenthash;
+
+    modifier notStopped {
+        require(!stopped, "Contract disabled.");
+        _;
+    }
 
     constructor(uint256 _defaultValue) public {
         defaultValue = _defaultValue;
@@ -31,20 +40,49 @@ contract MessageTribute is Controlled {
     }
 
     /**
-     * @notice Set tribute for accounts or everyone
-     * @param _value Required tribute value (using token from constructor)
+     * @notice Set tribute for everyone
+     * @param _value Required tribute value 
      */
-    function setRequiredTribute(uint256 _value) external {
+    function setRequiredTribute(uint256 _value) external notStopped {
         feeCatalog[msg.sender] = Fee(true, uint128(_value));
         emit CustomFee(msg.sender, _value);
     }
 
+
     /**
-     * @notice Reset to default value
+     * @notice Set tribute for everyone and public message
+     * @param _value Required tribute value 
+     * @param _contenthash Contenthash of Public Message
      */
-    function reset() external {
-        delete feeCatalog[msg.sender];
-        emit ResetFee(msg.sender);
+    function setRequiredTribute(uint256 _value, bytes calldata _contenthash) external notStopped {
+        feeCatalog[msg.sender] = Fee(true, uint128(_value));
+        emit CustomFee(msg.sender, _value);
+        contenthash[msg.sender] = _contenthash;
+        emit PublicMessage(msg.sender, _contenthash);
+    }
+
+    /**
+     * @notice Set public message
+     * @param _contenthash Contenthash of Public Message
+     */
+    function updateMessage(bytes calldata _contenthash) external notStopped {
+        contenthash[msg.sender] = _contenthash;
+        emit PublicMessage(msg.sender, _contenthash);
+    }
+
+    /**
+     * @notice Resets account params
+     */
+    function reset(bool value, bool message) external notStopped {
+        if(value){
+            delete feeCatalog[msg.sender];
+            emit ResetFee(msg.sender);
+        }
+        if(message) {
+            delete contenthash[msg.sender];
+            emit PublicMessage(msg.sender, new bytes(0));
+        }
+        
     }
     
     /**
@@ -54,6 +92,16 @@ contract MessageTribute is Controlled {
     function setDefaultValue(uint256 _defaultValue) external onlyController {
         defaultValue = _defaultValue;
         emit DefaultFee(_defaultValue);
+    }
+
+
+    /**
+     * @notice controller can stop the contract
+     * @param _defaultValue fee for unset or reseted users. 
+     */
+    function setStopped(bool stop) external onlyController {
+        stopped = stop;
+        emit Stopped(stop);
     }
 
     /**
@@ -66,6 +114,15 @@ contract MessageTribute is Controlled {
     {
         Fee storage fee = feeCatalog[_to];
         return fee.custom ? uint256(fee.value) : defaultValue;
+    }
+
+    /**
+     * @notice Obtain public message content hash
+     * @param _who Account reading the message from.
+     * @return contenthash
+     */
+    function getContenthash(address _who) external view returns(bytes memory) {
+        return contenthash[_who];
     }
 
 }
