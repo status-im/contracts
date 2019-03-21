@@ -21,6 +21,27 @@ config({
       }
   });
 
+  /**
+   *  Delegations: Root, Sticker Market, ENS Usernames, Version Listings 
+   *  Functions:
+   *   - Root
+   *   - Sticker Market
+   *        - change controller : Absolute Majority 
+   *        - change rates : Simple Majority 
+   *        - purgconte pack : Simple Majority
+   *   - ENS Usernames
+   *        - change controller : Simple Majority
+   *        - migrate registry : 
+   *        - change price
+   *   - Version Listing
+   *        - change developer address
+   *        - remove version
+   *        - add release category (android,ios,linux,etc) 
+   * 
+   * 
+   * 
+   */
+
 contract("DelegationBase", function() {
     this.timeout(0);
     var defaultDelegate;
@@ -129,6 +150,7 @@ contract("DelegationBase", function() {
     })    
 
     it("Child a2 delegate to a4", async function () {
+  
         result = await ChildDelegation.methods.delegate(accounts[4]).send({from: accounts[2]})
         const delegateArgs = result.events.Delegate.returnValues;
         assert.equal(delegateArgs.who, accounts[2])
@@ -137,6 +159,7 @@ contract("DelegationBase", function() {
         result = await ChildDelegation.methods.delegatedTo(accounts[2]).call()
         assert.equal(result, accounts[4])
         
+        
         result = await ChildDelegation.methods.delegationOf(accounts[0]).call()
         assert.equal(result, defaultDelegate)
         result = await ChildDelegation.methods.delegationOf(accounts[1]).call()
@@ -144,7 +167,27 @@ contract("DelegationBase", function() {
         result = await ChildDelegation.methods.delegationOf(accounts[2]).call()
         assert.equal(result, defaultDelegate)
 
-        
+         
     })    
 
+    it("default delegate should be able to delegate", async function () {
+        await ChildDelegation.methods.delegate(accounts[6]).send({from: accounts[6]})
+        newDelegate = await ChildDelegation.methods.delegationOf(accounts[6]).call()
+        result = await ChildDelegation.methods.delegate(accounts[6]).send({from: defaultDelegate})
+        const delegateArgs = result.events.Delegate.returnValues;
+        assert.equal(delegateArgs.who, defaultDelegate)
+        assert.equal(delegateArgs.to, accounts[6])
+        
+        result = await ChildDelegation.methods.delegatedTo(defaultDelegate).call()
+        assert.equal(result, accounts[6])
+        
+        result = await ChildDelegation.methods.delegationOf(accounts[0]).call()
+        assert.equal(result, newDelegate)
+        result = await ChildDelegation.methods.delegationOf(accounts[1]).call()
+        assert.equal(result, newDelegate)
+        result = await ChildDelegation.methods.delegationOf(accounts[2]).call()
+        assert.equal(result, newDelegate)
+
+        
+    })   
 })
