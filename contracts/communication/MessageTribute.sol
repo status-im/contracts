@@ -97,11 +97,11 @@ contract MessageTribute is Controlled {
 
     /**
      * @notice controller can stop the contract
-     * @param _defaultValue fee for unset or reseted users. 
+     * @param _stop true disables alterting the contract
      */
-    function setStopped(bool stop) external onlyController {
-        stopped = stop;
-        emit Stopped(stop);
+    function setStopped(bool _stop) external onlyController {
+        stopped = _stop;
+        emit Stopped(_stop);
     }
 
     /**
