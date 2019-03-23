@@ -32,6 +32,30 @@ contract ProposalInit is ProposalAbstract {
         blockStart = _blockStart;
         voteBlockEnd = blockStart + _blockEndDelay;
         quorum = _quorum;
+        controller = msg.sender;
+    }
+
+    function createProposal(
+        MiniMeToken _token,
+        Delegation _delegation,
+        bytes32 _dataHash,
+        uint256 _tabulationBlockDelay,
+        uint256 _blockStart,
+        uint256 _blockEndDelay,
+        Proposal.QuorumType _quorum,
+        address payable _controller
+    )
+        external
+    {
+        require(address(token) == address(0), "Already initialized");
+        delegation = _delegation;
+        token = _token;
+        tabulationBlockDelay = _tabulationBlockDelay;
+        dataHash = _dataHash;
+        blockStart = _blockStart;
+        voteBlockEnd = blockStart + _blockEndDelay;
+        quorum = _quorum;
+        controller = _controller;
     }
 
     function voteSigned(bytes32) external{}
