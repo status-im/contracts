@@ -207,36 +207,35 @@ exports.ensureException = function(error) {
     assert(isException(error), error.toString());
 };
 
-const NO_ERROR = 0;
-const FATAL_ERROR = 1;
-const OUT_OF_GAS = 2;
-const USER_ERROR = 3;
 
-exports.getEVMException = async function(sendFn) {
+exports.getEVMException = async function(sendFn, sender=null, gasLimit=8000000) {
     var error = null;
     try {
-        await sendFn.estimateGas();
+        await sendFn.estimateGas({ from: sender, gas: gasLimit});
     } catch(e) {
         var a = e.toString().split(": ");
+        
         if(a[0] != "RuntimeError" || a[1] != "VM Exception while processing transaction") {
           throw e;
         }
         
-        switch (a[3]){
+        switch (a[2]){
           case "out of gas":
           case "invalid opcode":
           case "invalid JUMP":
           case "stack overflow":
           case "revert":
-            error = a[3]
+            error = a[2]
             break;
           default:
-            if(a[3].startsWith("revert ")){
-              error = a[3].substring(7)
+            if(a[2].startsWith("revert ")){
+              error = a[2].substring(7)
             } else {
-              error = a[3];
+              error = a[2];
             }  
         }
+    } finally {
+        return error;
     }
 }
 
