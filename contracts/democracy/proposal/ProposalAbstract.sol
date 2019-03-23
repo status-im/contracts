@@ -33,4 +33,21 @@ contract ProposalAbstract is InstanceAbstract, Proposal, Controlled {
 
     Vote public result;
 
+    modifier votingPeriod {
+        require(block.number >= blockStart, "Voting not started");
+        require(block.number <= voteBlockEnd, "Voting ended");
+        _;
+    }
+
+    modifier tabulationPeriod {
+        require(block.number > voteBlockEnd, "Voting not ended");
+        require(result == Vote.Null, "Tabulation ended");
+        _;
+    }
+
+    modifier tabulationFinished {
+        require(lastTabulationBlock != 0, "Tabulation not started");
+        require(lastTabulationBlock + tabulationBlockDelay < block.number, "Tabulation not ended");
+        _;
+    }
 }
