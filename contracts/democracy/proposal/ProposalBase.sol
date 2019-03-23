@@ -10,7 +10,7 @@ import "./ProposalAbstract.sol";
  * Store votes and tabulate results for Democracy. Cannot be used stand alone, only as base of Instance.
  */
 contract ProposalBase is ProposalAbstract, MessageSigned {
-
+    
     /**
      * @notice constructs a "ProposalAbstract Library Contract" for Instance and ProposalFactory
      */
@@ -32,9 +32,8 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      */
     function voteSigned(bytes32 _signatures)
         external
+        votingPeriod
     {
-        require(block.number >= blockStart, "Voting not started");
-        require(block.number <= voteBlockEnd, "Voting ended");
         emit VoteSignatures(
             signatures.length, 
             _signatures
@@ -52,9 +51,8 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      */
     function voteDirect(Vote _vote)
         external
+        votingPeriod
     {
-        require(block.number >= blockStart, "Voting not started");
-        require(block.number <= voteBlockEnd, "Voting ended");
         require(_vote != Vote.Null, "Bad _vote parameter");
         voteMap[msg.sender] = _vote;
         emit Voted(_vote, msg.sender);
@@ -66,8 +64,8 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      */
     function tabulateDirect(address _voter) 
         external
+        tabulationPeriod
     {
-        require(block.number > voteBlockEnd, "Block end not reached");
         Vote vote = voteMap[_voter];
         require(vote != Vote.Null, "Not voted");
         setTabulation(_voter, _voter, vote );
@@ -82,8 +80,8 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      */
     function tabulateSigned(Vote _vote, uint256 _position, bytes32[] calldata _proof, bytes calldata _signature) 
         external
+        tabulationPeriod
     {
-        require(block.number > voteBlockEnd, "Block end not reached");
         require(MerkleProof.verifyProof(_proof, signatures[_position], keccak256(_signature)), "Invalid proof");
         address _voter = recoverAddress(getSignHash(voteHash(_vote)), _signature);
         require(voteMap[_voter] == Vote.Null, "Already voted");
@@ -100,8 +98,8 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      */
     function tabulateDelegated(address _source) 
         external
+        tabulationPeriod
     {
-        require(block.number > voteBlockEnd, "Block end not reached");
         (address _claimer, Vote _vote) = findNearestDelegatable(_source); // try finding first delegate from chain which voted
         setTabulation(_source, _claimer, _vote);
     }   
@@ -113,19 +111,16 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      * @param _clean if true dont use precomputed results 
      * TODO: fix long delegate chain recompute in case new votes
      */
-    function precomputeDelegation(address _start, bool _clean) external {
-        require(block.number > voteBlockEnd, "Block end not reached");
+    function precomputeDelegation(
+        address _start,
+        bool _clean
+    ) 
+        external 
+        tabulationPeriod
+    {
         cacheDelegation(_start,_clean);
     }
     
-    /** 
-     * TODO: 
-     * veto -> function that can run while is voting, in a block period just for veto collection, and while tabulation. 
-     * veto is a different delegate chain, which can disable delegator from getting votes tabulated
-     * veto can be done by any delegate on the chain of a user
-     * function veto(address _source) external;
-     */
-     
     /**
      * TODO:
      * cannot have votes claimed for votes: accumulators(hold more than 1%) and burned SNT (held by TokenController address).  
@@ -141,25 +136,12 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
      */
     function finalize()
         external
+        tabulationFinished
     {
-        require(block.number > voteBlockEnd, "Block end not reached");
-        require(lastTabulationBlock + tabulationBlockDelay > block.number, "Tabulation end not reached");
         require(result == Vote.Null, "Already finalized");
-        uint256 approvals = results[uint8(Vote.Approve)];
-        bool approved;
-
-        if(quorum == QuorumType.Simple){
-            uint256 rejects = results[uint8(Vote.Reject)];
-            approved = approvals > rejects;
-        } else {
-            uint256 totalTokens = token.totalSupplyAt(voteBlockEnd);
-            if(quorum == QuorumType.Absolute) {
-                approved = approvals > (totalTokens / 2);
-            } else if(quorum == QuorumType.Qualified) {
-                approved = approvals > (totalTokens * 3) / 5;
-            }
-        }
-        result = approved ? Vote.Approve : Vote.Reject;
+        Vote finalResult = calculateResult();
+        emit FinalResult(finalResult);
+        result = finalResult;
     }
 
     /**
@@ -204,10 +186,38 @@ contract ProposalBase is ProposalAbstract, MessageSigned {
     function getVotePrefixedHash(Vote _vote) external view returns (bytes32) { 
         return getSignHash(voteHash(_vote));
     }
+    
+    /**
+     * @notice get result
+     */
+    function calculateResult()
+        public
+        view
+        returns(Vote finalResult)
+    {
+        uint256 approvals = results[uint8(Vote.Approve)];
+        bool approved;
 
+        if(quorum == QuorumType.Simple){
+            uint256 rejects = results[uint8(Vote.Reject)];
+            approved = approvals > rejects;
+        } else {
+            uint256 totalTokens = token.totalSupplyAt(voteBlockEnd);
+            if(quorum == QuorumType.Absolute) {
+                approved = approvals > (totalTokens / 2);
+            } else if(quorum == QuorumType.Qualified) {
+                approved = approvals > (totalTokens * 3) / 5;
+            }
+        }
+        finalResult = approved ? Vote.Approve : Vote.Reject;
+    }
+    
     function setTabulation(address _source, address _claimer, Vote _vote) internal {
         require(_vote != Vote.Null, "Cannot be Vote.Null");
         uint256 voterBalance = token.balanceOfAt(_source, voteBlockEnd);
+        if(voterBalance == 0) {
+            return;
+        }
         address currentClaimer = tabulated[_source];
         tabulated[_source] = _claimer;
         emit Claimed(_vote, _claimer, _source);
