@@ -25,17 +25,11 @@ contract InstanceFactory is PrototypeRegistry {
      * @notice creates instance, passing msg.data to Instance constructor that delegatecalls to init 
      * @dev should be the same method signature of `init` function 
      */
+     
     function ()
         external 
     {
-        Instance instance = newInstance(
-            base,
-            prototypes[address(base)].init,
-            msg.data,
-            uint256(keccak256(abi.encodePacked(msg.sender)))
-        );
-        emit InstanceCreated(instance);
-        //TODO: Assembly return instance 
+        defaultCreate();
     }
 
     function newInstance(
@@ -71,5 +65,16 @@ contract InstanceFactory is PrototypeRegistry {
             setUpgradable(_base, base, true);
         }
         base = _base;
+    }
+
+        /** 
+     * @notice creates instance, passing msg.data to Instance constructor that delegatecalls to init 
+     * @dev should be the same method signature of `init` function 
+     */
+    function defaultCreate()
+        internal returns (Instance instance)
+    {
+        instance = new Instance(base, prototypes[address(base)].init, msg.data);
+        emit InstanceCreated(instance);
     }
 }
