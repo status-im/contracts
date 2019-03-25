@@ -9,7 +9,7 @@ import "./Delegation.sol";
  */
 contract DelegationAbstract is InstanceAbstract, Delegation {
     struct DelegateSet {
-        uint128 fromBlock; //when this was updated
+        uint96 fromBlock; //when this was updated
         address to; //who recieved this delegaton
     }
     //default delegation proxy, being used when user didn't set any delegation at this level.
@@ -36,7 +36,7 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
         DelegateSet[] storage fromHistory = delegations[_from];
     
         //Add the new delegation
-        _newFrom.fromBlock = uint128(block.number);
+        _newFrom.fromBlock = uint96(block.number);
         _newFrom.to = _to; //delegate address
 
         fromHistory.push(_newFrom); //register `from` delegation update;
@@ -87,25 +87,24 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
 
         //In case there is no registry
         if (checkpoints.length == 0) {
-            if (address(parentDelegation) != address(0)) {
-                return Delegation(parentDelegation).delegatedToAt(_who, _block);
-            } else {
-                return _who; 
-            }
+            return getDefaultDelegate(_who, _block);
         }
         DelegateSet memory d = getMemoryAt(checkpoints, _block);
         
         // Case user unset delegation
         if (d.to == address(0)) {
-            if (address(parentDelegation) != address(0)) {
-                return Delegation(parentDelegation).delegatedToAt(_who, _block);
-            } else {
-                return _who; 
-            }
+            return getDefaultDelegate(_who, _block);
         }
         return d.to;
     }
 
+    function getDefaultDelegate(address _who, uint256 _block) internal view returns(address) {
+        if (address(parentDelegation) != address(0)) {
+            return parentDelegation.delegatedToAt(_who, _block);
+        } else {
+            return _who; 
+        }
+    }
     /**
      * @notice Reads the final delegate of `_who` at block number `_block`.
      * @param _who Address to lookup.
@@ -121,11 +120,8 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
         returns(address finalDelegate)
     {
         finalDelegate = findDelegatedToAt(_who, _block);
-        if (finalDelegate == _who) { //_who is delegating to someone?
-            return _who; //no, reached the endpoint of delegation
-        } else {
-            return findDelegationOfAt(finalDelegate, _block);  //yes, load the delegation of _who delegation
+        if (finalDelegate != _who) { //_who is delegating to someone?
+            finalDelegate = findDelegationOfAt(finalDelegate, _block);  //yes, load the delegation of _who delegation
         }
-             
     } 
 }
