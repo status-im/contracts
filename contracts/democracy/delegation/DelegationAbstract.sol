@@ -105,23 +105,4 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
             return _who; 
         }
     }
-    /**
-     * @notice Reads the final delegate of `_who` at block number `_block`.
-     * @param _who Address to lookup.
-     * @param _block From what block.
-     * @return Final delegate address.
-     */
-    function findDelegationOfAt(
-        address _who,
-        uint _block
-    )
-        internal
-        view
-        returns(address finalDelegate)
-    {
-        finalDelegate = findDelegatedToAt(_who, _block);
-        if (finalDelegate != _who) { //_who is delegating to someone?
-            finalDelegate = findDelegationOfAt(finalDelegate, _block);  //yes, load the delegation of _who delegation
-        }
-    } 
 }

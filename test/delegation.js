@@ -2,7 +2,7 @@ const utils = require("../utils/testUtils")
 
 const DefaultDelegation = require('Embark/contracts/DefaultDelegation');
 const DelegationFactory = require('Embark/contracts/DelegationFactory');
-const Delegation = require('Embark/contracts/Delegation');
+const DelegationBase = require('Embark/contracts/DelegationBase');
 
 config({
     contracts: {
@@ -58,7 +58,7 @@ contract("DelegationBase", function() {
 
     it("creates headless delegation", async function () {
         let result = await DelegationFactory.methods.createDelegation(utils.zeroAddress).send();
-        var NoDefaultDelegation = new web3.eth.Contract(Delegation._jsonInterface, result.events.InstanceCreated.returnValues[0]);
+        var NoDefaultDelegation = new web3.eth.Contract(DelegationBase._jsonInterface, result.events.InstanceCreated.returnValues[0]);
         result = await NoDefaultDelegation.methods.delegatedTo(accounts[0]).call()
         assert.equal(result, accounts[0])
         result = await NoDefaultDelegation.methods.delegationOf(accounts[0]).call()
@@ -67,7 +67,7 @@ contract("DelegationBase", function() {
 
     it("creates root delegation", async function () {
         let result = await DelegationFactory.methods.createDelegation(DefaultDelegation._address).send();
-        RootDelegation = new web3.eth.Contract(Delegation._jsonInterface, result.events.InstanceCreated.returnValues[0]);
+        RootDelegation = new web3.eth.Contract(DelegationBase._jsonInterface, result.events.InstanceCreated.returnValues[0]);
         defaultDelegate = await DefaultDelegation.methods.defaultDelegate().call();
     })
 
@@ -132,7 +132,7 @@ contract("DelegationBase", function() {
 
     it("creates child delegation", async function () {
         let result = await DelegationFactory.methods.createDelegation(RootDelegation._address).send();
-        ChildDelegation = new web3.eth.Contract(Delegation._jsonInterface, result.events.InstanceCreated.returnValues[0]);
+        ChildDelegation = new web3.eth.Contract(DelegationBase._jsonInterface, result.events.InstanceCreated.returnValues[0]);
     })
 
     it("Child Delegate to Default", async function () {

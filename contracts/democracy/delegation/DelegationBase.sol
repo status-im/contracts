@@ -41,19 +41,6 @@ contract DelegationBase is DelegationAbstract {
     }
 
     /**
-     * @notice Reads the final delegate of `_who` at block number `_block`.
-     * @param _who Address to lookup.
-     * @return Final delegate address.
-     */
-    function delegationOf(address _who)
-        external
-        view
-        returns(address)
-    {
-        return findDelegationOfAt(_who, block.number);
-    }
-
-    /**
      * @notice Reads `_who` configured delegation at block number `_block` in this level, 
      *         or from parent level if `_who` never defined/defined to parent address.
      * @param _who What address to lookup.
@@ -69,6 +56,19 @@ contract DelegationBase is DelegationAbstract {
         returns (address directDelegate)
     {
         return findDelegatedToAt(_who, _block);
+    }
+    
+    /**
+     * @notice Reads the final delegate of `_who` at block number `_block`.
+     * @param _who Address to lookup.
+     * @return Final delegate address.
+     */
+    function delegationOf(address _who)
+        external
+        view
+        returns(address)
+    {
+        return findDelegationOfAt(_who, block.number);
     }
 
     /**
@@ -86,6 +86,29 @@ contract DelegationBase is DelegationAbstract {
         returns(address finalDelegate)
     {
         return findDelegationOfAt(_who, _block); 
+    } 
+
+    /**
+     * @notice Reads the final delegate of `_who` at block number `_block`.
+     * @param _who Address to lookup.
+     * @param _block From what block.
+     * @return Final delegate address.
+     */
+    function findDelegationOfAt(
+        address _who,
+        uint _block
+    )
+        internal
+        view
+        returns(address finalDelegate)
+    {
+        finalDelegate = _who;  
+        address last;      
+        do {
+            last = finalDelegate;
+            finalDelegate = findDelegatedToAt(last, _block);
+        } while (finalDelegate != last);
+
     } 
 
 }

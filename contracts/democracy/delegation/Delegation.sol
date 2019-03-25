@@ -18,10 +18,7 @@ interface Delegation {
      * @param _who What address to lookup.
      * @return The address `_who` choosen delegate to.
      */ 
-    function delegatedTo(address _who)
-        external
-        view 
-        returns (address directDelegate);
+    function delegatedTo(address _who) external view returns (address);
     
     /**
      * @notice Reads `_who` configured delegation at block number `_block` or 
@@ -30,36 +27,6 @@ interface Delegation {
      * @param _block Block number of what height in history.
      * @return The address `_who` choosen delegate to.
      */
-    function delegatedToAt(
-        address _who,
-        uint _block
-    )
-        external
-        view
-        returns (address directDelegate);
-    
-    /**
-     * @notice Reads the final delegate of `_who` at block number `_block`.
-     * @param _who Address to lookup.
-     * @return Final delegate address.
-     */
-    function delegationOf(address _who)
-        external
-        view
-        returns(address finalDelegate);
-    
-    /**
-     * @notice Reads the final delegate of `_who` at block number `_block`.
-     * @param _who Address to lookup.
-     * @param _block From what block.
-     * @return Final delegate address.
-     */
-    function delegationOfAt(
-        address _who,
-        uint _block
-    )
-        external
-        view
-        returns(address finalDelegate);
+    function delegatedToAt(address _who, uint _block) external view returns (address);
     
 }
