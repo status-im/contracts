@@ -87,22 +87,12 @@ contract DelegationAbstract is InstanceAbstract, Delegation {
 
         //In case there is no registry
         if (checkpoints.length == 0) {
-            return getDefaultDelegate(_who, _block);
+            return (
+                address(parentDelegation) == address(0) ?
+                address(0) : parentDelegation.delegatedToAt(_who, _block)
+            );
         }
-        DelegateSet memory d = getMemoryAt(checkpoints, _block);
-        
-        // Case user unset delegation
-        if (d.to == address(0)) {
-            return getDefaultDelegate(_who, _block);
-        }
-        return d.to;
+        return getMemoryAt(checkpoints, _block).to;
     }
 
-    function getDefaultDelegate(address _who, uint256 _block) internal view returns(address) {
-        if (address(parentDelegation) != address(0)) {
-            return parentDelegation.delegatedToAt(_who, _block);
-        } else {
-            return _who; 
-        }
-    }
 }

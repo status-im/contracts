@@ -1,14 +1,10 @@
 const utils = require("../utils/testUtils")
 
-const DefaultDelegation = require('Embark/contracts/DefaultDelegation');
 const DelegationFactory = require('Embark/contracts/DelegationFactory');
 const DelegationBase = require('Embark/contracts/DelegationBase');
 
 config({
     contracts: {
-        "DefaultDelegation": {
-            "args": [ "$accounts[5]" ]
-        },
         "DelegationBase": {
             "args": [ utils.zeroAddress ]
         },
@@ -51,29 +47,33 @@ contract("DelegationBase", function() {
     before(function(done) {
       web3.eth.getAccounts().then(function (res) {
         accounts = res;
+        defaultDelegate = accounts[5];
         done();
       });
     });
 
 
     it("creates headless delegation", async function () {
-        let result = await DelegationFactory.methods.createDelegation(utils.zeroAddress).send();
+        let result = await DelegationFactory.methods.createDelegation(utils.zeroAddress,utils.zeroAddress).send();
         var NoDefaultDelegation = new web3.eth.Contract(DelegationBase._jsonInterface, result.events.InstanceCreated.returnValues[0]);
         result = await NoDefaultDelegation.methods.delegatedTo(accounts[0]).call()
-        assert.equal(result, accounts[0])
-        result = await NoDefaultDelegation.methods.delegationOf(accounts[0]).call()
-        assert.equal(result, accounts[0])    
+        assert.equal(result, utils.zeroAddress)
+        result = await NoDefaultDelegation.methods.delegatedTo(utils.zeroAddress).call()
+        assert.equal(result, utils.zeroAddress)    
     })
 
     it("creates root delegation", async function () {
-        let result = await DelegationFactory.methods.createDelegation(DefaultDelegation._address).send();
+        let result = await DelegationFactory.methods.createDelegation(utils.zeroAddress,defaultDelegate).send();
         RootDelegation = new web3.eth.Contract(DelegationBase._jsonInterface, result.events.InstanceCreated.returnValues[0]);
-        defaultDelegate = await DefaultDelegation.methods.defaultDelegate().call();
+        result = await RootDelegation.methods.delegatedTo(utils.zeroAddress).call()
+        assert.equal(result, defaultDelegate)  
+        result = await RootDelegation.methods.delegate(defaultDelegate).send({from: defaultDelegate})
+        
     })
 
     it("starts with default delegate", async function () {
         let result = await RootDelegation.methods.delegatedTo(accounts[0]).call()
-        assert.equal(result, defaultDelegate)
+        assert.equal(result, utils.zeroAddress)
         result = await RootDelegation.methods.delegationOf(accounts[0]).call()
         assert.equal(result, defaultDelegate)        
     })

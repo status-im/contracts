@@ -22,11 +22,18 @@ contract DelegationInit is DelegationAbstract {
         require(address(parentDelegation) == address(0), "Bad call"); //avoids control of Init contract
         parentDelegation = _parentDelegation;
     }
+
+    /**
+     * @notice Creates a new Delegation with `_parentDelegation` as default delegation.
+     */
+    function createDelegation(Delegation _parentDelegation, address defaultDelegate) external {
+        require(address(parentDelegation) == address(0), "Bad call"); //avoids control of Init contract
+        parentDelegation = _parentDelegation;
+        updateDelegate(address(0), defaultDelegate);
+    }
     
     function delegate(address) external {}
     function delegatedTo(address) external view returns (address) {}  
-    function delegationOf(address) external view returns (address) {}
     function delegatedToAt(address,uint) external view returns (address) {}
-    function delegationOfAt(address,uint) external view returns (address) {}
     
 }

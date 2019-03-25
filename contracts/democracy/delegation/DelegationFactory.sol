@@ -22,8 +22,18 @@ contract DelegationFactory is InstanceFactory {
         external 
         returns (DelegationAbstract instance)
     {
-        instance = DelegationAbstract(address(new Instance(base, prototypes[address(base)].init, msg.data)));
-        emit InstanceCreated(instance);
+        return DelegationAbstract(address(defaultCreate()));
     }
+
+    function createDelegation(
+        Delegation /*_parent*/,
+        address /*defaultDelegate*/
+    ) 
+        external 
+        returns (DelegationAbstract instance)
+    {
+        return DelegationAbstract(address(defaultCreate()));
+    }
+    
 
 }

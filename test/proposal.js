@@ -1,12 +1,10 @@
 const utils = require("../utils/testUtils")
 const { MerkleTree } = require('../utils/merkleTree.js');
 
-const DefaultDelegation = require('Embark/contracts/DefaultDelegation');
 const DelegationFactory = require('Embark/contracts/DelegationFactory');
 const MiniMeToken = require('Embark/contracts/MiniMeToken');
 const Delegation = require('Embark/contracts/Delegation');
 const ProposalFactory = require('Embark/contracts/ProposalFactory');
-const Proposal = require('Embark/contracts/Proposal');
 const ProposalBase = require('Embark/contracts/ProposalBase');
 
 config({
@@ -23,9 +21,6 @@ config({
                 "TST",
                 true
             ]
-        },
-        "DefaultDelegation": {
-            "args": [ "$accounts[5]" ]
         },
         "DelegationBase": {
             "args": [ utils.zeroAddress ]
@@ -50,9 +45,9 @@ function mintTokens(accounts, amount) {
     );
 }
 
-function newDelegation(topDelegation) {
+function newDelegation(topDelegation, defaultDelegate) {
     return new Promise((resolve, reject) => {
-        DelegationFactory.methods.createDelegation(topDelegation).send().on('receipt', (receipt) => {
+        DelegationFactory.methods.createDelegation(topDelegation, defaultDelegate).send().on('receipt', (receipt) => {
             resolve(new web3.eth.Contract(Delegation._jsonInterface, receipt.events.InstanceCreated.returnValues.instance));
         }).on('error', (error) => {
             reject(error);
@@ -98,17 +93,17 @@ contract("Proposal", function() {
     var ChildDelegation;
 
     before(function(done) {
-        defaultDelegate = DefaultDelegation._address;
         web3.eth.getAccounts().then((res) => {
             web3.eth.defaultAccount = res[0]
+            defaultDelegate = res[5];
             accounts = res;
             //let contactList = require("./contacts.json")
             //contacts = Object.keys(contactList).map((key) => { return { name: contactList[key].name.en, address: utils.pubKeyToAddress(key), pubKey: key }})
             //res = accounts.concat(contacts.map((obj) => {return obj.address } ));
             mintTokens(res, initialBalance).then((mintReceipts) => {
-                newDelegation(defaultDelegate).then((createdRoot) => {
+                newDelegation(utils.zeroAddress, defaultDelegate).then((createdRoot) => {
                     RootDelegation = createdRoot;
-                    newDelegation(RootDelegation._address).then((createdChild) => {
+                    newDelegation(RootDelegation._address, utils.zeroAddress).then((createdChild) => {
                         ChildDelegation = createdChild;
                         Promise.all([ 
                             // root: 0 -> 1 -> 2 -> 3 (-> 5) 
