@@ -11,27 +11,8 @@ module.exports = {
       "http://localhost:8545"
     ],
     gas: "auto",
-    strategy: 'explicit',
+    strategy: "explicit",
     contracts: {      
-      MiniMeTokenFactory: {},
-      MiniMeToken: {
-        args:["$MiniMeTokenFactory", "0x0", "0x0", "Status Test Token", 18, "STT", true],
-      },
-      StatusRoot: {
-        instanceOf: "TestStatusNetwork",
-        deploy: true,
-        args: ["0x0", "$MiniMeToken"],
-        "onDeploy": [
-          "await MiniMeToken.methods.changeController(StatusRoot.address).send()",
-          "await StatusRoot.methods.setOpen(true).send()",
-        ]
-      },  
-      VisibilityStake: {
-        args:["$MiniMeToken", "31104000"],
-      },
-      GroupAccess: {
-        args:["$MiniMeToken"],
-      },
       MessageTribute: {
         args:["0x"],
       }
