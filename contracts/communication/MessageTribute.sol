@@ -4,96 +4,50 @@ import "../common/Controlled.sol";
 
 /**
  * @title MessageTribute
- * @author Richard Ramos (Status Research & Development GmbH) 
- *         Ricardo Guilherme Schmidt (Status Research & Development GmbH)
- * @dev Inspired by one of Satoshi Nakamoto’s original suggested use cases for Bitcoin, 
-        we will be introducing an economics-based anti-spam filter, in our case for 
-        receiving messages and “cold” contact requests from users.
-        token is deposited, and transferred from stakeholders to recipients upon receiving 
-        a reply from the recipient.
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)* @
+ * @notice User registry of Tribute to Talk manifests
  */
 contract MessageTribute is Controlled {
-    event DefaultFee(uint256 value);
-    event CustomFee(address indexed user, uint256 value);
-    event PublicMessage(address indexed user, bytes message);
-    event ResetFee(address indexed user);
+    event Manifest(address indexed user, bytes manifest);
     event Stopped(bool stop);
 
-    struct Fee {
-        bool custom;
-        uint128 value; 
-    }
-
     bool public stopped;
-    uint256 public defaultValue;
-    mapping(address => Fee) public feeCatalog;
-    mapping(address => bytes) contenthash;
+    mapping(address => bytes) private manifests;
 
     modifier notStopped {
         require(!stopped, "Contract disabled.");
         _;
     }
-
-    constructor(uint256 _defaultValue) public {
-        defaultValue = _defaultValue;
-        emit DefaultFee(_defaultValue);
-    }
-
     /**
-     * @notice Set tribute for everyone
-     * @param _value Required tribute value 
+     * @param _defaultManifest contenthash manifest returned for unset/reset users 
      */
-    function setRequiredTribute(uint256 _value) external notStopped {
-        feeCatalog[msg.sender] = Fee(true, uint128(_value));
-        emit CustomFee(msg.sender, _value);
-    }
-
-
-    /**
-     * @notice Set tribute for everyone and public message
-     * @param _value Required tribute value 
-     * @param _contenthash Contenthash of Public Message
-     */
-    function setRequiredTribute(uint256 _value, bytes calldata _contenthash) external notStopped {
-        feeCatalog[msg.sender] = Fee(true, uint128(_value));
-        emit CustomFee(msg.sender, _value);
-        contenthash[msg.sender] = _contenthash;
-        emit PublicMessage(msg.sender, _contenthash);
+    constructor(bytes memory _defaultManifest) public {
+        updateManifest(address(0), _defaultManifest);
     }
 
     /**
      * @notice Set public message
-     * @param _contenthash Contenthash of Public Message
+     * @param _manifest  contenthash manifest of Tribute to Talk
      */
-    function updateMessage(bytes calldata _contenthash) external notStopped {
-        contenthash[msg.sender] = _contenthash;
-        emit PublicMessage(msg.sender, _contenthash);
+    function setManifest(bytes calldata _manifest) external notStopped {
+        updateManifest(msg.sender, _manifest);
     }
 
     /**
-     * @notice Resets account params
+     * @notice Resets account to default manifest
      */
-    function reset(bool value, bool message) external notStopped {
-        if(value){
-            delete feeCatalog[msg.sender];
-            emit ResetFee(msg.sender);
-        }
-        if(message) {
-            delete contenthash[msg.sender];
-            emit PublicMessage(msg.sender, new bytes(0));
-        }
-        
+    function resetManifest() external notStopped {
+        delete manifests[msg.sender];
+        emit Manifest(msg.sender, new bytes(0));
     }
-    
+
     /**
      * @notice controller can configure default fee
-     * @param _defaultValue fee for unset or reseted users. 
+     * @param _defaultManifest contenthash manifest returned for unset/reset users 
      */
-    function setDefaultValue(uint256 _defaultValue) external onlyController {
-        defaultValue = _defaultValue;
-        emit DefaultFee(_defaultValue);
+    function setDefaultManifest(bytes calldata _defaultManifest) external onlyController {
+        updateManifest(address(0), _defaultManifest);
     }
-
 
     /**
      * @notice controller can stop the contract
@@ -105,24 +59,25 @@ contract MessageTribute is Controlled {
     }
 
     /**
-     * @notice Obtain required fee to talk with `_to`
-     * @param _to Account `msg.sender` wishes to talk to
-     * @return Fee
-     */
-    function getFee(address _to) public view
-        returns (uint256) 
-    {
-        Fee storage fee = feeCatalog[_to];
-        return fee.custom ? uint256(fee.value) : defaultValue;
-    }
-
-    /**
      * @notice Obtain public message content hash
      * @param _who Account reading the message from.
-     * @return contenthash
+     * @return contenthash of user custom manifest, or if unset, default manifest
      */
-    function getContenthash(address _who) external view returns(bytes memory) {
-        return contenthash[_who];
+    function getManifest(address _who) external view returns(bytes memory manifest) {
+        manifest = manifests[_who];
+        if(manifest.length == 0) {
+            manifest = manifests[address(0)];
+        }
+    }
+
+    /** 
+     * @dev changes storage and fires event 
+     * @param account account being changed, use address(0) for default manifest
+     * @param manifest contenthash format data.
+     */
+    function updateManifest(address account, bytes memory manifest) internal {
+        manifests[account] = manifest;
+        emit Manifest(account, manifest);
     }
 
 }
