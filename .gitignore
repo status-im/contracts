@@ -4,10 +4,12 @@ __pycache__/
 *$py.class
 
 # embark
-.embark/
+.embark
 chains.json
-config/production/password
 config/livenet/password
+config/production/password
+embarkArtifacts
+.password
 
 # egg-related
 viper.egg-info/
@@ -40,3 +42,4 @@ npm-debug.log
 # other
 .vs/
 bin/
+.trash
