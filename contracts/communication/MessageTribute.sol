@@ -1,13 +1,14 @@
 pragma solidity >=0.5.0 <0.6.0;
 
 import "../common/Controlled.sol";
+import "../common/MessageSigned.sol";
 
 /**
  * @title MessageTribute
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)* @
  * @notice User registry of Tribute to Talk manifests
  */
-contract MessageTribute is Controlled {
+contract MessageTribute is Controlled, MessageSigned {
     event Manifest(address indexed user, bytes manifest);
     event Stopped(bool stop);
 
@@ -31,6 +32,23 @@ contract MessageTribute is Controlled {
      */
     function setManifest(bytes calldata _manifest) external notStopped {
         updateManifest(msg.sender, _manifest);
+    }
+
+    /**
+     * @notice Set public message using address signature
+     * @param _ttl limit of time signature can be included
+     * @param _manifest  contenthash manifest of Tribute to Talk
+     * @param _signature rsv padded bytes of signature
+     */
+    function setManifest(uint256 _ttl, bytes calldata _manifest, bytes calldata _signature) external notStopped {
+        require(block.timestamp < _ttl, "Expired signature"); //prevent reuse of signatures
+        require(block.timestamp > _ttl - 2 days, "Too high ttl."); //prevent using infinite time ttl
+        address signer = recoverAddress(
+            getSignHash(getManifestHash(_ttl, _manifest)),
+            _signature
+        );
+        require(signer != address(0), "Invalid signature");
+        updateManifest(signer, _manifest);
     }
 
     /**
@@ -68,6 +86,22 @@ contract MessageTribute is Controlled {
         if(manifest.length == 0) {
             manifest = manifests[address(0)];
         }
+    }
+
+    /**
+     * @notice Calculates `keccak256(address(this),_ttl,_manifest)` used in signature
+     * @param _ttl limit of time signature can be included
+     * @param _manifest  contenthash manifest 
+     * @return manifestHash which can be signed by user as a Ethereum Signed Message.
+     */
+    function getManifestHash(uint256 _ttl, bytes memory _manifest) public view returns(bytes32 manifestHash){
+        manifestHash = keccak256(
+            abi.encodePacked(
+                address(this),
+                _ttl,
+                _manifest
+            )
+        );
     }
 
     /** 
