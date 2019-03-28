@@ -55,6 +55,7 @@ contract MessageSigned {
         pure
         returns (uint8 v, bytes32 r, bytes32 s)
     {
+        require(_signature.length == 65, "Bad signature length");
         // The signature format is a compact form of:
         //   {bytes32 r}{bytes32 s}{uint8 v}
         // Compact means, uint8 is not padded to 32 bytes.
@@ -68,8 +69,10 @@ contract MessageSigned {
             // use the second best option, 'and'
             v := and(mload(add(_signature, 65)), 0xff)
         }
-
-        require(v == 27 || v == 28, "Bad signature");
+        if (v < 27) {
+            v += 27;
+        }
+        require(v == 27 || v == 28, "Bad signature version");
     }
     
 }
