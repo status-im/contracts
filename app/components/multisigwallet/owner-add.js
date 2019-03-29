@@ -45,8 +45,8 @@ class MSWAddOwner extends React.Component {
 
             const toSend = this.state.mswInstance.methods.addOwner(input.owner);
 
-            const MsSend = this.state.mswInstance.submitTransaction(
-                this.state.mswInstance._address, 0, toSend.encodeABI
+            const MsSend = this.state.mswInstance.methods.submitTransaction(
+                this.state.mswInstance._address, 0, toSend.encodeABI()
             )
             const estimatedGas = await MsSend.estimateGas({from: this.state.account});
 

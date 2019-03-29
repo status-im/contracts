@@ -42,10 +42,10 @@ class MSWConfirmation extends React.Component {
 
         try {
 
-            const toSend = accountConfirmed ? mswInstance.methods.revokeConfirmation(transactionId) : mswInstance.methods.confirmTransaction(transactionId);
-            const estimatedGas = await toSend.estimateGas({from: web3.eth.defaultAccount});
+            const toSend = accountConfirmed ? this.state.mswInstance.methods.revokeConfirmation(transactionId) : this.state.mswInstance.methods.confirmTransaction(transactionId);
+            const estimatedGas = await toSend.estimateGas({from: this.state.account});
             const receipt = await toSend.send({
-                from: web3.eth.defaultAccount,
+                from: this.state.account,
                 gasLimit: estimatedGas
             });
 
