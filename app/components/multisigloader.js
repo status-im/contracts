@@ -18,13 +18,14 @@ class MultiSigLoader extends React.Component {
       contractSetError: null,
       contractAddress: props.address
     };
-    if (props.address) {
-      this.checkContractAddress(props.address)
-    }
+    
 
   }
 
   componentDidMount() {
+    if (this.props.address) {
+      this.checkContractAddress(this.props.address)
+    }
   }
 
   handleChange(instance, account = null, isOwner = false) {

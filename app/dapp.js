@@ -41,6 +41,11 @@ class App extends React.Component {
   }
 
   render() {
+    if (!this.state.blockchainEnabled) {
+      return (
+        <div>Waiting for blockchain.</div>
+      )
+    }
     if (this.state.error) {
       return (<div>
         <div>Something went wrong connecting to ethereum. Please make sure you have a node running or are using metamask to connect to the ethereum network:</div>
@@ -54,7 +59,7 @@ class App extends React.Component {
             <MultiSigLoader onReady={this.onMultiSigReady}/>
           )} />
           <Route path="/wallet/:address" render={({match}) => (
-           <MultiSigLoader address={match.params.address} onReady={this.onMultiSigReady}/>
+            <MultiSigLoader address={match.params.address} onReady={this.onMultiSigReady}/>
           )} />
       </HashRouter>
       );
