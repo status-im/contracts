@@ -5,6 +5,8 @@ import {Tabs, Tab} from 'react-bootstrap';
 import MSWTransactionTable from './multisigwallet/transaction-table';
 import MSWOwnerTable from './multisigwallet/owner-table';
  
+
+
 class MultiSigWalletUI extends React.Component {
 
     constructor(props) {

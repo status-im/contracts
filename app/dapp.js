@@ -3,8 +3,12 @@ import ReactDOM from 'react-dom';
 import EmbarkJS from 'Embark/EmbarkJS';
 import MultiSigWallet from 'Embark/contracts/MultiSigWallet';
 import MultiSigWalletUI from './components/multisigwallet';
+import MultiSigLoader from './components/multisigloader';
 import { Alert, FormGroup, ControlLabel, FormControl } from 'react-bootstrap';
+import { HashRouter, Route, Redirect } from "react-router-dom";
 import './dapp.css';
+
+
 
 class App extends React.Component {
 
@@ -17,9 +21,8 @@ class App extends React.Component {
       mswInstance: null,
       account: null,
       isOwner: false,
-      contractSetError: null,
-      contractAddress: null
     };
+    this.onMultiSigReady = this.onMultiSigReady.bind(this);
   }
 
   componentDidMount() {
@@ -33,40 +36,10 @@ class App extends React.Component {
     });
   }
 
-
-  setContractAddress(e) {
-    this.setState({contractSetError: null})
-    try{
-      const contractAddress = web3.utils.toChecksumAddress(e.target.value);
-      web3.eth.getCode(contractAddress).then((code) => {
-        if(code.length > 2){
-          let mswInstance = new web3.eth.Contract(MultiSigWallet._jsonInterface, contractAddress)
-          mswInstance.methods.required().call().then((req) => {
-            if(req > 0){
-              EmbarkJS.enableEthereum().then((s)=>{
-                if(s){
-                  let defaultAccount = web3.utils.toChecksumAddress(s[0]);
-                  mswInstance.methods.isOwner(defaultAccount).call().then((isOwner) => {
-                    this.setState({isOwner:isOwner, account: defaultAccount, contractAddress: contractAddress, mswInstance: mswInstance});  
-                  })
-                }
-              })
-                
-            } else {
-              this.setState({contractSetError: "Invalid MultiSigWallet"})
-            }
-          }).catch((e) => {
-            this.setState({contractSetError: "Not a MultiSigWallet"})
-          })   
-        } else {
-          this.setState({contractSetError: "Not a smart contract"})
-        }
-      })
-    }catch(e){
-      this.setState({contractSetError: e.toString()})
-    }
-
+  onMultiSigReady(instance, account, isOwner) {
+    this.setState({isOwner:isOwner, account: account, mswInstance: instance});  
   }
+
   render() {
     if (this.state.error) {
       return (<div>
@@ -74,24 +47,32 @@ class App extends React.Component {
         <div>{this.state.error}</div>
       </div>);
     }
-    return (
-    <div>
-      <h2>MultiSig Wallet</h2>
-
-      {!this.state.mswInstance && <form> 
-       <FormGroup>
-            <ControlLabel>Contract Address:</ControlLabel>
-            <FormControl
-                type="text"
-                defaultValue={ this.state.contractAddress }
-                placeholder="address"
-                onChange={(e) => this.setContractAddress(e)}
-            />
-        </FormGroup> 
-        { this.state.contractSetError != null && <Alert bsStyle="danger">{this.state.contractSetError}</Alert> }
-      </form>}
-      { this.state.mswInstance && <MultiSigWalletUI isOwner={this.state.isOwner} account={this.state.account} instance={this.state.mswInstance} /> }
-    </div>);
+    if(!this.state.mswInstance){
+      return (
+        <HashRouter hashType="noslash">
+          <Route exact path="/" render={()=>(
+            <MultiSigLoader onReady={this.onMultiSigReady}/>
+          )} />
+          <Route path="/wallet/:address" render={({match}) => (
+           <MultiSigLoader address={match.params.address} onReady={this.onMultiSigReady}/>
+          )} />
+      </HashRouter>
+      );
+    } else {
+      return(
+        <HashRouter hashType="noslash">
+          <Route exact path="/" render={()=>(
+            <Redirect to={"/wallet/"+this.state.mswInstance._address }/>  
+          )} />
+          <Route path="/wallet/:address" render={(props)=>(
+            props.match.params.address != this.state.mswInstance._address && <Redirect to={"/wallet/"+this.state.mswInstance._address }/> 
+          )} />
+          <MultiSigWalletUI instance={this.state.mswInstance} account={this.state.account} isOwner={this.state.isOwner}  /> 
+        </HashRouter>
+      );
+      
+    }
+    
   }
 }
 

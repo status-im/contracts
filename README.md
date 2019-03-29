@@ -1,6 +1,6 @@
 # status.im Simple Multisig
 
-v0.0.1 features:
+v0.0.2 features:
 - bootstrap ui
 - Identify if account is owner
 - submit transaction
@@ -9,9 +9,10 @@ v0.0.1 features:
 - list owners
 - remove owner
 - add owner
+- routes (#wallet/0xYourMultiSigWallet)
 
 ## Release
-[ipfs://QmSYTjMQoCyuyrncYxDHT3tMthKJUVNf4ViQDH7aJ8yrRE](ipfs://QmSYTjMQoCyuyrncYxDHT3tMthKJUVNf4ViQDH7aJ8yrRE) [@infura](https://ipfs.infura.io/ipfs/QmSYTjMQoCyuyrncYxDHT3tMthKJUVNf4ViQDH7aJ8yrRE/) [@ipfs.io](https://gateway.ipfs.io/ipfs/QmSYTjMQoCyuyrncYxDHT3tMthKJUVNf4ViQDH7aJ8yrRE/) [@cloudflare](https://cloudflare-ipfs.com/ipfs/QmSYTjMQoCyuyrncYxDHT3tMthKJUVNf4ViQDH7aJ8yrRE/)
+[ipfs://QmTkeUd6ovXkhLGw4eL4Gje75shJ2Micwi5dDCgALqNTc9](ipfs://QmTkeUd6ovXkhLGw4eL4Gje75shJ2Micwi5dDCgALqNTc9) [@infura](https://ipfs.infura.io/ipfs/QmTkeUd6ovXkhLGw4eL4Gje75shJ2Micwi5dDCgALqNTc9/) [@ipfs.io](https://gateway.ipfs.io/ipfs/QmTkeUd6ovXkhLGw4eL4Gje75shJ2Micwi5dDCgALqNTc9/) [@cloudflare](https://cloudflare-ipfs.com/ipfs/QmTkeUd6ovXkhLGw4eL4Gje75shJ2Micwi5dDCgALqNTc9/)
 
 
 ## Build
