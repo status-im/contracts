@@ -1,7 +1,7 @@
 {
   "contracts": ["contracts/**"],
   "app": {
-    "js/multisig.js": ["app/multisig.js"],
+    "js/dapp.js": ["app/dapp.js"],
     "index.html": "app/index.html"
   },
   "buildDir": "dist/",

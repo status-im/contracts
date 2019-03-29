@@ -13,26 +13,12 @@ module.exports = {
     gas: "auto",
     strategy: "explicit",
     contracts: {  
-      MultiSigWalletWithDailyLimit: {
-        deploy: true,
-        args: [["$accounts[0]"], 1, 0]
-      }
     }
   },
   livenet: {
-    contracts: {
-      MultiSigWalletWithDailyLimit: {
-        deploy: false,
-        address: "0xB913626032140A86c77D1fdde4f611A00D589C55"
-      }
-    }
   },
   testnet: {
-    contracts: {
-    }
   },
   rinkeby: {
-    contracts: {
-    }
   }
 }
