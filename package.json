@@ -1,7 +1,7 @@
 {
-  "name": "status-contracts",
+  "name": "status-multisig",
   "version": "0.0.1",
-  "description": "",
+  "description": "Simple multisig UI",
   "scripts": {
     "test": "embark test"
   },

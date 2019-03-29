@@ -31,7 +31,7 @@ class MSWOwnerTable extends React.Component {
 
             const toSend = this.state.mswInstance.methods.removeOwner(account);
             const MsSend = this.state.mswInstance.submitTransaction(
-                this.state.mswInstance.address, 0, toSend.encodeABI
+                this.state.mswInstance._address, 0, toSend.encodeABI
             )
             const estimatedGas = await MsSend.estimateGas({from: this.state.account});
 
