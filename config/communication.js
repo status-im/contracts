@@ -1,6 +1,6 @@
 module.exports = {
   default: {
-    enabled: true,
+    enabled: false,
     provider: "whisper", 
     available_providers: ["whisper"], 
   },
