@@ -26,7 +26,7 @@ contract MessageTribute is MessageSigned {
      */
     function setTribute(uint256 _value, uint256 _ttl, bytes calldata _messageSignature) external {
         uint256 time = block.timestamp;
-        require(time < _ttl && _ttl-time > 1 days, "Invalid TTL");
+        require(time < _ttl && _ttl-time < 1 days, "Invalid TTL");
         address signer = recoverAddress(getSignHash(hashTributeMessage(_value, _ttl)), _messageSignature);
         require(signer != address(0), "Invalid signer");
         tributeCatalog[signer] = _value;
