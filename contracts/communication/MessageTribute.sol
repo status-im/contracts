@@ -22,7 +22,7 @@ contract MessageTribute is MessageSigned {
      * @notice Set tribute of account using signature
      * @param _value Required tribute value
      * @param _ttl TTL of message
-     * @param _signature signature of hashTributeMessage(_value, _ttl)
+     * @param _messageSignature signature of hashTributeMessage(_value, _ttl)
      */
     function setTribute(uint256 _value, uint256 _ttl, bytes calldata _messageSignature) external {
         uint256 time = block.timestamp;
