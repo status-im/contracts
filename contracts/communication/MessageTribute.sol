@@ -1,117 +1,56 @@
 pragma solidity >=0.5.0 <0.6.0;
-
-import "../common/Controlled.sol";
 import "../common/MessageSigned.sol";
 
 /**
- * @title MessageTribute
- * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)* @
- * @notice User registry of Tribute to Talk manifests
+ * @notice Defines tribute to talk
  */
-contract MessageTribute is Controlled, MessageSigned {
-    event Manifest(address indexed user, bytes manifest);
-    event Stopped(bool stop);
+contract MessageTribute is MessageSigned {
+    event SetTribute(address indexed account, uint256 value);
 
-    bool public stopped;
-    mapping(address => bytes) private manifests;
+    mapping(address => uint256) private tributeCatalog;
 
-    modifier notStopped {
-        require(!stopped, "Contract disabled.");
-        _;
-    }
     /**
-     * @param _defaultManifest contenthash manifest returned for unset/reset users 
+     * @notice Set tribute of account
+     * @param _value Required tribute value
      */
-    constructor(bytes memory _defaultManifest) public {
-        updateManifest(address(0), _defaultManifest);
+    function setTribute(uint256 _value) external {
+        tributeCatalog[msg.sender] = _value;
+        emit SetTribute(msg.sender, _value);
     }
 
     /**
-     * @notice Set public message
-     * @param _manifest  contenthash manifest of Tribute to Talk
+     * @notice Set tribute of account using signature
+     * @param _value Required tribute value
+     * @param _ttl TTL of message
+     * @param _signature signature of hashTributeMessage(_value, _ttl)
      */
-    function setManifest(bytes calldata _manifest) external notStopped {
-        updateManifest(msg.sender, _manifest);
+    function setTribute(uint256 _value, uint256 _ttl, bytes calldata _messageSignature) external {
+        uint256 time = block.timestamp;
+        require(time < _ttl && _ttl-time > 1 days, "Invalid TTL");
+        address signer = recoverAddress(getSignHash(hashTributeMessage(_value, _ttl)), _messageSignature);
+        require(signer != address(0), "Invalid signer");
+        tributeCatalog[signer] = _value;
+        emit SetTribute(signer, _value);
     }
 
     /**
-     * @notice Set public message using address signature
-     * @param _ttl limit of time signature can be included
-     * @param _manifest  contenthash manifest of Tribute to Talk
-     * @param _signature rsv padded bytes of signature
+     * @notice Obtain required tribute to talk with `_of`
+     * @param _of Account to lookup
+     * @return value of tribute
      */
-    function setManifest(uint256 _ttl, bytes calldata _manifest, bytes calldata _signature) external notStopped {
-        require(block.timestamp < _ttl, "Expired signature"); //prevent reuse of signatures
-        require(block.timestamp > _ttl - 2 days, "Too high ttl."); //prevent using infinite time ttl
-        address signer = recoverAddress(
-            getSignHash(getManifestHash(_ttl, _manifest)),
-            _signature
-        );
-        require(signer != address(0), "Invalid signature");
-        updateManifest(signer, _manifest);
+    function getTribute(address _of) external view
+        returns (uint256)
+    {
+        return tributeCatalog[_of];
     }
 
     /**
-     * @notice Resets account to default manifest
+     * @notice generates hash for signing tributes
+     * @param _value Required tribute value
+     * @param _ttl TTL of message
      */
-    function resetManifest() external notStopped {
-        delete manifests[msg.sender];
-        emit Manifest(msg.sender, new bytes(0));
-    }
-
-    /**
-     * @notice controller can configure default fee
-     * @param _defaultManifest contenthash manifest returned for unset/reset users 
-     */
-    function setDefaultManifest(bytes calldata _defaultManifest) external onlyController {
-        updateManifest(address(0), _defaultManifest);
-    }
-
-    /**
-     * @notice controller can stop the contract
-     * @param _stop true disables alterting the contract
-     */
-    function setStopped(bool _stop) external onlyController {
-        stopped = _stop;
-        emit Stopped(_stop);
-    }
-
-    /**
-     * @notice Obtain public message content hash
-     * @param _who Account reading the message from.
-     * @return contenthash of user custom manifest, or if unset, default manifest
-     */
-    function getManifest(address _who) external view returns(bytes memory manifest) {
-        manifest = manifests[_who];
-        if(manifest.length == 0) {
-            manifest = manifests[address(0)];
-        }
-    }
-
-    /**
-     * @notice Calculates `keccak256(address(this),_ttl,_manifest)` used in signature
-     * @param _ttl limit of time signature can be included
-     * @param _manifest  contenthash manifest 
-     * @return manifestHash which can be signed by user as a Ethereum Signed Message.
-     */
-    function getManifestHash(uint256 _ttl, bytes memory _manifest) public view returns(bytes32 manifestHash){
-        manifestHash = keccak256(
-            abi.encodePacked(
-                address(this),
-                _ttl,
-                _manifest
-            )
-        );
-    }
-
-    /** 
-     * @dev changes storage and fires event 
-     * @param account account being changed, use address(0) for default manifest
-     * @param manifest contenthash format data.
-     */
-    function updateManifest(address account, bytes memory manifest) internal {
-        manifests[account] = manifest;
-        emit Manifest(account, manifest);
+    function hashTributeMessage(uint256 _value, uint256 _ttl) public view returns(bytes32) {
+        return keccak256(abi.encodePacked(address(this), _value, _ttl));
     }
 
 }
