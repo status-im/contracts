@@ -10,7 +10,7 @@ contract ERC20Receiver {
     mapping (address => mapping(address => uint256)) tokenBalances;
 
     constructor() public {
-        
+
     }
 
     function depositToken(
@@ -22,7 +22,7 @@ contract ERC20Receiver {
             msg.sender,
             _token,
             _token.allowance(
-                msg.sender, 
+                msg.sender,
                 address(this)
             )
         );
@@ -32,7 +32,7 @@ contract ERC20Receiver {
         ERC20Token _token,
         uint256 _amount
     )
-        external 
+        external
     {
         _withdrawToken(msg.sender, _token, _amount);
     }
@@ -40,7 +40,7 @@ contract ERC20Receiver {
     function depositToken(
         ERC20Token _token,
         uint256 _amount
-    ) 
+    )
         external
     {
         require(_token.allowance(msg.sender, address(this)) >= _amount, "Bad argument");
@@ -51,9 +51,9 @@ contract ERC20Receiver {
         ERC20Token _token,
         address _from
     )
-        external 
-        view 
-        returns(uint256 fromTokenBalance) 
+        external
+        view
+        returns(uint256 fromTokenBalance)
     {
         return tokenBalances[address(_token)][_from];
     }
@@ -63,7 +63,7 @@ contract ERC20Receiver {
         ERC20Token _token,
         uint256 _amount
     )
-        private 
+        private
     {
         require(_amount > 0, "Bad argument");
         if (_token.transferFrom(_from, address(this), _amount)) {
@@ -86,5 +86,5 @@ contract ERC20Receiver {
         emit TokenWithdrawn(address(_token), _from, _amount);
     }
 
-    
+
 }

@@ -15,9 +15,9 @@ contract StatusNetwork is SNTController {
     constructor(
         address payable _owner,
         MiniMeToken _snt
-    ) 
-        public 
-        SNTController(_owner, _snt)    
+    )
+        public
+        SNTController(_owner, _snt)
     { }
 
 }

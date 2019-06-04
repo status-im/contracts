@@ -1,10 +1,10 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-/** 
+/**
  * @notice Uses ethereum signed messages
  */
 contract MessageSigned {
-    
+
     constructor() internal {}
 
     /**
@@ -13,12 +13,12 @@ contract MessageSigned {
      * @param _messageSignature message `_signHash` signature
      */
     function recoverAddress(
-        bytes32 _signHash, 
+        bytes32 _signHash,
         bytes memory _messageSignature
     )
         internal
         pure
-        returns(address) 
+        returns(address)
     {
         uint8 v;
         bytes32 r;
@@ -48,7 +48,7 @@ contract MessageSigned {
     }
 
     /**
-     * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s` 
+     * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`
      */
     function signatureSplit(bytes memory _signature)
         internal
@@ -74,5 +74,5 @@ contract MessageSigned {
         }
         require(v == 27 || v == 28, "Bad signature version");
     }
-    
+
 }
