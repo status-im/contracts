@@ -32,6 +32,7 @@ contract MessageTribute is MessageSigned, Controlled {
         setTribute(signer, _value);
 
     }
+
     /**
      * @notice Stops the contract of being able to change values.
      */
@@ -59,10 +60,15 @@ contract MessageTribute is MessageSigned, Controlled {
         return keccak256(abi.encodePacked(address(this), _value, _ttl));
     }
 
+    /**
+     * @notice Changes tribute of account
+     * @param _of Account chaning tribute
+     * @param _value New tribute value
+     */
     function setTribute(address _of, uint256 _value) internal {
         require(!stopped, "Contract stopped by Controller");
         tributeCatalog[_of] = _value;
         emit SetTribute(_of, _value);
     }
-    
+
 }
