@@ -1,11 +1,12 @@
 pragma solidity >=0.5.0 <0.6.0;
-import "../common/MessageSigned.sol";
+
 import "../common/Controlled.sol";
+import "../common/MessageSigned.sol";
 
 /**
  * @notice Defines tribute to talk
  */
-contract MessageTribute is MessageSigned, Controlled {
+contract MessageTribute is Controlled, MessageSigned {
     event SetTribute(address indexed account, uint256 value);
     bool public stopped;
     mapping(address => uint256) tributeCatalog;
