@@ -3,22 +3,32 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
-    "test": "embark test"
+    "start": "npx embark run",
+    "ci": "npm run qa",
+    "clean": "npm run reset",
+    "package": "npm pack",
+    "qa": "npm-run-all test package",
+    "reset": "npx embark-reset && npx rimraf embark-*.tgz package",
+    "test": "npx embark test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/status-im/contracts.git"
   },
   "author": "Status Research & Development GMBH",
-  "license": "ISC",
+  "license": "CC0-1.0",
   "bugs": {
     "url": "https://github.com/status-im/contracts/issues"
   },
   "homepage": "https://github.com/status-im/contracts#readme",
   "devDependencies": {
+    "embark": "^4.0.2",
     "embarkjs-connector-web3": "^4.0.0",
     "react": "16.7.0",
     "react-bootstrap": "0.32.4",
     "react-dom": "16.7.0"
+  },
+  "dependencies": {
+    "bootstrap": "^4.3.1"
   }
 }
