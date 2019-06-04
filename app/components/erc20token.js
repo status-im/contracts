@@ -28,29 +28,34 @@ class ERC20TokenUI extends React.Component {
     transfer(e){
       var to = this.state.transferTo;
       var amount = this.state.transferAmount;
-      var tx = ERC20Token.methods.transfer(to, amount).send({from: web3.eth.defaultAccount});
-      this._addToLog(ERC20Token.options.address+".transfer(" + to + ", "+amount+")");
+      this._addToLog(ERC20Token.options.address+".methods.transfer(" + to + ", "+amount+").send({from: " + web3.eth.defaultAccount + "})");
+      var tx = ERC20Token.methods.transfer(to, amount);
+      tx.estimateGas().then((r) => {
+        tx.send({gas: r, from: web3.eth.defaultAccount});
+      });
+
     }
 
     approve(e){
       var to = this.state.transferTo;
       var amount = this.state.transferAmount;
+      this._addToLog(ERC20Token.options.address+".methods.approve(" + to + ", "+amount+").send({from: " + web3.eth.defaultAccount + "})");
       var tx = ERC20Token.methods.approve(to, amount).send({from: web3.eth.defaultAccount});
-      this._addToLog(ERC20Token.options.address+".approve(" + to + ", "+amount+")");
+
     }
 
     balanceOf(e){
       e.preventDefault();
       var who = e.target.value;
+      this._addToLog(ERC20Token.options.address+".methods.balanceOf(" + who + ").call()");
       ERC20Token.methods.balanceOf(who).call()
         .then(_value => this.setState({balanceOf: _value}))
-      this._addToLog(ERC20Token.options.address+".balanceOf(" + who + ")");
     }
   
     getDefaultAccountBalance(){
+      this._addToLog(ERC20Token.options.address + ".methods.balanceOf(" + web3.eth.defaultAccount + ").call()");
       ERC20Token.methods.balanceOf(web3.eth.defaultAccount).call()
         .then(_value => this.setState({accountBalance: _value}))
-      this._addToLog(ERC20Token.options.address + ".balanceOf(" + web3.eth.defaultAccount + ")");
     }
 
     _addToLog(txt){
@@ -103,7 +108,7 @@ class ERC20TokenUI extends React.Component {
       </React.Fragment>
     );
   }
-  }
+}
 
 
 export default ERC20TokenUI;

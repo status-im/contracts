@@ -1,10 +1,10 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-/** 
+/**
  * @notice Uses ethereum signed messages
  */
 contract MessageSigned {
-    
+
     constructor() internal {}
 
     /**
@@ -13,12 +13,12 @@ contract MessageSigned {
      * @param _messageSignature message `_signHash` signature
      */
     function recoverAddress(
-        bytes32 _signHash, 
+        bytes32 _signHash,
         bytes memory _messageSignature
     )
         internal
         pure
-        returns(address) 
+        returns(address)
     {
         uint8 v;
         bytes32 r;
@@ -48,13 +48,14 @@ contract MessageSigned {
     }
 
     /**
-     * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s` 
+     * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`
      */
     function signatureSplit(bytes memory _signature)
         internal
         pure
         returns (uint8 v, bytes32 r, bytes32 s)
     {
+        require(_signature.length == 65, "Bad signature length");
         // The signature format is a compact form of:
         //   {bytes32 r}{bytes32 s}{uint8 v}
         // Compact means, uint8 is not padded to 32 bytes.
@@ -68,8 +69,10 @@ contract MessageSigned {
             // use the second best option, 'and'
             v := and(mload(add(_signature, 65)), 0xff)
         }
-
-        require(v == 27 || v == 28, "Bad signature");
+        if (v < 27) {
+            v += 27;
+        }
+        require(v == 27 || v == 28, "Bad signature version");
     }
-    
+
 }

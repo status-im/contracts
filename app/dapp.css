@@ -1,17 +1,7 @@
-.navbar {
-  
-}
 
-.accounts {
-  float: right;
-  margin-right: 17px;
-  font-family: monospace;
+div {
+  margin: 15px;
 }
-
-.identicon {
-  border-radius: 50%;
-}
-
 
 .logs {
   background-color: black;
@@ -59,5 +49,9 @@
 }
 
 input.form-control {
-  margin: 5px;
+  margin-right: 5px;
+}
+
+.alert-result {
+  margin-left: 0;
 }

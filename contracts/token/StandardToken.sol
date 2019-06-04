@@ -9,20 +9,20 @@ contract StandardToken is ERC20Token {
     mapping (address => mapping (address => uint256)) allowed;
 
     constructor() internal { }
-    
+
     function transfer(
         address _to,
         uint256 _value
-    ) 
-        external 
+    )
+        external
         returns (bool success)
     {
-        return transfer(msg.sender, _to, _value);    
+        return transfer(msg.sender, _to, _value);
     }
 
-    function approve(address _spender, uint256 _value) 
+    function approve(address _spender, uint256 _value)
         external
-        returns (bool success) 
+        returns (bool success)
     {
         allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
@@ -38,35 +38,35 @@ contract StandardToken is ERC20Token {
         returns (bool success)
     {
         if (balances[_from] >= _value &&
-            allowed[_from][msg.sender] >= _value && 
+            allowed[_from][msg.sender] >= _value &&
             _value > 0) {
             allowed[_from][msg.sender] -= _value;
             return transfer(_from, _to, _value);
-        } else { 
-            return false; 
+        } else {
+            return false;
         }
     }
 
-    function allowance(address _owner, address _spender) 
-        external 
-        view 
+    function allowance(address _owner, address _spender)
+        external
+        view
         returns (uint256 remaining)
     {
         return allowed[_owner][_spender];
     }
 
-    function balanceOf(address _owner) 
-        external 
-        view 
-        returns (uint256 balance) 
+    function balanceOf(address _owner)
+        external
+        view
+        returns (uint256 balance)
     {
         return balances[_owner];
     }
-    
+
     function mint(
         address _to,
         uint256 _amount
-    ) 
+    )
         internal
     {
         balances[_to] += _amount;
@@ -75,11 +75,11 @@ contract StandardToken is ERC20Token {
     }
 
     function transfer(
-        address _from, 
+        address _from,
         address _to,
         uint256 _value
     )
-        internal 
+        internal
         returns (bool success)
     {
         if (balances[_from] >= _value && _value > 0) {
@@ -87,8 +87,8 @@ contract StandardToken is ERC20Token {
             balances[_to] += _value;
             emit Transfer(_from, _to, _value);
             return true;
-        } else { 
-            return false; 
+        } else {
+            return false;
         }
     }
 

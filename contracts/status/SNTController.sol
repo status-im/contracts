@@ -6,7 +6,7 @@ import "../token/ERC20Token.sol";
 import "../token/MiniMeToken.sol";
 /**
  * @title SNTController
- * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH) 
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @notice enables economic abstraction for SNT
  */
 contract SNTController is TokenController, Owned {
@@ -27,7 +27,7 @@ contract SNTController is TokenController, Owned {
         }
         snt = _snt;
     }
-    /** 
+    /**
      * @notice The owner of this contract can change the controller of the SNT token
      *  Please, be sure that the owner is a trusted agent or 0x0 address.
      *  @param _newController The address of the new controller
@@ -60,7 +60,7 @@ contract SNTController is TokenController, Owned {
 
     /**
      * @notice payment by address coming from controlled token
-     * @dev In between the offering and the network. Default settings for allowing token transfers. 
+     * @dev In between the offering and the network. Default settings for allowing token transfers.
      */
     function proxyPayment(address) external payable returns (bool) {
         //Uncomment above line when using parameters
@@ -84,7 +84,7 @@ contract SNTController is TokenController, Owned {
      */
     function onApprove(address, address, uint256) external returns (bool) {
         //Uncomment above line when using parameters
-        //require(msg.sender == address(snt), "Unauthorized"); 
+        //require(msg.sender == address(snt), "Unauthorized");
         return true;
     }
 }

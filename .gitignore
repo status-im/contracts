@@ -4,10 +4,16 @@ __pycache__/
 *$py.class
 
 # embark
-.embark/
+.embark
 chains.json
 .password
-embark_demo/
+flattenedContracts
+embarkArtifacts
+config/livenet/password
+config/production/password
+dist
+embarkArtifacts
+
 
 # egg-related
 viper.egg-info/
@@ -41,3 +47,4 @@ package-lock.json
 # other
 .vs/
 bin/
+.trash/

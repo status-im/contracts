@@ -1,19 +1,15 @@
-# status.im contracts
-Requires https://github.com/creationix/nvm
+# status.im bootstrap contracts
+Requires embark 4.0.1. Recommended use of https://github.com/creationix/nvm
 Usage: 
  ```
- nvm install v8.9.4
- nvm use v8.9.4
+ nvm install v10.15
+ nvm use v10.15
  npm install -g embark
  git clone https://github.com/status-im/contracts.git
  cd contracts
+ git checkout bootstrap
  npm install
- embark simulator
  embark test
  embark run
  ```
 
-| Contract                               | Deploy | Test | UI  |
-| -------------------------------------- | ------ | ---- | --- |
-| token/TestToken                        | Yes    | Yes  | Yes |
-| token/ERC20Token                       | No     | Yes  | Yes |
