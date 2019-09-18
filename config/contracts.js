@@ -65,5 +65,22 @@ module.exports = {
         address: "0xEdEB948dE35C6ac414359f97329fc0b4be70d3f1"
       }
     }
+  },
+  goerli: {
+    contracts: {
+      MiniMeTokenFactory: {
+        deploy: false,
+        address: "0x7BE1A19be2822C39777f0CB2EB3E927494eCFCf4"
+      },
+      MiniMeToken: {
+        deploy: false,
+        address: "0x86e5C5c884740894644dAD30021aAaAdE2B7bAbd"
+      },
+      StatusRoot: {
+        instanceOf: "TestStatusNetwork",
+        deploy: false,
+        address: "0x2B3845b982B147A0436e3766EAE06936f4E271a0"
+      }
+    }
   }
 }
