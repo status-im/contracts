@@ -3,6 +3,7 @@ pragma solidity >=0.5.0 <0.6.0;
 /// @dev `Owned` is a base level contract that assigns an `owner` that can be
 ///  later changed
 contract Owned {
+    event OwnerChanged(address newOwner);
 
     /// @dev `owner` is the only address that can call a function with this
     /// modifier
@@ -24,6 +25,7 @@ contract Owned {
     /// @param _newOwner The address of the new owner. 0x0 can be used to create
     ///  an unowned neutral vault, however that cannot be undone
     function changeOwner(address payable _newOwner) public onlyOwner {
+        emit OwnerChanged(_newOwner);
         newOwner = _newOwner;
     }
 
