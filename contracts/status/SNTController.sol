@@ -2,6 +2,7 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "../token/TokenController.sol";
 import "../common/Owned.sol";
+import "../common/TokenClaimer.sol";
 import "../token/ERC20Token.sol";
 import "../token/MiniMeToken.sol";
 /**
@@ -9,7 +10,7 @@ import "../token/MiniMeToken.sol";
  * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
  * @notice enables economic abstraction for SNT
  */
-contract SNTController is TokenController, Owned {
+contract SNTController is TokenController, Owned, TokenClaimer {
 
     MiniMeToken public snt;
 
@@ -47,15 +48,7 @@ contract SNTController is TokenController, Owned {
         if (snt.controller() == address(this)) {
             snt.claimTokens(_token);
         }
-        if (_token == address(0)) {
-            address(owner).transfer(address(this).balance);
-            return;
-        }
-
-        ERC20Token token = ERC20Token(_token);
-        uint256 balance = token.balanceOf(address(this));
-        token.transfer(owner, balance);
-        emit ClaimedTokens(_token, owner, balance);
+        withdrawBalance(_token, owner);
     }
 
     /**
