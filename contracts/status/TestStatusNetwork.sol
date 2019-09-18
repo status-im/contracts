@@ -18,7 +18,9 @@ contract TestStatusNetwork is StatusNetwork {
     constructor(address payable _owner, MiniMeToken _snt)
         public
         StatusNetwork(_owner, _snt)
-    { }
+    {
+
+    }
 
     function () external {
         _generateTokens(msg.sender, 1000 * (10 ** uint(snt.decimals())));
